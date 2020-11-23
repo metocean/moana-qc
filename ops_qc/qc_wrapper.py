@@ -1,18 +1,22 @@
-import qc_tests_df as qcdf 
-import qc_tests_sd as qcds
+import numpy as np
+import xarray as xr
+
+import qc_tests_df as qcdf
+from ops_core.utils import import_pycallable, catch_exception
+
 
 class QC_wrapper(object):
     '''Wrapper class for observational data quality control.  Incorporates transferring files from
     an incoming directory to a new directory.
-    
+
     '''
-    def __init__(self, 
+    def __init__(self,
                 outfile_ext = '',
                 qc_tests = None,
                 metafile = '/data/obs/mangopare/Trial_fishermen_database.csv',
-                datareader = qc_readers.MangopareStandardReader,
-                metareader = qc_readers.MangopareMetadataReader,
-                preprocessor = qc_preprocess.PreProcessMangopare,
+                datareader = {},
+                metareader = {},
+                preprocessor = {},
                 save_flags = False,
                 convert_p_to_z = True,
                 test_order = False,
@@ -26,8 +30,9 @@ class QC_wrapper(object):
         self.outfile_ext = putfile_ext
         self.qc_tests = qc_tests
         self.metafile = metafile
-        self.filereader = filereader
-        self.preprocessor = preprocessor
+        self.datareader_class = datafilereader
+        self.metareader_class = metafilereader
+        self.preprocessor_class = preprocessor
         self.save_flags = save_flags
         self.convert_p_to_z = convert_p_to_z
         self.test_order = test_order
@@ -35,6 +40,9 @@ class QC_wrapper(object):
         self.startstring = startstring
         self.dateformat = dateformat
         self.gear_class = gear_class
+        self._default_datareader_class = 'qc_readers.MangopareStandardReader'
+        self._default_metareader_class = 'qc_readers.MangopareMetadataReader'
+        self._default_preprocessor_class = 'qc_preprocess.PreProcessMangopare'
         self.logger = logging
 
     def set_cycle(self, cycle_dt):
@@ -44,6 +52,17 @@ class QC_wrapper(object):
         self.local_dir = cycle_dt.strftime(self.local_dir)
         self.local_basefile = cycle_dt.strftime(self.local_basefile)
         self._proxy.set_cycle(cycle_dt)
+
+    def _set_reader(self,filereader,_default_reader_class):
+        klass = filereader.pop('class', self._default_reader_class)
+        filereader = import_pycallable(klass)
+        return(filereader)
+        self.logger.info('Using file reader: %s ' % klass)
+
+    def _set_all_readers(self):
+        self.datareader = _set_reader(self.datareader_class,self._default_datareader_class)
+        self.metareader = _set_reader(self.metareader_class,self._default_metareader_class)
+        self.preprocessor = _set_reader(self.preprocessor_class,self._default_preprocessor_class)
 
     def _transfer(self, source=None, transfer=None,
                   default='msl_actions.transfer.base.LocalTransferBase'):
@@ -62,13 +81,17 @@ class QC_wrapper(object):
             d_lat = self.default_latitude
         depth = [sw.eos80.dpth(catch(lambda: float(z)),d_lat) for z in self.ds['PRESSURE']]
         self.ds['DEPTH'] = xr.Variable(dims = 'PRESSURE', data = depth, attrs={'units':'[m]','standard_name':'depth'})
-    
+
     def run(self):
+        # set all readers/preprocessors
+        self._set_all_readers()
+        # load metadata common for all files
+        self.fisher_metadata = self.metareader(metafile = self.metafile).run()
         # apply qc
         for filename in self._success_files:
             try:
                 self.ds = self.datareader(filename = filename).run()
-                self.ds = self.preprocess(self.ds)
+                self.ds = self.preprocessor(self.ds,self.fisher_metadata)
                 qc_apply()
             except:
                 tb = catch_exception(exc)

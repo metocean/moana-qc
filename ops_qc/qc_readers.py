@@ -5,22 +5,21 @@ import logging
 import subprocess
 import io
 
-from ops_core.utils import read_xml, import_pycallable, catch_exception
-
+from qc_utils import catch
 
 class MangopareStandardReader(object):
     '''
     Read Mangopare temperature and pressure data for applying quality control.
     Right now this is all done using pandas dataframes for consistency with
-    the Berring Data Collective.  
+    the Berring Data Collective.
     Inputs:
         filetype: 'sensor' or 'fisherdata'
 
         Load Mangopare csv data into a pandas dataframe, then convert to xarray.
         Converts column names to be consistent with BDC QC.
-        Inputs: 
+        Inputs:
             filename: mangopare csv file to be read
-            self.startstring: name of first column in order to skip header, 
+            self.startstring: name of first column in order to skip header,
                 example: startstring = 'DateTime (UTC)'
             self.dateformat: date format to convert to pd.datetime object
                 example: dateformat = '%Y%m%dT%H%M%S'
@@ -29,13 +28,13 @@ class MangopareStandardReader(object):
             self.df = pandas dataframe of data only, no metadata
 
     '''
-    def __init__(self, 
-                 filename, 
+    def __init__(self,
+                 filename,
                  filetype = 'sensor',
                  skiprows = 11,
                  dateformat = '%Y%m%dT%H%M%S',
                  startstring = "DateTime (UTC)",
-                 logger = logging,                  
+                 logger = logging,
                   **kwargs):
         self.filename = filename
         self.filetype = filetype
@@ -58,19 +57,19 @@ class MangopareStandardReader(object):
         else:
             self.logger.error('Column name not recognized in {}'.format(self.filename))
         self.df.DATETIME = pd.to_datetime(self.df['DATETIME'], format=self.dateformat, errors='coerce')
-        self.df['TEMPERATURE'] = [self._catch(lambda:float(t)) for t in self.df['TEMPERATURE']]   
-        
+        self.df['TEMPERATURE'] = [self.catch(lambda:float(t)) for t in self.df['TEMPERATURE']]
+
         # Drop rows with bad temp or depth data
         self.df.dropna()
-        
+
         # Convert 0 lat/lon to nan, since 0 is bad value, but don't drop
         self.df['LONGITUDE'].loc[self.df['LONGITUDE']==0] = np.nan
         self.df['LATITUDE'].loc[self.df['LATITUDE']==0] = np.nan
 
         # ADD VARIABLE METADATA HERE:  ds.lev.attrs['Units'] = '[m]'
 #     ds['lev3'] = xr.Variable(dims = 'lev', data = ds.lev, attrs={'a second variable':'hu'})
-        self.ds = self.df.to_xarray()         
-    
+        self.ds = self.df.to_xarray()
+
     def _calc_header_rows(self):
         '''
         The datafile header size changes with different Mangopare firmware.
@@ -96,21 +95,15 @@ class MangopareStandardReader(object):
             self.ds.attrs[row[0]] = row[1].strip()
         self.ds.attrs['Date quality controlled'] = datetime.now()
         self.ds.attrs['Quality control repository'] = 'https://github.com/metocean/ops-qc'
-        self.ds.attrs['QC Git Revision'] = subprocess.check_output(['git', 'log', '-n', '1', '--pretty=tformat:%h-%ad', '--date=short']).strip()
-    
-    def _catch(self,func, handle=lambda e : e, *args, **kwargs):
-        ''' Values that return an error are overwritten as np.nan...we just ignore them for now '''
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            return np.nan
+        self.ds.attrs['QC git revision'] = subprocess.check_output(['git', 'log', '-n', '1', '--pretty=tformat:%h-%ad', '--date=short']).strip()
+        self.ds.attrs['Raw data filename'] = self.filename
 
     def run(self):
         # read file based on self.filetype
         try:
             self.load_moana_standard()
             self._load_attributes()
-            return(self.ds) 
+            return(self.ds)
         except Exception as exc:
             self.logger.error('Could not load data from {}. Traceback: {}'.format(self.filename, exc))
 
@@ -121,8 +114,8 @@ class MangopareMetadataReader(object):
     Read Mangopare fisher metadata in order to classify gear and
     to assign email addresses to Mangopare serial number.
     '''
-    def __init__(self, 
-                 metafile = '/data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv', 
+    def __init__(self,
+                 metafile = '/data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv',
                  dateformat = '%Y%m%dT%H%M%S',
                  gear_class = {'Bottom trawl':'mobile','Potting':'stationary','Long lining':'mobile','Trawling':'mobile'},
                  logger = logging):
@@ -149,7 +142,7 @@ class MangopareMetadataReader(object):
         try:
             self.fisher_metadata['Gear Class'] = 'unknown'
             for gvessel,gclass in self.gear_class.items():
-                self.fisher_metadata.loc[self.fisher_metadata['Fishing method'] == gvessel, 'Gear Class'] = gclass       
+                self.fisher_metadata.loc[self.fisher_metadata['Fishing method'] == gvessel, 'Gear Class'] = gclass
             self.fisher_metadata['Date returned'].replace({pd.NaT: pd.datetime.now()}, inplace=True)
         except Exception as exc:
             self.logger.error('Could not load fisher metadata from {}'.format(self.metafile))
