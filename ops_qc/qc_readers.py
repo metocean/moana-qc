@@ -57,7 +57,7 @@ class MangopareStandardReader(object):
         else:
             self.logger.error('Column name not recognized in {}'.format(self.filename))
         self.df.DATETIME = pd.to_datetime(self.df['DATETIME'], format=self.dateformat, errors='coerce')
-        self.df['TEMPERATURE'] = [self.catch(lambda:float(t)) for t in self.df['TEMPERATURE']]
+        self.df['TEMPERATURE'] = [catch(lambda:float(t)) for t in self.df['TEMPERATURE']]
 
         # Drop rows with bad temp or depth data
         self.df.dropna()
