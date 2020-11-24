@@ -82,31 +82,24 @@ class PreProcessMangopare(object):
         except:
             print("Position could not be calculated for {}".format(self.filename))
 
-    def find_bottom(self, cutoff = False):
+    def find_bottom(self, cutoff = '4 minutes'):
         '''
-        Uses gradient to assign descending (DESC), ascending (ASC), or deployed (DEPL) status
+        Uses timedelta to assign profile (PROF) or deployed (DEPL) status
         to each datapoint in fishing gear deployment.  Used to estimate average bottom or fishing
         temperature.
         '''
         try:
-            self.ds = self.ds.dropna()
-            ts = self.ds['time'].astype('datetime64[s]').astype('int64')/1e9
-            ts = ts - ts[0]
-            temp = self.ds['depth']
-            tempfilt = savgol_filter(temp, window_length=9, polyorder=3)
-            dev1 = np.gradient(tempfilt,ts)
-        except exception as exc:
-            cat = np.array(['NA' for x in range(len(temp))])
-            self.logger.error('Filter or pressure gradient failed for {}.  NA applied instead.'.format(self.filename))
-        try:
-            if not cutoff:
-                cutoff = np.std(dev1)/2.5
-            cat = np.array(["DEPL" for x in range(len(temp))])
-            cat[dev1>cutoff] = "DESC"
-            cat[-dev1>cutoff] = "ASCD"
+            self.ds = self.ds.dropna(subset=['DATETIME','PRESSURE'], how='all')
+            #  self.ds = self.ds.dropna()
+            t_delta = (ds['DATETIME']-ds['DATETIME'].shift()).fillna(pd.Timedelta('0 days'))
+            cutoff = pd.Timedelta(cutoff)
+
+            cat = np.array(["DEPL" for x in range(len(self.ds['TEMPERATURE']))])
+            cat[t_delta<cutoff] = "PROF"
         except:
             cat = np.array(['NA' for x in range(len(temp))])
-            self.logger.error('Gradient cutoff not applied to {}, NA applied instead.'.format(self.filename))
+            self.logger.error('Bottom not found for {}, NA applied instead.'.format(self.filename))
+        
         self.ds['Phase'] = cat
         self.ds.Phase.attrs['Units'] = 'none'
 
