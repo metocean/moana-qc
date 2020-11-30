@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 import logging
-import qc_tests_df as qcdf
+import qc_tests_df as qctests
 from qc_utils import catch
 
 #######################################################################################################################
@@ -10,14 +10,15 @@ from qc_utils import catch
 #######################################################################################################################
 
 class QC_apply(object):
-    '''Base class for observational data quality control.   
-    Input dataframe with LONGITUDE, LATITUDE, DATETIME, PRESSURE, TEMPERATURE 
+    '''Base class for observational data quality control.
+    Input dataframe with LONGITUDE, LATITUDE, DATETIME, PRESSURE, TEMPERATURE
     of same shape and applies QC, designed for instruments mounted on fishing gear.
-    Options for test_list: classify_gear, calc_stationary_loc, find_bottom, gear_type,
-    Note that test_list MUST GO IN THE ORDER ABOVE.
+    Converts dataset to dataframe for consistency with BDC QC code.
+    At some point might change all QC to ds so we don't have to switch
+    back and forth.
     '''
-    def __init__(self, 
-                ds = ds, 
+    def __init__(self,
+                ds = ds,
                 test_list = None,
                 save_flags = False,
                 convert_p_to_z = True,
@@ -34,24 +35,28 @@ class QC_apply(object):
         self.logger = logging
         self.df = self.ds.to_dataframe()
 
-    def _run_pre_processing(self):
-        try:
-            self.qc_test = getattr(qcds,testname)
-            self.qc_test()
-        except:
-            self.logger.error('Test {} failed on {}'.format(testname,self.filename))
-    
     def _run_qc_tests(self):
         for testname in self.test_list:
             try:
-                self.qc_test = getattr(qcdf,testname)
+                self.qc_test = getattr(qctests,testname)
                 self.qc_test()
-            else: 
+            else:
 
 
-    def merge_qc(self):
+    def _merge_df_and_ds(self):
+        '''
+        Converts pandas dataframe back to xarray, adds back in
+        attributes from original ds.  Updates attributes.
+        '''
 
-        
+    def _global_qc_flag(self):
+        '''
+        Individual QC tests record qc flag in flag_* column.
+        Take the maximum value to determine overall qc flag
+        for each measurement.
+        '''
+        qc_col = [col for col in df if col.startswith('flag')]
+        self.df['qc_flag'] = self.df[qc_col].max(axis=0)
 
     def run(self):
         # initialize global QC flag with zero (no QC'd value)
@@ -59,4 +64,4 @@ class QC_apply(object):
         # run df and ds test
         if self.qc_tests:
             self._run_qc_tests()
-        # convert pressure to depth if needed
+        self._global_qc_flag()
