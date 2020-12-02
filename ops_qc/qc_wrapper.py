@@ -1,7 +1,5 @@
 import numpy as np
 import xarray as xr
-
-import qc_tests_df as qcdf
 from ops_core.utils import import_pycallable, catch_exception
 
 
@@ -13,7 +11,7 @@ class QC_wrapper(object):
     def __init__(self,
                 outfile_ext = '',
                 qc_tests = None,
-                metafile = '/data/obs/mangopare/Trial_fishermen_database.csv',
+                metafile = '/data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv',
                 datareader = {},
                 metareader = {},
                 preprocessor = {},
@@ -92,7 +90,7 @@ class QC_wrapper(object):
             try:
                 self.ds = self.datareader(filename = filename).run()
                 self.ds = self.preprocessor(self.ds,self.fisher_metadata)
-                qc_apply()
+    #            qc_apply()
             except:
                 tb = catch_exception(exc)
                 self.logger.error('Could not qc data from {}. Traceback: {}'.format(filename, tb))

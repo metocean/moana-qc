@@ -1,3 +1,7 @@
+'''
+Miscellanous functions used by multiple classes in the QC library.
+'''
+
 def catch(func, handle=lambda e : e, *args, **kwargs):
     ''' Values that return an error are overwritten as np.nan...we just ignore them for now '''
     try:
@@ -27,7 +31,7 @@ def calc_speed(df,units = 'kts'):
     '''
     Calculate speed in km/hr, mph, or kts
     '''
-    conversions = {'knots':0.539957,'mph':0.621371}
+    conversions = {'kts':0.539957,'mph':0.621371}
     self.df['speed'] = np.nan
     if (len(df) != 0):
         delta_time = df.DATETIME.to_series().diff().dt.hours

@@ -2,8 +2,6 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from global_land_mask import globe
-import geopy.distance
-import setup_rtd
 import logging
 from qc_utils import haversine, speed
 
@@ -14,7 +12,7 @@ from qc_utils import haversine, speed
 # 3. Gear type control.
 
 def gear_type(self,fail_flag = 3):
-    self.df['flag_gear_type'] = 1
+    self.df['flag_gear_type'] = np.ones_like(arr, dtype='uint8')
     if not "speed" in self.df:
         self.df,mean_speed = calc_speed(self.df)
     if (mean_speed > 0 and gear == 'stationary') or (mean_speed == 0 and gear == 'mobile'):
@@ -26,7 +24,7 @@ def timing_gap_test(self,fail_flag = 3):
     '''
     Take another look at this, do not include for now
     '''
-    self.df['flag_timing_gap'] = 1
+    self.df['flag_timing_gap'] = np.ones_like(arr, dtype='uint8')
     currdate = datetime.utcnow()
     tim_inc = 24  # hours
     time_gap = currdate - self.df['DATETIME'].iloc[-1]
@@ -40,7 +38,7 @@ def impossible_date(self,min_date = datetime(2010, 1, 1),fail_flag = 4):
     '''
     Min_date here should really come from fishing metadata
     '''
-    self.df['flag_date'] = 1
+    self.df['flag_date'] = np.ones_like(arr, dtype='uint8')
     currdate = datetime.now()
     self.df.loc[((self.df['DATETIME'] >= currdate)), 'flag_date'] = fail_flag
     # min date could be a spreadsheet error
@@ -50,7 +48,7 @@ def impossible_date(self,min_date = datetime(2010, 1, 1),fail_flag = 4):
 # 6. Impossible location test
 
 def impossible_location(self,lonrange = [-180, 360], latrange = [-90, 90], fail_flag = 4):
-    self.df['flag_location'] = 1
+    self.df['flag_location'] = np.ones_like(arr, dtype='uint8')
     self.df.loc[((self.df['LATITUDE'] <= latrange[0]) | (self.df['LATITUDE'] >= latrange[1]) | (self.df['LONGITUDE'] <= lonrange[0]) | (self.df['LONGITUDE'] >= lonrange[1])), 'flag_location'] = fail_flag
 
 # 7. Position on land test
@@ -61,7 +59,7 @@ def position_on_land(self, fail_flag = 3):
     but need to think about how to efficientlly import higher res mask.
     Leaving this test out for now.
     '''
-    self.df['flag_land'] = 1
+    self.df['flag_land'] = np.ones_like(arr, dtype='uint8')
     self.df.loc[(globe.is_land(self.df['LATITUDE'], self.df['LONGITUDE'])), 'flag_land'] = fail_flag
 
 
@@ -72,7 +70,7 @@ def impossible_speed(self,max_speed = 100, fail_flag = 4):
     Don't really like calculating speed twice.  (Fixed)
     max_speed in knots
     '''
-    self.df['flag_speed'] = 1
+    self.df['flag_speed'] = np.ones_like(arr, dtype='uint8')
 #    self.df.reset_index(drop=True)  #not sure why this is here?
     if not "speed" in self.df:
         self.df = calc_speed(self.df,units='kts')
@@ -89,7 +87,7 @@ def global_range(self, ranges = {'PRESSURE':[0,10000],'TEMPERATURE':[-2,50]}, fa
     Simplified version based on our experience so far.
     Applies as many ranges tests to as many variables as you'd like.
     '''
-    self.df['flag_global_range'] = 1
+    self.df['flag_global_range'] = np.ones_like(arr, dtype='uint8')
     for var,limit in ranges:
         self.df.loc[(self.df[var] < limit[0]) | (self.df[var] > limit[1])), 'flag_global_range'] = fail_flag
 
@@ -123,7 +121,8 @@ def spike(self, vars = {'TEMPERATURE':10,'PRESSURE':100}, fail_flag = 4):
     thresholds. Because I think all of the spike section could
     be rethought and I'm not sure how it should be done yet.
     '''
-    self.df['flag_temp_spike'] = 1
+
+    self.df['flag_temp_spike'] = np.ones_like(arr, dtype='uint8')
     for var, thresh in vars:
         val = np.abs(np.convolve(self.df[var], [-0.5, 1, -0.5], mode='same'))
         val[[0, -1]] = 0
@@ -136,7 +135,8 @@ def stuck_value(self,vars = {'TEMPERATURE':.005,'PRESSURE':.01},rep_num = 5, fai
     Adapted from QARTOD - sort of.  This whole thing is suspect as implemented
     here.
     '''
-    self.df['flag_temp_stuck'] = 1
+    self.df['flag_temp_stuck'] = np.ones_like(arr, dtype='uint8')
+
     if not isinstance(rep_num, int):
         raise TypeError("Maximum number of repeated values must be type int.")
     for var,thresh in vars:
@@ -152,24 +152,31 @@ def stuck_value(self,vars = {'TEMPERATURE':.005,'PRESSURE':.01},rep_num = 5, fai
 
 # 13. Rate of change test
 
-def rate_of_change_test(self):
+def rate_of_change_test(self,thresh,fail_flag = 3):
     '''
     Old version doesn't really work for Mangopare, because the time
-    delta isn't taken into consideration.
+    delta isn't taken into consideration.  Another QARTOD-ish version:
     '''
-    self.df['flag_RoC'] = 1
+    y = self.df['TEMPERATURE']
+    x = self.df['PRESSURE']
 
-    sd_temp_prof = self.df[self.df['type'] == 'PROF']['TEMPERATURE'].std()
-    sd_temp_bottom = self.df[self.df['type'] == 3]['TEMPERATURE'].std()
-
-    n_dev = 3 # threshold
-
-    self.df['prev_temp'] = self.df['TEMPERATURE'].shift(1)
-
-    self.df.loc[(abs(self.df['TEMPERATURE'] - self.df['prev_temp']) > (n_dev * sd_temp_down)), 'flag_RoC'] = 3
-    self.df.loc[(abs(self.df['TEMPERATURE'] - self.df['prev_temp']) > (n_dev * sd_temp_bottom)), 'flag_RoC'] = 3
-    self.df.loc[(abs(self.df['TEMPERATURE'] - self.df['prev_temp']) > (n_dev * sd_temp_up)), 'flag_RoC'] = 3
-
-    self.df = self.df.drop(columns=['prev_temp'])
+    self.df['flag_RoC'] = np.ones_like(arr, dtype='uint8')
+    # express rate of change as seconds, unit conversions will handle proper
+    # comparison to threshold later
+    roc = np.abs(np.divide(np.diff(y),np.diff(x)))
+    exceed = np.insert(roc > thresh, 0, False)
+    self.df['flag_RoC'].loc[exceed] = fail_flag
 
 # 14.  Within radius of "bad" location (i.e. to remove calibration tests)
+
+def remove_ref_location(self,bad_radius = 5,ref_lat = -41.25707, ref_lon = 173.28393, fail_flag = 4):
+    '''
+    Defaults correspond to Zebra-Tech's location in Nelson, NZ
+    in order to remove any testing values that weren't offloaded
+    from the sensors at the time of test.
+    '''
+    self.df['flag_ref_loc'] = np.ones_like(arr, dtype='uint8')
+    lats = self.df['LATITUDE']
+    lons = self.df['LONGITUDE']
+    d = [float(sw.dist([ref_lat,lat],[ref_lon,lon])[0]) for lat,lon in zip(lats,lons)]
+    self.df.loc[np.array(d)<bad_radius, 'flag_ref_loc'] = fail_flag

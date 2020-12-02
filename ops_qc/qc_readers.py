@@ -25,8 +25,9 @@ class MangopareStandardReader(object):
                 example: dateformat = '%Y%m%dT%H%M%S'
         Output:
             self.ds = xarray dataset including data attributes
-            self.df = pandas dataframe of data only, no metadata
 
+        To do: UPDATE GLOBAL ATTRIBUTES I.E. LIKE CORA.  Maybe global ATTRIBUTES
+        variable (dictionary) is needed
     '''
     def __init__(self,
                  filename,
@@ -43,7 +44,14 @@ class MangopareStandardReader(object):
         self.startstring = startstring
         self.logger = logger
 
-    def load_moana_standard(self):
+        self.global_attrs = {
+            'Date quality controlled':datetime.utcnow().astimezone().strftime("%Y-%m-%dT%H:%M:%S %z"),
+            'Quality control repository':'https://github.com/metocean/ops-qc',
+            'QC git revision':subprocess.check_output(['git', 'log', '-n', '1', '--pretty=tformat:%h-%ad', '--date=short']).strip(),
+            'Raw data filename':self.filename
+        }
+
+    def _read_mangopare_csv(self):
         '''
         Opens a mangopare csv file in pandas, formats the data, converts to xarray
         '''
@@ -56,19 +64,22 @@ class MangopareStandardReader(object):
             self.df.rename(columns={str(depth_col[0]): 'PRESSURE', 'DateTime (UTC)':'DATETIME', 'Lat':'LATITUDE','Lon':'LONGITUDE','Temperature C':'TEMPERATURE'}, inplace=True)
         else:
             self.logger.error('Column name not recognized in {}'.format(self.filename))
-        self.df.DATETIME = pd.to_datetime(self.df['DATETIME'], format=self.dateformat, errors='coerce')
+        self.df['DATETIME'] = pd.to_datetime(self.df['DATETIME'], format=self.dateformat, errors='coerce')
         self.df['TEMPERATURE'] = [catch(lambda:float(t)) for t in self.df['TEMPERATURE']]
 
         # Drop rows with bad temp or depth data
-        self.df.dropna()
+        self.df = self.df.dropna(how='any',subset=['DATETIME','TEMPERATURE','PRESSURE'])
 
         # Convert 0 lat/lon to nan, since 0 is bad value, but don't drop
         self.df['LONGITUDE'].loc[self.df['LONGITUDE']==0] = np.nan
         self.df['LATITUDE'].loc[self.df['LATITUDE']==0] = np.nan
 
-        # ADD VARIABLE METADATA HERE:  ds.lev.attrs['Units'] = '[m]'
-#     ds['lev3'] = xr.Variable(dims = 'lev', data = ds.lev, attrs={'a second variable':'hu'})
-        self.ds = self.df.to_xarray()
+    def _convert_df_to_ds(self):
+        '''
+        Sets dims and coords, converts to xaxrray dataset.
+        '''
+        self.df = self.df.set_index(['DATETIME'])
+        self.ds = self.df.to_xarray().set_coords(['LATITUDE','LONGITUDE'])
 
     def _calc_header_rows(self):
         '''
@@ -87,22 +98,21 @@ class MangopareStandardReader(object):
             startline = 13
         return(startline)
 
-    def _load_attributes(self):
+    def _load_global_attributes(self):
         # Add attributes from csv file header
         f = open(self.filename)
         for i in range(self.startline):
             row = f.readline().split(',')
             self.ds.attrs[row[0]] = row[1].strip()
-        self.ds.attrs['Date quality controlled'] = datetime.now()
-        self.ds.attrs['Quality control repository'] = 'https://github.com/metocean/ops-qc'
-        self.ds.attrs['QC git revision'] = subprocess.check_output(['git', 'log', '-n', '1', '--pretty=tformat:%h-%ad', '--date=short']).strip()
-        self.ds.attrs['Raw data filename'] = self.filename
+        for name,value in self.global_attrs.items():
+            self.ds.attrs[name] = value
 
     def run(self):
         # read file based on self.filetype
         try:
-            self.load_moana_standard()
-            self._load_attributes()
+            self._read_mangopare_csv()
+            self._convert_df_to_ds()
+            self._load_global_attributes()
             return(self.ds)
         except Exception as exc:
             self.logger.error('Could not load data from {}. Traceback: {}'.format(self.filename, exc))
@@ -117,7 +127,7 @@ class MangopareMetadataReader(object):
     def __init__(self,
                  metafile = '/data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv',
                  dateformat = '%Y%m%dT%H%M%S',
-                 gear_class = {'Bottom trawl':'mobile','Potting':'stationary','Long lining':'mobile','Trawling':'mobile'},
+                 gear_class = {'Bottom trawl':'mobile','Potting':'stationary','Long lining':'mobile','Trawling':'mobile','Midwater trawl':'mobile'},
                  logger = logging):
         self.metafile = metafile
         self.dateformat = dateformat
@@ -143,7 +153,7 @@ class MangopareMetadataReader(object):
             self.fisher_metadata['Gear Class'] = 'unknown'
             for gvessel,gclass in self.gear_class.items():
                 self.fisher_metadata.loc[self.fisher_metadata['Fishing method'] == gvessel, 'Gear Class'] = gclass
-            self.fisher_metadata['Date returned'].replace({pd.NaT: pd.datetime.now()}, inplace=True)
+            self.fisher_metadata['Date returned'].replace({pd.NaT: datetime.utcnow()}, inplace=True)
         except Exception as exc:
             self.logger.error('Could not load fisher metadata from {}'.format(self.metafile))
             raise exc
