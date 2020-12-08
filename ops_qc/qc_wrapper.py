@@ -10,14 +10,13 @@ class QC_wrapper(object):
     '''
     def __init__(self,
                 outfile_ext = '',
-                qc_tests = None,
+                list_list = None,
                 metafile = '/data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv',
                 datareader = {},
                 metareader = {},
                 preprocessor = {},
                 save_flags = False,
                 convert_p_to_z = True,
-                test_order = False,
                 default_latitude = -40,
                 startstring = "DateTime (UTC)",
                 dateformat = '%Y%m%dT%H%M%S',
@@ -26,14 +25,13 @@ class QC_wrapper(object):
                 **kwargs)
 
         self.outfile_ext = putfile_ext
-        self.qc_tests = qc_tests
+        self.test_list = test_list
         self.metafile = metafile
         self.datareader_class = datafilereader
         self.metareader_class = metafilereader
         self.preprocessor_class = preprocessor
         self.save_flags = save_flags
         self.convert_p_to_z = convert_p_to_z
-        self.test_order = test_order
         self.default_latitude = default_latitude
         self.startstring = startstring
         self.dateformat = dateformat
