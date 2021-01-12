@@ -3,11 +3,6 @@ import pandas as pd
 import xarray as xr
 from qc_utils import load_yaml
 
-
-#######################################################################################################################
-# QC
-#######################################################################################################################
-
 class QcApply(object):
     """
     Base class for observational data quality control.
@@ -19,7 +14,7 @@ class QcApply(object):
     """
 
     def __init__(self,
-                 ds=ds,
+                 ds,
                  test_list=None,
                  save_flags=False,
                  convert_p_to_z=True,
@@ -57,44 +52,57 @@ class QcApply(object):
         Converts pandas dataframe back to xarray, adds back in
         attributes from original ds.  Updates attributes.
         """
-        flag_attrs = self._load_qc_attrs(self.attr_file)
-        qc_attr_info = flag_attrs[]
-        if self.qcdf:
-            for flag_name in self.qcdf.keys():
-                self.ds[flag_name] = xr.Variable(dims='DATETIME', data=self.qcdf[flag_name], 'units'=, 'standard_name'= , 'long_name'=)
+        try:
+            flag_attrs = load_yaml(self.attr_file,'qc_attr_info')
+            qc_flag_info = load_yaml(self.attr_file,'qc_flag_info')
+        except Exception as exc:
+            self.logger.error('Could not load qc flag attribute data from {}. Traceback: {}'.format(self.attr_file,exc))
+        try:
+            if self.qcdf:
+                for flag_name in self.qcdf.keys():
+                    self.ds[flag_name] = xr.Variable(dims='DATETIME', data=self.qcdf[flag_name])
+                    self._assign_qc_attributes(flag_attrs, flag_name, qc_flag_info)
+        except Exception as exc:
+            self.logger.error('Could not apply attributes to qc flag {}. Traceback: {}'.format(flag_name,exc))
 
 
-    def _assign_qc_attributes(self,flag_attrs,flag_name):
+    def _assign_qc_attributes(self,flag_attrs,flag_name,qc_flag_info):
         """
         Uses qc attributes and flag information from
         _load_qc_attrs and applies it to each flag in the
         self.ds dataset
         """
-
-    def _load_qc_attributes(self):
-        """
-        Assign variable attributes to QC flags
-        """
-        for dictionary in load_yaml(self.attr_file):
-            qc_attr_info = flag_attrs['qc_attr_info']
-
-        return(flag_attrs)
-
+        long_name = flag_attrs[flag_name][0]
+        standard_name = flag_attrs[standard_name]
+        flag_values = [str(val).encode() for val in flag_info['flag_values']]
+        flag_meanings = qc_flag_info['flag_meanings']
+        self.ds[flag_name].attrs.update({'long_name': long_name,
+                                           'standard_name': standard_name,
+                                           'flag_values': flag_values,
+                                           'flag_meanings': flag_meanings
+                                           })
     def _global_qc_flag(self):
         """
         Individual QC tests record qc flag in flag_* column.
         Take the maximum value to determine overall qc flag
         for each measurement.
         """
-        self.qc_flag = np.zeros_like(self.df['LONGITUDE'])
-        qc_col = [col for col in self.df if col.startswith('flag')]
-        self.df['qc_flag'] = self.df[qc_col].max(axis=0)
+        try:
+            self.qcdf['qc_flag'] = np.zeros_like(self.df['LONGITUDE'])
+            self.qcdf['qc_flag'] = self.qcdf.max(axis=0)
+        except Exception as exc:
+            self.logger.error('Unable to calculate global quality control flag. Traceback: {}'.format(exc))
 
     def run(self):
-        # initialize global QC flag with zero (no QC'd value)
-        # run df and ds test
-        if self.test_list:
-            self._run_qc_tests()
-        self._global_qc_flag()
-        if self._tests_not_applied:
-            self.logger.error('Unable to apply the following qc tests: {}'.format(self._tests_not_applied))
+        try:
+            if self.test_list:
+                self._run_qc_tests()
+            else:
+                self.logger.error('No QC tests in list of tests, skipping QC')
+            self._global_qc_flag()
+            self._merge_df_and_ds()
+            if self._tests_not_applied:
+                self.logger.error('Unable to apply the following qc tests: {}'.format(self._tests_not_applied))
+            return(self.ds)
+        except Exception as exc:
+            self.logger.error('QC testing failed.  Traceback: {}'.format(exc))

@@ -59,13 +59,13 @@ class MangopareStandardReader(object):
         try:
             self.start_line = self._calc_header_rows(default_skiprows=self.skip_rows)
         except Exception as exc:
-            print('Could not calculate start row of csv data for {}. Traceback: {}'.format(self.filename, exc))
+            self.logger.error('Could not calculate start row of csv data for {}: {}'.format(self.filename, exc))
 
         try:
             self.df = pd.read_csv(
                 self.filename, skiprows=self.start_line, error_bad_lines=False)
         except Exception as exc:
-            print('Could not read file {} due to {}'.format(self.filename, exc))
+            self.logger.error('Could not read file {} due to {}'.format(self.filename, exc))
 
     def _format_df_data(self):
         """
@@ -93,7 +93,7 @@ class MangopareStandardReader(object):
             self.df['LONGITUDE'].loc[self.df['LONGITUDE'] == 0] = np.nan
             self.df['LATITUDE'].loc[self.df['LATITUDE'] == 0] = np.nan
         except Exception as exc:
-            print('Formatting of data failed for {}.  Traceback: {}'.format(self.filename, exc))
+            self.logger.error('Formatting of data failed for {}: {}'.format(self.filename, exc))
 
     def _convert_df_to_ds(self):
         """
@@ -103,7 +103,7 @@ class MangopareStandardReader(object):
             self.df = self.df.set_index(['DATETIME'])
             self.ds = self.df.to_xarray().set_coords(['LATITUDE', 'LONGITUDE'])
         except Exception as exc:
-            print('Could not convert df to ds for {}. Traceback: {}'.format(self.filename, exc))
+            self.logger.error('Could not convert df to ds for {}: {}'.format(self.filename, exc))
 
     def _calc_header_rows(self, default_skiprows=13):
         """
@@ -122,7 +122,7 @@ class MangopareStandardReader(object):
             # will probably fail though
             if not start_line:
                 start_line = default_skiprows
-            self.logger.error('Could not calculate number of header rows, attempting to use default of {}. Traceback: {}'.format(start_line, exc))
+            self.logger.error('Could not calculate number of header rows, attempting to use default of {}: {}'.format(start_line, exc))
         return(start_line)
 
     def _load_global_attributes(self):
@@ -135,7 +135,7 @@ class MangopareStandardReader(object):
             for name, value in self.global_attrs.items():
                 self.ds.attrs[name] = value
         except Exception as exc:
-            print('Could not load global attributes for {} due to {}'.format(self.filename, exc))
+            self.logger.error('Could not load global attributes for {} due to {}'.format(self.filename, exc))
 
     def run(self):
         # read file based on self.filetype
@@ -204,4 +204,4 @@ class MangopareMetadataReader(object):
             self._format_fisher_metadata()
             return(self.fisher_metadata)
         except Exception as exc:
-            self.logger.error('Could not load data from {}. Traceback: {}'.format(self.metafile, exc))
+            self.logger.error('Could not load data from {}: {}'.format(self.metafile, exc))

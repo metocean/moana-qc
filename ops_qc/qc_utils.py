@@ -1,5 +1,5 @@
 import numpy as np
-import pyyaml as yaml
+import yaml
 
 """
 Miscellanous functions used by multiple classes in the QC library.
@@ -53,13 +53,14 @@ def calc_speed(df, units='kts'):
     return (df)
 
 
-def load_yaml(self, filename):
+def load_yaml(filename,dict_name):
     """
-    Load yaml file
+    Load yaml file and return specified dictionary
     """
     with open(filename, 'r') as stream:
         try:
-            flag_attrs = yaml.load_all(stream)
-            return (flag_attrs)
+            for var in yaml.safe_load_all(stream):
+                attrs_list = var
+                return(attrs_list[dict_name])
         except yaml.YAMLError as exc:
-            self.logger.error('Could not open attribute file {}: {}'.format(filename, exc))
+            print('Could not open attribute file {}: {}'.format(filename, exc))

@@ -3,21 +3,24 @@ import xarray as xr
 from ops_core.utils import import_pycallable, catch_exception
 
 
-class QC_wrapper(object):
+class QcWrapper(object):
     '''Wrapper class for observational data quality control.  Incorporates transferring files from
     an incoming directory to a new directory.
 
     '''
     def __init__(self,
                 outfile_ext = '',
-                list_list = None,
-                metafile = '/data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv',
+                out_dir = None,
+                test_list = None,
+                fishing_metafile = '/data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv',
                 datareader = {},
                 metareader = {},
                 preprocessor = {},
+                qc_class = {},
                 save_flags = False,
                 convert_p_to_z = True,
                 default_latitude = -40,
+                attr_file = 'attribute_list.yml',
                 startstring = "DateTime (UTC)",
                 dateformat = '%Y%m%dT%H%M%S',
                 gear_class = {'Bottom trawl':'mobile','Potting':'stationary','Long lining':'mobile','Trawling':'mobile'},
@@ -25,20 +28,24 @@ class QC_wrapper(object):
                 **kwargs)
 
         self.outfile_ext = putfile_ext
+        self.out_dir = out_dir
         self.test_list = test_list
-        self.metafile = metafile
+        self.metafile = fishing_metafile
         self.datareader_class = datafilereader
         self.metareader_class = metafilereader
         self.preprocessor_class = preprocessor
+        self.qc_class = qc_class
         self.save_flags = save_flags
         self.convert_p_to_z = convert_p_to_z
         self.default_latitude = default_latitude
+        self.attr_file = attr_file
         self.startstring = startstring
         self.dateformat = dateformat
         self.gear_class = gear_class
         self._default_datareader_class = 'qc_readers.MangopareStandardReader'
         self._default_metareader_class = 'qc_readers.MangopareMetadataReader'
         self._default_preprocessor_class = 'qc_preprocess.PreProcessMangopare'
+        self._default_qc_class = 'qc_apply.QcApply'
         self.logger = logging
 
     def set_cycle(self, cycle_dt):
@@ -49,16 +56,20 @@ class QC_wrapper(object):
         self.local_basefile = cycle_dt.strftime(self.local_basefile)
         self._proxy.set_cycle(cycle_dt)
 
-    def _set_reader(self,filereader,_default_reader_class):
-        klass = filereader.pop('class', self._default_reader_class)
-        filereader = import_pycallable(klass)
-        return(filereader)
-        self.logger.info('Using file reader: %s ' % klass)
+    def _set_class(self,in_class,_default_class):
+        klass = in_class.pop('class', self._default_class)
+        out_class = import_pycallable(klass)
+        return(out_class)
+        self.logger.info('Using class: %s ' % klass)
 
-    def _set_all_readers(self):
-        self.datareader = _set_reader(self.datareader_class,self._default_datareader_class)
-        self.metareader = _set_reader(self.metareader_class,self._default_metareader_class)
-        self.preprocessor = _set_reader(self.preprocessor_class,self._default_preprocessor_class)
+    def _set_all_classes(self):
+        try:
+            self.datareader = _set_class(self.datareader_class,self._default_datareader_class)
+            self.metareader = _set_class(self.metareader_class,self._default_metareader_class)
+            self.preprocessor = _set_class(self.preprocessor_class,self._default_preprocessor_class)
+            self.qc_class = _set_class(self.qc_class,self._default_qc_class)
+        except raise Exception as exc:
+            self.logger.error('Unable to set required classes for qc: {}'.format(exc))
 
     def _transfer(self, source=None, transfer=None,
                   default='msl_actions.transfer.base.LocalTransferBase'):
@@ -66,21 +77,40 @@ class QC_wrapper(object):
         transfer = transfer or self.transfer
         return self._proxy(source, transfer, 'source', default)
 
+    def _save_qc_data(self,filename):
+        """
+        Save qc'd data as netcdf files.  If no outdir specified,
+        saves in same directory as original file.
+        """
+        try:
+            head, tail = os.path.split(filename)
+            if not self.out_dir:
+                self.out_dir = head
+            savefile = '{}{}{}{}'.format(self.out_dir,os.path.splitext(tail)[0],self.outfile_ext,'.nc')
+            ds.to_netcdf(savefile)
+        except Exception as exc:
+            self.logger.error('Could not save qc data from {}: {}'.format(filename, exc))
+
+
     def convert_pressure_to_depth(self):
         '''
         Converts pressure to depth in the ocean either using the
         mean latitude of the observations or using a default_latitude
         '''
-        if not np.isnan(np.nanmean(self.ds['LATITUDE'])):
-            d_lat = np.nanmean(self.ds['LATITUDE'])
-        else:
-            d_lat = self.default_latitude
-        depth = [sw.eos80.dpth(catch(lambda: float(z)),d_lat) for z in self.ds['PRESSURE']]
-        self.ds['DEPTH'] = xr.Variable(dims = 'PRESSURE', data = depth, attrs={'units':'[m]','standard_name':'depth'})
+        try:
+            if not np.isnan(np.nanmean(self.ds['LATITUDE'])):
+                d_lat = np.nanmean(self.ds['LATITUDE'])
+            else:
+                d_lat = self.default_latitude
+            depth = [sw.eos80.dpth(catch(lambda: float(z)),d_lat) for z in self.ds['PRESSURE']]
+            self.ds['DEPTH'] = xr.Variable(dims = 'PRESSURE', data = depth, attrs={'units':'[m]','standard_name':'depth'})
+        except Exception as exc:
+            self.logger.error('Could not convert pressure to depth, leaving as pressure: {}'.format(exc))
+            pass
 
     def run(self):
         # set all readers/preprocessors
-        self._set_all_readers()
+        self._set_all_classes()
         # load metadata common for all files
         self.fisher_metadata = self.metareader(metafile = self.metafile).run()
         # apply qc
@@ -88,10 +118,10 @@ class QC_wrapper(object):
             try:
                 self.ds = self.datareader(filename = filename).run()
                 self.ds = self.preprocessor(self.ds,self.fisher_metadata)
-    #            qc_apply()
-            except:
+                self.ds = self.qc_class(self.ds,self.test_list,self.save_flags,self.convert_p_to_z,self.default_latitude,self.attr_file)
+                if self.convert_p_to_z:
+                    self.convert_pressure_to_depth()
+            except Exception as exc:
                 tb = catch_exception(exc)
                 self.logger.error('Could not qc data from {}. Traceback: {}'.format(filename, tb))
                 continue
-            if self.convert_p_to_z:
-                self.convert_pressure_to_depth()

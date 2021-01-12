@@ -25,11 +25,15 @@ class PreProcessMangopare(object):
     def __init__(self,
                  ds,
                  fisher_metadata,
+                 attr_file = 'attribute_list.yml',
+                 attr_dict_name = 'var_attr_info',
                  surface_pressure=5,
                  logger=logging):
 
         self.ds = ds
         self.fisher_metadata = fisher_metadata
+        self.attr_file = attr_file
+        self.attr_dict_name = attr_dict_name
         self.surface_pressure = surface_pressure
         self.logger = logging
         self.filename = self.ds.attrs['Raw data filename']
@@ -59,7 +63,7 @@ class PreProcessMangopare(object):
                     'Multiple entries found for this SN and time range in fisher metadata, skipping {}.'.format(self.filename))
         except Exception as exc:
             self.ds.attrs['Gear Class'] = 'unknown'
-            print('Gear Class calculation failed, labeled as unknown: {}'.format(exc))
+            self.logger.error('Gear Class calculation failed, labeled as unknown: {}'.format(exc))
 
     def _calc_positions(self, surface_pressure=5):
         """
@@ -97,7 +101,7 @@ class PreProcessMangopare(object):
             lons = [l % 360 for l in lons]
             self.ds['LONGITUDE'] = xr.DataArray(lons, dims=['DATETIME'])
         except Exception as exc:
-            print(f"Position could not be calculated for {self.filename}: {exc}")
+            self.logger.error(f"Position could not be calculated for {self.filename}: {exc}")
 
     def _find_bottom(self, cutoff='4 minutes'):
         """
@@ -130,6 +134,7 @@ class PreProcessMangopare(object):
         Example dictionary: var_attr_info = {'LATITUDE':['latitude','units']}
         """
         try:
+            var_attr_info = load_yaml(self.attr_file,self.attr_dict_name)
             for var, [standard_name, units] in var_attr_info.items():
                 if var in self.ds.keys():
                     self.ds[var].attrs.update({'standard_name': standard_name,
@@ -144,4 +149,4 @@ class PreProcessMangopare(object):
             self._find_bottom()
             self._add_variable_attrs()
         except Exception as exc:
-            self.logger.error('Could not preprocess data from {}. Traceback: {}'.format(self.filename, exc))
+            self.logger.error('Could not preprocess data from {}: {}'.format(self.filename, exc))

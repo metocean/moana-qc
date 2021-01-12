@@ -6,13 +6,24 @@ import logging
 from qc_utils import calc_speed
 import seawater as sw
 
+"""
+QC Tests for ocean observations.  The test options are:
+gear_type, timing_gap_test, impossible_date, impossible_location,
+position_on_land, impossible_speed, global_range, climatology_test,
+spike, stuck_value, rate_of_change_test, remove_ref_location.
 
-############
-#  QC TESTS
-############
+Currently, some tests are not recommended or not complete:
+timing_gap_test, position_on_land, climatology_test.
 
-# 3. Gear type control.
+Tests that are particularly useful/necessary:
+impossible_date, impossible_location, impossible_speed,
+global_range, remove_ref_location
 
+Possibly useful:
+gear_type, spike, stuck_value, rate_of_change_test
+
+Note these are constantly changing/being updated/improved.
+"""
 
 def gear_type(self, fail_flag=3, gear=None):
     try:
@@ -49,7 +60,7 @@ def impossible_date(self, min_date=datetime(2010, 1, 1), fail_flag=4):
     Min_date here should really come from fishing metadata
     """
     self.qcdf['flag_date'] = np.ones_like(self.df['DATETIME'], dtype='uint8')
-    curr_date = datetime.now()
+    curr_date = datetime.utcnow()
     self.qcdf.loc[(self.df['DATETIME'] >= curr_date), 'flag_date'] = fail_flag
     # min date could be a spreadsheet error
     self.qcdf.loc[(self.df['DATETIME'] <= min_date), 'flag_date'] = 3
