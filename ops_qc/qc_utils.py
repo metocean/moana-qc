@@ -1,5 +1,6 @@
 import numpy as np
 import yaml
+import datetime as dt
 
 """
 Miscellanous functions used by multiple classes in the QC library.
@@ -39,15 +40,15 @@ def calc_speed(df, units='kts'):
     """
     conversions = {'kts': 0.539957, 'mph': 0.621371}
     df['speed'] = np.nan
-    if len(df) != 0:
-        delta_time = df.DATETIME.to_series().diff().dt.hours
+    if len(df.DATETIME) > 1:
+        delta_time = df.DATETIME.diff().dt.total_seconds()/3600
         lat1 = df.LATITUDE.shift()
         lon1 = df.LONGITUDE.shift()
-        lat2 = df.loc[1:, 'LONGITUDE']
-        lon2 = df.loc[1:, 'LATITUDE']
+        lat2 = df.LONGITUDE
+        lon2 = df.LATITUDE
         dist = haversine(lat1, lon1, lon2, lat2)
-        factor = conversions[units]
-        df['speed'] = [d / t * factor if t != 0 else np.nan for d, t in zip(dist, delta_time)]
+        cvf = conversions[units]
+        df['speed'] = [d / t * cvf if t != 0 else np.nan for d, t in zip(dist, delta_time)]
     else:
         df['speed'] = np.nan
     return (df)

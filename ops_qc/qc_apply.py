@@ -1,7 +1,9 @@
 import logging
 import pandas as pd
 import xarray as xr
+import numpy as np
 from qc_utils import load_yaml
+import qc_tests_df as qc_tests
 
 class QcApply(object):
     """
@@ -10,7 +12,7 @@ class QcApply(object):
     of same shape and applies QC, designed for instruments mounted on fishing gear.
     Converts dataset to dataframe for consistency with BDC QC code.
     At some point might change all QC to ds so we don't have to switch
-    back and forth.
+    back and forth.  Or change all qc flags to a list/dict which would make way more sense.
     """
 
     def __init__(self,
@@ -29,20 +31,28 @@ class QcApply(object):
         self.default_latitude = default_latitude
         self.attr_file = attr_file
         self.logger = logging
-        self.df = self.ds.to_dataframe()
+        self.df = self.ds.to_dataframe().reset_index()
 
     def _run_qc_tests(self):
+        """
+        Applies all qc tests from test_list and saves flags in
+        self.qcdf dataframe.  Should probably be saving flags
+        to a dict instead...
+        """
         self._success_tests = []
         self._tests_not_applied = []
+        # initialize dataframe to hold qc flags
+        self.qcdf = pd.DataFrame()
         for test_name in self.test_list:
             try:
                 # from qc_tests_df import *
                 # needed for this to work
-                test_name()
-                self._success_tests.append(test_name)
+                #test_name()
+                
                 # use this if importing module only
-            #                qc_test = getattr(qctests,test_name)
-            #                qc_test()
+                qc_test = getattr(qc_tests,test_name)
+                qc_test(self)
+                self._success_tests.append(test_name)
             except Exception as exc:
                 self._tests_not_applied.append(test_name)
                 self.logger.error('Could not apply QC test {}.  Traceback: {}'.format(test_name,exc))
@@ -58,29 +68,39 @@ class QcApply(object):
         except Exception as exc:
             self.logger.error('Could not load qc flag attribute data from {}. Traceback: {}'.format(self.attr_file,exc))
         try:
-            if self.qcdf:
-                for flag_name in self.qcdf.keys():
+            if len(self.qcdf.keys())>0:
+                # if save_flags, add all qc_flags to ds
+                # otherwise, only save global qc_flag
+                if self.save_flags:
+                    flag_list = self.qcdf.keys()
+                else:
+                    flag_list = ['QC_FLAG']
+                for flag_name in flag_list:
                     self.ds[flag_name] = xr.Variable(dims='DATETIME', data=self.qcdf[flag_name])
                     self._assign_qc_attributes(flag_attrs, flag_name, qc_flag_info)
         except Exception as exc:
-            self.logger.error('Could not apply attributes to qc flag {}. Traceback: {}'.format(flag_name,exc))
+            self.logger.error('Could not apply attributes to qc flags. Traceback: {}'.format(exc))
 
 
-    def _assign_qc_attributes(self,flag_attrs,flag_name,qc_flag_info):
+    def _assign_qc_attributes(self,flag_attrs,flag_name,flag_info):
         """
         Uses qc attributes and flag information from
         _load_qc_attrs and applies it to each flag in the
         self.ds dataset
         """
-        long_name = flag_attrs[flag_name][0]
-        standard_name = flag_attrs[standard_name]
-        flag_values = [str(val).encode() for val in flag_info['flag_values']]
-        flag_meanings = qc_flag_info['flag_meanings']
-        self.ds[flag_name].attrs.update({'long_name': long_name,
-                                           'standard_name': standard_name,
-                                           'flag_values': flag_values,
-                                           'flag_meanings': flag_meanings
-                                           })
+        try:
+            long_name = flag_attrs[flag_name][0]
+            standard_name = flag_attrs['standard_name']
+            flag_values = [str(val).encode() for val in flag_info['flag_values']]
+            flag_meanings = flag_info['flag_meanings']
+            self.ds[flag_name].attrs.update({'long_name': long_name,
+                                            'standard_name': standard_name,
+                                            'flag_values': flag_values,
+                                            'flag_meanings': flag_meanings
+                                            })
+        except Exception as exc:
+            self.logger.error('Could not assign qc attribute {} due to {}, check that it exists in attribute yaml.'.format(flag_name,exc))
+
     def _global_qc_flag(self):
         """
         Individual QC tests record qc flag in flag_* column.
@@ -88,8 +108,8 @@ class QcApply(object):
         for each measurement.
         """
         try:
-            self.qcdf['qc_flag'] = np.zeros_like(self.df['LONGITUDE'])
-            self.qcdf['qc_flag'] = self.qcdf.max(axis=0)
+            self.qcdf['QC_FLAG'] = np.zeros_like(self.df['LONGITUDE'])
+            self.qcdf['QC_FLAG'] = self.qcdf.max(axis=1).astype('int')          
         except Exception as exc:
             self.logger.error('Unable to calculate global quality control flag. Traceback: {}'.format(exc))
 

@@ -19,20 +19,15 @@ def getreq(fpath):
     return read(fpath).splitlines()
 
 if __name__ == '__main__':
-    setup(name = 'ops-core',
-        version = get_package_version('ops_core'),
-        description = 'Core library for MetOcean Actions',
-        author='Ops Team',
+    setup(name = 'ops-qc',
+        version = get_package_version('ops_qc'),
+        description = 'Quality Control Library for Manogpare Sensor',
+        author='Ops Team - Julie Jakoboski',
         install_requires=getreq('requirements/default.txt'),
         test_require=getreq('requirements/tests.txt'),
         long_description=read('README.md'),
         test_suite='pytest',
         author_email='ops@metocean.co.nz',
-        url='http://github.com/metocean/ops-core',
-        packages=['ops_core'],
-        entry_points={
-            'console_scripts': [
-                'run_action = ops_core.__main__:main',
-            ],
-        },
+        url='http://github.com/metocean/ops-qc',
+        #packages=['ops_qc'],
     )

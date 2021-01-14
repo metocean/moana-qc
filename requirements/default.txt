@@ -1,3 +1,13 @@
+os
 pytz
 PyYaml<5
+numpy
+datetime
+xarray
+pandas
+logging
+seawater
+global_land_mask
+
 mandrill
+git+ssh://git@github.com/metocean/ops-core

@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 import logging
+from qc_utils import load_yaml
 #from ops_core.utils import import_pycallable, catch_exception
 
 var_attr_info = {
@@ -148,5 +149,6 @@ class PreProcessMangopare(object):
             self._calc_positions()
             self._find_bottom()
             self._add_variable_attrs()
+            return(self.ds)
         except Exception as exc:
             self.logger.error('Could not preprocess data from {}: {}'.format(self.filename, exc))

@@ -33,7 +33,9 @@ def gear_type(self, fail_flag=3, gear=None):
         self.logger.error('Could not determine gear type for gear_type qc test. Traceback: {}'.format(exc))
 
     self.qcdf['flag_gear_type'] = np.ones_like(self.df['DATETIME'], dtype='uint8')
-    self.df, mean_speed = calc_speed(self.df)
+    if "speed" not in self.df:
+        self.df = calc_speed(self.df, units='kts')
+    mean_speed = np.nanmean(self.df['speed'])
     if (mean_speed > 0 and gear == 'stationary') or (mean_speed == 0 and gear == 'mobile'):
         self.qcdf['flag_gear_type'] = fail_flag
 
@@ -74,8 +76,8 @@ def impossible_location(self, lonrange=None, latrange=None, fail_flag=4):
     if lonrange is None:
         lonrange = [-180, 360]
     self.qcdf['flag_location'] = np.ones_like(self.df['LATITUDE'], dtype='uint8')
-    self.df.loc[((self.df['LATITUDE'] <= latrange[0]) | (self.df['LATITUDE'] >= latrange[1]) | (
-            self.qcdf['LONGITUDE'] <= lonrange[0]) | (
+    self.qcdf.loc[((self.df['LATITUDE'] <= latrange[0]) | (self.df['LATITUDE'] >= latrange[1]) | (
+            self.df['LONGITUDE'] <= lonrange[0]) | (
                              self.df['LONGITUDE'] >= lonrange[1])), 'flag_location'] = fail_flag
 
 
@@ -107,8 +109,6 @@ def impossible_speed(self, max_speed=100, fail_flag=4):
     if np.nanmean(np.absolute(self.df['speed'])) != 0:
         self.qcdf['flag_speed'] = 1
         self.qcdf.loc[(self.df['speed'] > max_speed), 'flag_speed'] = fail_flag
-    self.df = self.df.drop(columns=['speed'])
-
 
 # 9. Global range test
 
@@ -120,7 +120,7 @@ def global_range(self, ranges=None, fail_flag=4):
     if ranges is None:
         ranges = {'PRESSURE': [0, 10000], 'TEMPERATURE': [-2, 50]}
     self.qcdf['flag_global_range'] = np.ones_like(self.df['PRESSURE'], dtype='uint8')
-    for var, limit in ranges:
+    for var, limit in ranges.items():
         self.qcdf.loc[(self.df[var] < limit[0]) | (self.df[var] > limit[1]), 'flag_global_range'] = fail_flag
 
 
@@ -157,27 +157,29 @@ def spike(self, qc_vars=None, fail_flag=4):
     """
     if qc_vars is None:
         qc_vars = {'TEMPERATURE': 10, 'PRESSURE': 100}
-    self.qcdf['flag_temp_spike'] = np.ones_like(self.df['PRESSURE'], dtype='uint8')
-    for var, thresh in qc_vars:
+    self.qcdf['flag_spike'] = np.ones_like(self.df['PRESSURE'], dtype='uint8')
+    for var, thresh in qc_vars.items():
         val = np.abs(np.convolve(self.df[var], [-0.5, 1, -0.5], mode='same'))
         val[[0, -1]] = 0
-        self.qcdf.loc[val > thresh, 'flag_temp_spike'] = fail_flag
+        self.qcdf.loc[val > thresh, 'flag_spike'] = fail_flag
 
 
 # 12. Stuck value test
 
-def stuck_value(self, qc_vars=None, rep_num=5, fail_flag=3):
+def stuck_value(self, qc_vars=None, rep_num=5, fail_flag=2):
     """
     Adapted from QARTOD - sort of.  This whole thing is suspect as implemented
-    here.
+    here.  rep_num should be over a given amount of time, not number of obs.
+    Maybe not that useful of a test, since with stationary gear, could stay the
+    same.  Or write different thresholds for stationary vs mobile.
     """
     if qc_vars is None:
-        qc_vars = {'TEMPERATURE': .005, 'PRESSURE': .01}
-    self.qcdf['flag_temp_stuck'] = np.ones_like(self.df['PRESSURE'], dtype='uint8')
+        qc_vars = {'TEMPERATURE': .05, 'PRESSURE': .001}
+    self.qcdf['flag_stuck_value'] = np.ones_like(self.df['PRESSURE'], dtype='uint8')
 
     if not isinstance(rep_num, int):
         raise TypeError("Maximum number of repeated values must be type int.")
-    for var, thresh in qc_vars:
+    for var, thresh in qc_vars.items():
         arr = self.df[var]
         it = np.nditer(arr)
         # Maybe not very efficient, based on QARTOD code
@@ -186,25 +188,29 @@ def stuck_value(self, qc_vars=None, rep_num=5, fail_flag=3):
             if idx >= rep_num:
                 is_suspect = np.all(np.abs(arr[idx - rep_num: idx] - elem) < thresh)
                 if is_suspect:
-                    self.qcdf['flag_temp_stuck'].iloc[idx] = fail_flag
+                    self.qcdf['flag_stuck_value'].iloc[idx] = fail_flag
 
 
 # 13. Rate of change test
 
-def rate_of_change_test(self, thresh, fail_flag=3):
+def rate_of_change_test(self, thresh=5, fail_flag=3):
     """
+    Thresh is in units of y/x, or temp (degC) per dbar.
     Old version doesn't really work for Mangopare, because the time
     delta isn't taken into consideration.  Another QARTOD-ish version:
     """
     y = self.df['TEMPERATURE']
     x = self.df['PRESSURE']
-
-    self.qcdf['flag_roc'] = np.ones_like(x, dtype='uint8')
-    # express rate of change as seconds, unit conversions will handle proper
-    # comparison to threshold later
-    roc = np.abs(np.divide(np.diff(y), np.diff(x)))
-    exceed = np.insert(roc > thresh, 0, False)
-    self.qcdf['flag_roc'].loc[exceed] = fail_flag
+    try:
+        self.qcdf['flag_roc'] = np.ones_like(x, dtype='uint8')
+        # express rate of change as seconds, unit conversions will handle proper
+        # comparison to threshold later
+        with np.errstate(divide='ignore', invalid='ignore'):
+            roc = np.abs(np.divide(np.diff(y), np.diff(x)))
+        exceed = np.insert(roc > thresh, 0, False)
+        self.qcdf['flag_roc'].loc[exceed] = fail_flag
+    except Excpetion as exc:
+        self.logger.error('Could not apply rate of change test: {}'. format(exc))
 
 
 # 14.  Within radius of "bad" location (i.e. to remove calibration tests)
@@ -219,4 +225,4 @@ def remove_ref_location(self, bad_radius=5, ref_lat=-41.25707, ref_lon=173.28393
     lats = self.df['LATITUDE']
     lons = self.df['LONGITUDE']
     d = [float(sw.dist([ref_lat, lat], [ref_lon, lon])[0]) for lat, lon in zip(lats, lons)]
-    self.qcdf['flag_ref_loc'].loc[np.array(d) < bad_radius] = fail_flag
+    self.qcdf.loc[np.array(d) < bad_radius,'flag_ref_loc'] = fail_flag

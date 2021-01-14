@@ -1,6 +1,11 @@
+import os
+import logging
+import pytz
 import numpy as np
 import xarray as xr
+import seawater as sw
 from ops_core.utils import import_pycallable, catch_exception
+from qc_utils import catch
 
 
 class QcWrapper(object):
@@ -24,15 +29,14 @@ class QcWrapper(object):
                 startstring = "DateTime (UTC)",
                 dateformat = '%Y%m%dT%H%M%S',
                 gear_class = {'Bottom trawl':'mobile','Potting':'stationary','Long lining':'mobile','Trawling':'mobile'},
-                logger = logging,
-                **kwargs)
-
-        self.outfile_ext = putfile_ext
+                logger = logging):      
+        
+        self.outfile_ext = outfile_ext
         self.out_dir = out_dir
         self.test_list = test_list
         self.metafile = fishing_metafile
-        self.datareader_class = datafilereader
-        self.metareader_class = metafilereader
+        self.datareader_class = datareader
+        self.metareader_class = metareader
         self.preprocessor_class = preprocessor
         self.qc_class = qc_class
         self.save_flags = save_flags
@@ -56,19 +60,19 @@ class QcWrapper(object):
         self.local_basefile = cycle_dt.strftime(self.local_basefile)
         self._proxy.set_cycle(cycle_dt)
 
-    def _set_class(self,in_class,_default_class):
-        klass = in_class.pop('class', self._default_class)
+    def _set_class(self,in_class,default_class):
+        klass = in_class.pop('class', default_class)
         out_class = import_pycallable(klass)
-        return(out_class)
         self.logger.info('Using class: %s ' % klass)
+        return(out_class)
 
     def _set_all_classes(self):
         try:
-            self.datareader = _set_class(self.datareader_class,self._default_datareader_class)
-            self.metareader = _set_class(self.metareader_class,self._default_metareader_class)
-            self.preprocessor = _set_class(self.preprocessor_class,self._default_preprocessor_class)
-            self.qc_class = _set_class(self.qc_class,self._default_qc_class)
-        except raise Exception as exc:
+            self.datareader = self._set_class(self.datareader_class,self._default_datareader_class)
+            self.metareader = self._set_class(self.metareader_class,self._default_metareader_class)
+            self.preprocessor = self._set_class(self.preprocessor_class,self._default_preprocessor_class)
+            self.qc_class = self._set_class(self.qc_class,self._default_qc_class)
+        except Exception as exc:
             self.logger.error('Unable to set required classes for qc: {}'.format(exc))
 
     def _transfer(self, source=None, transfer=None,
@@ -87,7 +91,7 @@ class QcWrapper(object):
             if not self.out_dir:
                 self.out_dir = head
             savefile = '{}{}{}{}'.format(self.out_dir,os.path.splitext(tail)[0],self.outfile_ext,'.nc')
-            ds.to_netcdf(savefile)
+            self.ds.to_netcdf(savefile)
         except Exception as exc:
             self.logger.error('Could not save qc data from {}: {}'.format(filename, exc))
 
