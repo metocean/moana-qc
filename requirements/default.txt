@@ -11,5 +11,3 @@ global_land_mask
 subprocess
 io
 mandrill
-
-git+ssh://git@github.com/metocean/ops-core
