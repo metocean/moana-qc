@@ -14,6 +14,7 @@ class QcWrapper(object):
 
     '''
     def __init__(self,
+                filelist = None,
                 outfile_ext = '',
                 out_dir = None,
                 test_list = None,
@@ -29,8 +30,9 @@ class QcWrapper(object):
                 startstring = "DateTime (UTC)",
                 dateformat = '%Y%m%dT%H%M%S',
                 gear_class = {'Bottom trawl':'mobile','Potting':'stationary','Long lining':'mobile','Trawling':'mobile'},
-                logger = logging):      
-        
+                logger = logging):
+
+        self.filelist = filelist
         self.outfile_ext = outfile_ext
         self.out_dir = out_dir
         self.test_list = test_list
@@ -81,6 +83,15 @@ class QcWrapper(object):
         transfer = transfer or self.transfer
         return self._proxy(source, transfer, 'source', default)
 
+    def _set_filelist(self):
+        try:
+            if hasattr(self, '_success_files'):
+                self.files_to_qc = self._success_files
+            else:
+                self.files_to_qc = self.filelist
+        except Exception as exc:
+            self.logger.error('No file list found, please specify.  No QC performed.')
+
     def _save_qc_data(self,filename):
         """
         Save qc'd data as netcdf files.  If no outdir specified,
@@ -118,7 +129,8 @@ class QcWrapper(object):
         # load metadata common for all files
         self.fisher_metadata = self.metareader(metafile = self.metafile).run()
         # apply qc
-        for filename in self._success_files:
+        self._set_filelist()
+        for filename in self.files_to_qc:
             try:
                 self.ds = self.datareader(filename = filename).run()
                 self.ds = self.preprocessor(self.ds,self.fisher_metadata)
