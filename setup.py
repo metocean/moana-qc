@@ -24,7 +24,6 @@ if __name__ == '__main__':
         description = 'Quality Control Library for Manogpare Sensor',
         author='Ops Team - Julie Jakoboski',
         install_requires=getreq('requirements/default.txt'),
-        install_requires=getreq('requirements/opslibs.txt'),
         test_require=getreq('requirements/tests.txt'),
         long_description=read('README.md'),
         test_suite='pytest',

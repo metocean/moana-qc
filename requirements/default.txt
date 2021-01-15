@@ -1,13 +1,9 @@
-os
-pytz
-PyYaml<5
 numpy
 datetime
-xarray
 pandas
-logging
+xarray
+pytz
+PyYaml<5
 seawater
 global_land_mask
-subprocess
-io
 mandrill
