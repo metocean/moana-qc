@@ -1,0 +1,43 @@
+# This is not done so do not run like this.  Currently disabled github actions for this repository.
+
+name: build-test
+
+# Controls when the action will run. 
+on: [push]
+  # Triggers the workflow on push or pull request events but only for the master branch
+#  push:
+#    branches: [ master ]
+#  pull_request:
+#    branches: [ master ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.6]
+    name: Build, Test and Push
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GIT_TOKEN }}
+          submodules: true
+      - name: Set up python version in docker image 
+        run: sed -i '1 s/3.6/${{ matrix.python-version }}/' Dockerfile
+      - name: Build Docker image from python:${{ matrix.python-version }}-buster
+        env:
+          GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+        run: docker build --build-arg GIT_TOKEN -t metocean/ops-qc:latest .
+      - name: Run tests
+        env:
+          GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+        run: docker run --rm metocean/ops-qc:latest pytest /source/ops-qc --cov
+      - name: Docker login
+        run: docker login -u mslops -p ${{ secrets.DOCKERHUB_MSLOPS_PASS  }}
+      - name: Docker push
+        run: docker push metocean/ops-qc:latest
+      - name: Docker logout
+        run: docker logout    
