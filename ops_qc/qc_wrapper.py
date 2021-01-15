@@ -78,7 +78,7 @@ class QcWrapper(object):
             self.logger.error('Unable to set required classes for qc: {}'.format(exc))
 
     def _transfer(self, source=None, transfer=None,
-                  default='msl_actions.transfer.base.LocalTransferBase'):
+                  default='ops_transfer.base.LocalTransferBase'):
         source = source or self._success_files
         transfer = transfer or self.transfer
         return self._proxy(source, transfer, 'source', default)
@@ -128,15 +128,24 @@ class QcWrapper(object):
         self._set_all_classes()
         # load metadata common for all files
         self.fisher_metadata = self.metareader(metafile = self.metafile).run()
-        # apply qc
         self._set_filelist()
+        self._saved_files = []
+        self._failed_files = []
+        # apply qc
         for filename in self.files_to_qc:
             try:
                 self.ds = self.datareader(filename = filename).run()
                 self.ds = self.preprocessor(self.ds,self.fisher_metadata)
                 self.ds = self.qc_class(self.ds,self.test_list,self.save_flags,self.convert_p_to_z,self.default_latitude,self.attr_file)
-                if self.convert_p_to_z:
-                    self.convert_pressure_to_depth()
+                # only save files with at least some good data
+                if np.nanmin(self.ds['QC_FLAG']>4):
+                    if self.convert_p_to_z:
+                        self.convert_pressure_to_depth()
+                    self._save_qc_data(filename)
+                    self._saved_files.append(filename)
+                else:
+                    self._failed_files.append(filename)
+                return(self._saved_files)
             except Exception as exc:
                 tb = catch_exception(exc)
                 self.logger.error('Could not qc data from {}. Traceback: {}'.format(filename, tb))
