@@ -16,28 +16,27 @@ on: [push]
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.6]
+#    strategy:
+#      matrix:
+#        python-version: [3.6]
     name: Build, Test and Push
     steps:
       - uses: actions/checkout@v2
         with:
           token: ${{ secrets.GIT_TOKEN }}
-          submodules: true
-      - name: Set up python version in docker image 
-        run: sed -i '1 s/3.6/${{ matrix.python-version }}/' Dockerfile
-      - name: Build Docker image from python:${{ matrix.python-version }}-buster
+      - name: Install System dependencies
+        run: sudo apt update && sudo apt install -y $(echo $(cat requirements/ubuntu.txt))
+      - name: Docker login
+        run: docker login -u mslops -p ${{ secrets.DOCKERHUB_MSLOPS_PASS  }}
+      - name: Build Docker Image
         env:
           GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
-        run: docker build --build-arg GIT_TOKEN -t metocean/ops-qc:latest .
+        run: docker build --build-arg GIT_TOKEN -t metocean/ops-qc:${GITHUB_REF#refs/*/} .
       - name: Run tests
         env:
           GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
-        run: docker run --rm metocean/ops-qc:latest pytest /source/ops-qc --cov
-      - name: Docker login
-        run: docker login -u mslops -p ${{ secrets.DOCKERHUB_MSLOPS_PASS  }}
+        run: docker run --rm metocean/ops-qc:${GITHUB_REF#refs/*/} pytest /source/ops-qc --cov
       - name: Docker push
-        run: docker push metocean/ops-qc:latest
+        run: docker push metocean/ops-qc:${GITHUB_REF#refs/*/}
       - name: Docker logout
-        run: docker logout    
+        run: docker logout 
