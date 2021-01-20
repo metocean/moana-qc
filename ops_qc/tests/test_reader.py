@@ -2,6 +2,9 @@ from ops_qc.qc_readers import qc_readers
 from .. import qc_preprocess
 from importlib import reload
 
+docker run -ti -v /Users/jjakoboski/Desktop/MetOcean/Data/mangopare:/data/obs/mangopare -
+v /Users/jjakoboski/Desktop/MetOcean/ops-qc:/source/ops-qc metocean/ops-qc:v0.1
+
 def test_mangopare_reader():
     # for mobile gear:
     filename = '/Users/jjakoboski/Desktop/MetOcean/MOANA_0028_15_201128004121.csv'

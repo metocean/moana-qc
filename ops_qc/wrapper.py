@@ -6,7 +6,7 @@ import xarray as xr
 import seawater as sw
 import netCDF4
 from ops_core.utils import import_pycallable
-from ops_qc.qc_utils import catch
+from utils import catch
 
 
 class QcWrapper(object):

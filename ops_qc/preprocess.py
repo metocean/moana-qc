@@ -7,13 +7,13 @@ from utils import load_yaml
 
 # Note DATETIME not included below because xaxrray
 # encodes datetime automatically
-var_attr_info = {
-    'LATITUDE': ['latitude', 'degree_north'],
-    'LONGITUDE': ['longitude', 'degree_east'],
-    'TEMPERATURE': ['sea_water_temperature', 'degree_C'],
-    'PRESSURE': ['sea_water_pressure', 'dbar'],
-    'PHASE': ['fishing_deployment_phase', 'na']
-}
+# var_attr_info = {
+#     'LATITUDE': ['latitude', 'degree_north'],
+#     'LONGITUDE': ['longitude', 'degree_east'],
+#     'TEMPERATURE': ['sea_water_temperature', 'degree_C'],
+#     'PRESSURE': ['sea_water_pressure', 'dbar'],
+#     'PHASE': ['fishing_deployment_phase', 'na']
+# }
 
 class PreProcessMangopare(object):
     """

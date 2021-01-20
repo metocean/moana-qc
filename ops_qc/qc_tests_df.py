@@ -3,7 +3,7 @@ import numpy as np
 from datetime import datetime
 from global_land_mask import globe
 import logging
-from qc_utils import calc_speed
+from utils import calc_speed
 import seawater as sw
 
 """
