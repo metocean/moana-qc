@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 import logging
-from qc_utils import load_yaml
+from ops_qc.qc_utils import load_yaml
 #from ops_core.utils import import_pycallable, catch_exception
 
 # Note DATETIME not included below because xaxrray

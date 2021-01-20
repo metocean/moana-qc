@@ -6,7 +6,7 @@ import subprocess
 import io
 import re
 
-from qc_utils import catch
+from ops_qc.qc_utils import catch
 
 
 class MangopareStandardReader(object):

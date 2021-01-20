@@ -19,7 +19,7 @@ def getreq(fpath):
     return read(fpath).splitlines()
 
 if __name__ == '__main__':
-    setup(name = 'ops-qc',
+    setup(name = 'ops_qc',
         version = get_package_version('ops_qc'),
         description = 'Quality Control Library for Manogpare Sensor',
         author='Ops Team - Julie Jakoboski',
@@ -29,5 +29,5 @@ if __name__ == '__main__':
         test_suite='pytest',
         author_email='ops@metocean.co.nz',
         url='http://github.com/metocean/ops-qc',
-        #packages=['ops_qc'],
+        packages=['ops_qc'],
     )

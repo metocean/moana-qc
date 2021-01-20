@@ -2,8 +2,8 @@ import logging
 import pandas as pd
 import xarray as xr
 import numpy as np
-from qc_utils import load_yaml
-import qc_tests_df as qc_tests
+from ops_qc.qc_utils import load_yaml
+import ops_qc.qc_tests_df as qc_tests
 
 class QcApply(object):
     """
@@ -48,7 +48,7 @@ class QcApply(object):
                 # from qc_tests_df import *
                 # needed for this to work
                 #test_name()
-                
+
                 # use this if importing module only
                 qc_test = getattr(qc_tests,test_name)
                 qc_test(self)
@@ -109,7 +109,7 @@ class QcApply(object):
         """
         try:
             self.qcdf['QC_FLAG'] = np.zeros_like(self.df['LONGITUDE'])
-            self.qcdf['QC_FLAG'] = self.qcdf.max(axis=1).astype('int')          
+            self.qcdf['QC_FLAG'] = self.qcdf.max(axis=1).astype('int')
         except Exception as exc:
             self.logger.error('Unable to calculate global quality control flag. Traceback: {}'.format(exc))
 
