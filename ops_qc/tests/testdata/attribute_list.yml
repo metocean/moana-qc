@@ -1,0 +1,28 @@
+# long name, standard name, units
+
+var_attr_info:
+    DATETIME: ['time', 'datetime']
+    LATITUDE: ['latitude', 'degree_north']
+    LONGITUDE: ['longitude', 'degree_east']
+    TEMPERATURE: ['sea_water_temperature', 'degree_C']
+    PRESSURE: ['sea_water_pressure', 'dbar']
+    PHASE: ['fishing_deployment_phase', 'na']
+
+qc_attr_info:
+    standard_name: 'quality_flag'
+    flag_gear_type: ['Fishing Gear Type Quality Flag']
+    flag_timing_gap: ['Timing Gap Quality Flag']
+    flag_date: ['Impossible Date Quality Flag']
+    flag_location: ['Impossible Location Quality Flag']
+    flag_land: ['Position on Land Quality Flag']
+    flag_speed: ['Impossible Speed Quality Flag']
+    flag_global_range: ['Global Variable Range Quality Flag']
+    flag_clima: ['Climatology Range Quality Flag']
+    flag_temp_spike: ['Spike Test Quality Flag']
+    flag_temp_stuck: ['Stuck Value Quality Flag']
+    flag_roc: ['Rate of Change Quality Flag']
+    flag_reference_loc: ['Within Radius of Bad Location Quality Flag']
+
+qc_flag_info:
+    flag_values: [0,1,2,3,4,5]
+    flag_meanings: ['No QC Applied', 'Good', 'Probably Good', 'Probably Bad', 'Bad', 'Overwritten']

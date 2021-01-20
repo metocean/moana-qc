@@ -1,0 +1,23 @@
+ Deck unit serial number,5006
+Deck unit firmware version,2.41
+Deck unit battery voltage,4.0
+Deck unit battery percent,67
+Cellular upload position,-41.257080,173.277039
+Cellular signal strength,31
+Download Time,29/11/2020 20:00:47
+Moana Serial Number,29
+Moana Firmware,MOANA-1.13
+Protocol Version,2
+Moana calibration date,01/01/1970
+Reset Codes, 0x402103
+Moana Battery (V),3.60
+Max Lifetime Depth (dBar),942.2
+Baseline(mBar),838
+DateTime (UTC),Lat,Lon,Depth (dBar),Temperature C
+20201126T215537,-41.259530,+173.283150,19.1,39.283
+20201126T215752,-41.259576,+173.283151,12.6,35.793
+20201126T215753,-41.259698,+173.283213,5.7,34.395
+20201126T215754,-41.259698,+173.283213,2.1,32.818
+20201126T215756,-41.259698,+173.283213,0.0,31.470
+
+END
