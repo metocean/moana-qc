@@ -1,7 +1,7 @@
 # long name, standard name, units
 
 var_attr_info:
-    DATETIME: ['time', 'datetime']
+#    DATETIME: ['time','datetime[ns]']
     LATITUDE: ['latitude', 'degree_north']
     LONGITUDE: ['longitude', 'degree_east']
     TEMPERATURE: ['sea_water_temperature', 'degree_C']

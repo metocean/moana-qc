@@ -37,5 +37,7 @@ ds2 = qc_apply.QcApply(ds1,test_list,save_flags=True).run()
 filelist = ['/data/obs/mangopare/incoming/0028/MOANA_0028_15_201128004121.csv','/data/obs/mangopare/incoming/0026/MOANA_0026_30_201106230019.csv']
 out_dir = '/data/obs/mangopare/processed/'
 outfile_ext = '_qc'
-qc_wrapper.QcWrapper(filelist,outfile_ext,out_dir,test_list)
-                convert_p_to_z
+test_list = ['impossible_date', 'impossible_location', 'impossible_speed',
+'global_range', 'remove_ref_location', 'gear_type', 'spike']
+import qc_wrapper
+qc_wrapper.QcWrapper(filelist,outfile_ext,out_dir,test_list).run()

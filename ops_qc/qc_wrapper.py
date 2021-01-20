@@ -4,7 +4,8 @@ import pytz
 import numpy as np
 import xarray as xr
 import seawater as sw
-from ops_core.utils import import_pycallable, catch_exception
+import netCDF4
+from ops_core.utils import import_pycallable
 from qc_utils import catch
 
 
@@ -76,6 +77,7 @@ class QcWrapper(object):
             self.qc_class = self._set_class(self.qc_class,self._default_qc_class)
         except Exception as exc:
             self.logger.error('Unable to set required classes for qc: {}'.format(exc))
+            raise exc
 
     def _transfer(self, source=None, transfer=None,
                   default='ops_transfer.base.LocalTransferBase'):
@@ -102,10 +104,12 @@ class QcWrapper(object):
             if not self.out_dir:
                 self.out_dir = head
             savefile = '{}{}{}{}'.format(self.out_dir,os.path.splitext(tail)[0],self.outfile_ext,'.nc')
-            self.ds.to_netcdf(savefile)
+#            import ipdb; ipdb.set_trace()
+            self.ds.to_netcdf(savefile,mode="w",format="NETCDF4")
+            self._saved_files.append(savefile)
         except Exception as exc:
             self.logger.error('Could not save qc data from {}: {}'.format(filename, exc))
-
+            self._failed_files.append(filename)
 
     def convert_pressure_to_depth(self):
         '''
@@ -118,7 +122,9 @@ class QcWrapper(object):
             else:
                 d_lat = self.default_latitude
             depth = [sw.eos80.dpth(catch(lambda: float(z)),d_lat) for z in self.ds['PRESSURE']]
-            self.ds['DEPTH'] = xr.Variable(dims = 'PRESSURE', data = depth, attrs={'units':'[m]','standard_name':'depth'})
+            self.ds['DEPTH'] = xr.Variable(dims = 'DATETIME', data = depth, attrs={'units':'[m]','standard_name':'depth'})
+            self.ds = self.ds.drop('PRESSURE')
+            return(self.ds)
         except Exception as exc:
             self.logger.error('Could not convert pressure to depth, leaving as pressure: {}'.format(exc))
             pass
@@ -135,18 +141,17 @@ class QcWrapper(object):
         for filename in self.files_to_qc:
             try:
                 self.ds = self.datareader(filename = filename).run()
-                self.ds = self.preprocessor(self.ds,self.fisher_metadata)
-                self.ds = self.qc_class(self.ds,self.test_list,self.save_flags,self.convert_p_to_z,self.default_latitude,self.attr_file)
+                self.ds = self.preprocessor(self.ds,self.fisher_metadata).run()
+                self.ds = self.qc_class(self.ds,self.test_list,self.save_flags,self.convert_p_to_z,self.default_latitude,self.attr_file).run()
                 # only save files with at least some good data
-                if np.nanmin(self.ds['QC_FLAG']>4):
+                if np.nanmin(self.ds['QC_FLAG']<4):
                     if self.convert_p_to_z:
-                        self.convert_pressure_to_depth()
+                        self.ds = self.convert_pressure_to_depth()
                     self._save_qc_data(filename)
-                    self._saved_files.append(filename)
                 else:
                     self._failed_files.append(filename)
-                return(self._saved_files)
             except Exception as exc:
-                tb = catch_exception(exc)
-                self.logger.error('Could not qc data from {}. Traceback: {}'.format(filename, tb))
+                self._failed_files.append(filename)
+                self.logger.error('Could not qc data from {}. Traceback: {}'.format(filename, exc))
                 continue
+        return(self._saved_files,self._failed_files)

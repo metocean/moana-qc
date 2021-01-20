@@ -5,8 +5,9 @@ import logging
 from qc_utils import load_yaml
 #from ops_core.utils import import_pycallable, catch_exception
 
+# Note DATETIME not included below because xaxrray
+# encodes datetime automatically
 var_attr_info = {
-    'DATETIME': ['time', 'datetime'],
     'LATITUDE': ['latitude', 'degree_north'],
     'LONGITUDE': ['longitude', 'degree_east'],
     'TEMPERATURE': ['sea_water_temperature', 'degree_C'],
@@ -65,6 +66,7 @@ class PreProcessMangopare(object):
         except Exception as exc:
             self.ds.attrs['Gear Class'] = 'unknown'
             self.logger.error('Gear Class calculation failed, labeled as unknown: {}'.format(exc))
+            raise exc
 
     def _calc_positions(self, surface_pressure=5):
         """
@@ -103,6 +105,7 @@ class PreProcessMangopare(object):
             self.ds['LONGITUDE'] = xr.DataArray(lons, dims=['DATETIME'])
         except Exception as exc:
             self.logger.error(f"Position could not be calculated for {self.filename}: {exc}")
+            raise exc
 
     def _find_bottom(self, cutoff='4 minutes'):
         """
@@ -119,19 +122,22 @@ class PreProcessMangopare(object):
             df.reset_index(inplace=True)
             times = df['DATETIME']
             t_delta = (times-times.shift()).fillna(pd.Timedelta('0 days'))
-            cat = np.full_like(self.ds['TEMPERATURE'], 'DEPL', dtype='S4')
-            cat[t_delta < cutoff] = "PROF"
+            cat = np.chararray(len(self.ds['TEMPERATURE']))
+            cat[:] = 'D'
+            cat[t_delta < cutoff] = 'P'
         except Exception as exc:
-            cat = np.full_like(self.ds['TEMPERATURE'], np.nan, dtype='float')
+            cat = np.empty(len(self.ds['TEMPERATURE']))
             self.logger.error(
                 'Bottom not found for {}, np.nan applied instead: {}'.format(self.filename, exc))
 
         self.ds['PHASE'] = xr.Variable(dims='DATETIME', data=cat)
+        self.ds['PHASE'].attrs.update({'flag_values':['P','D'],'flag_meanings':'P indicates the measurement was classified as a profile, D indicates deployed (i.e. bottom, fishing)'})
 
     def _add_variable_attrs(self):
         """
-        Uses the local variable dictionary at the start of this file
-        to specify the name and units for each var.
+        Loads local variable attributes from attribute file.
+        [Uses the local variable dictionary at the start of this file
+        to specify the name and units for each var.]
         Example dictionary: var_attr_info = {'LATITUDE':['latitude','units']}
         """
         try:
@@ -139,7 +145,9 @@ class PreProcessMangopare(object):
             for var, [standard_name, units] in var_attr_info.items():
                 if var in self.ds.keys():
                     self.ds[var].attrs.update({'standard_name': standard_name,
-                                               'units': units})
+                                                   'units': units})
+    #                if standard_name=='time':
+#                        self.ds[var].attrs.pop['units']
         except Exception as exc:
             self.logger.error('Could not assign variable attributes for {}: {}'.format(self.filename, exc))
 

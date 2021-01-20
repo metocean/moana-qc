@@ -4,6 +4,7 @@ from datetime import datetime
 import logging
 import subprocess
 import io
+import re
 
 from qc_utils import catch
 
@@ -48,7 +49,7 @@ class MangopareStandardReader(object):
         self.global_attrs = {
             'Date quality controlled': datetime.utcnow().astimezone().strftime("%Y-%m-%dT%H:%M:%S %z"),
             'Quality control repository': 'https://github.com/metocean/ops-qc',
-            'QC git revision': subprocess.check_output(['git', 'log', '-n', '1', '--pretty=tformat:%h-%ad', '--date=short']).strip(),
+            'QC git revision': str(subprocess.check_output(['git', 'log', '-n', '1', '--pretty=tformat:%h-%ad', '--date=short']).strip()),
             'Raw data filename': self.filename
         }
 
@@ -58,14 +59,10 @@ class MangopareStandardReader(object):
         """
         try:
             self.start_line = self._calc_header_rows(default_skiprows=self.skip_rows)
-        except Exception as exc:
-            self.logger.error('Could not calculate start row of csv data for {}: {}'.format(self.filename, exc))
-
-        try:
-            self.df = pd.read_csv(
-                self.filename, skiprows=self.start_line, error_bad_lines=False)
+            self.df = pd.read_csv(self.filename, skiprows=self.start_line, error_bad_lines=False)
         except Exception as exc:
             self.logger.error('Could not read file {} due to {}'.format(self.filename, exc))
+            raise exc
 
     def _format_df_data(self):
         """
@@ -94,6 +91,7 @@ class MangopareStandardReader(object):
             self.df['LATITUDE'].loc[self.df['LATITUDE'] == 0] = np.nan
         except Exception as exc:
             self.logger.error('Formatting of data failed for {}: {}'.format(self.filename, exc))
+            raise exc
 
     def _convert_df_to_ds(self):
         """
@@ -104,6 +102,7 @@ class MangopareStandardReader(object):
             self.ds = self.df.to_xarray().set_coords(['LATITUDE', 'LONGITUDE'])
         except Exception as exc:
             self.logger.error('Could not convert df to ds for {}: {}'.format(self.filename, exc))
+            raise exc
 
     def _calc_header_rows(self, default_skiprows=13):
         """
@@ -131,23 +130,31 @@ class MangopareStandardReader(object):
             f = open(self.filename)
             for i in range(self.start_line):
                 row = f.readline().split(',')
-                self.ds.attrs[row[0]] = row[1].strip()
+                attr_name = row[0]
+                # extract units from attr_name and
+                # append to attr_val
+                res = re.findall(r'\(.*?\)', attr_name)
+                if not res:
+                    res = ""
+                else:
+                    res = " "+res[0]
+                attr_val = str(row[1].strip()) + res
+                # remove 'illegal' characters
+                attr_name = re.sub("[\(\[].*?[\)\]]", "", attr_name).strip()
+                self.ds.attrs[attr_name] = attr_val
             for name, value in self.global_attrs.items():
                 self.ds.attrs[name] = value
         except Exception as exc:
             self.logger.error('Could not load global attributes for {} due to {}'.format(self.filename, exc))
+            raise exc
 
     def run(self):
         # read file based on self.filetype
-        try:
-            self._read_mangopare_csv()
-            self._format_df_data()
-            self._convert_df_to_ds()
-            self._load_global_attributes()
-            return(self.ds)
-        except Exception as exc:
-            self.logger.error('Could not load data from {}. Traceback: {}'.format(self.filename, exc))
-
+        self._read_mangopare_csv()
+        self._format_df_data()
+        self._convert_df_to_ds()
+        self._load_global_attributes()
+        return(self.ds)
 
 class MangopareMetadataReader(object):
     """
@@ -178,7 +185,6 @@ class MangopareMetadataReader(object):
         except Exception as exc:
             self.logger.error(
                 'Could not load fisher metadata from {}'.format(self.metafile))
-            raise exc
 
     def _format_fisher_metadata(self):
         """
@@ -195,8 +201,6 @@ class MangopareMetadataReader(object):
         except Exception as exc:
             self.logger.error(
                 'Could not load fisher metadata from {}'.format(self.metafile))
-            raise exc
-
     def run(self):
         # read file based on self.filetype
         try:
@@ -205,3 +209,4 @@ class MangopareMetadataReader(object):
             return(self.fisher_metadata)
         except Exception as exc:
             self.logger.error('Could not load data from {}: {}'.format(self.metafile, exc))
+            raise exc
