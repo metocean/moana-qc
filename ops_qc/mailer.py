@@ -91,7 +91,7 @@ ALERT_BODY_TEXT = """
     LEVEL: {level}
     ETA: {eta}
     The latest forecast guidance suggests the worst case scenario will exceed the safety threshold at {alert_at}.
-    
+
     Latest forecast cycle {cycle} UTC.
     Estimation produced at {issued_at}.
 """
@@ -99,7 +99,7 @@ ALERT_BODY_TEXT = """
 ALERT_CANCEL_BODY_TEXT = """
     LEVEL: {level}
     The latest forecast guidance suggests the worst case scenario will not exceed safety thresholds.
-    
+
     Latest forecast cycle {cycle} UTC.
     Estimation produced at {issued_at}.
 """
@@ -108,11 +108,11 @@ ALERT_CANCEL_BODY_TEXT = """
 
 class StormWatchMailer(object):
     """docstring for StormWatchMailer"""
-    def __init__(self, site, evaluators, plots, cycle_dt,  
+    def __init__(self, site, evaluators, plots, cycle_dt,
                  recipients,
                  from_email,
-                 bcc=[], 
-                 reply_to=None, 
+                 bcc=[],
+                 reply_to=None,
                  logger=logging):
         super(StormWatchMailer, self).__init__()
         self.site = site
@@ -141,11 +141,11 @@ class StormWatchMailer(object):
                 alert_at = evaluator.alert_at
                 level = evaluator.alert_level
                 color = evaluator.alert_color
-                
+
         return alert_at, level, color
 
     def _get_context(self):
-        timezone = pytz.timezone(self.site.timezone) 
+        timezone = pytz.timezone(self.site.timezone)
         now = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
         now = now.astimezone(timezone)
         utcoff = now.utcoffset()
@@ -179,12 +179,12 @@ class StormWatchMailer(object):
         }
 
         last_email = self.mailer.mandrill.messages.search(**params)
-        
+
         if last_email and 'Detected' in last_email[0]['subject']:
             return True
         else:
             return False
-    
+
     def get_alert_table(self, utcoffset):
         table = """<table>"""
         table += "<thead><tr><th>Time (UTC+{utcoffset}h)</th><th>Reason</th><th>Alert Level</th></tr></thead>\n<tbody>"
@@ -222,10 +222,10 @@ class StormWatchMailer(object):
         subject = ALERT_SUBJECT.format(**context)
         html = ALERT_BODY_HTML.format(**context)
         text = ALERT_BODY_TEXT.format(**context)
-        self.mailer.send_email(to=self.recipients, bcc=self.bcc, 
+        self.mailer.send_email(to=self.recipients, bcc=self.bcc,
                           subject=subject,
-                          html=html, 
-                          text=text, 
+                          html=html,
+                          text=text,
                           from_=self.from_email,
                           reply_to=self.reply_to,
                           images=self.plots,
@@ -239,10 +239,10 @@ class StormWatchMailer(object):
         subject = ALERT_CANCEL_SUBECT.format(**context)
         html = ALERT_CANCEL_BODY_HTML.format(**context)
         text = ALERT_CANCEL_BODY_TEXT.format(**context)
-        self.mailer.send_email(to=self.recipients, bcc=self.bcc, 
+        self.mailer.send_email(to=self.recipients, bcc=self.bcc,
                           subject=subject,
-                          html=html, 
-                          text=text, 
+                          html=html,
+                          text=text,
                           from_=self.from_email,
                           reply_to=self.reply_to,
                           images=self.plots,

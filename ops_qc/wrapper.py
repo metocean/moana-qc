@@ -6,7 +6,7 @@ import xarray as xr
 import seawater as sw
 import netCDF4
 from ops_core.utils import import_pycallable
-from qc_utils import catch
+from ops_qc.qc_utils import catch
 
 
 class QcWrapper(object):
@@ -49,10 +49,10 @@ class QcWrapper(object):
         self.startstring = startstring
         self.dateformat = dateformat
         self.gear_class = gear_class
-        self._default_datareader_class = 'qc_readers.MangopareStandardReader'
-        self._default_metareader_class = 'qc_readers.MangopareMetadataReader'
-        self._default_preprocessor_class = 'qc_preprocess.PreProcessMangopare'
-        self._default_qc_class = 'qc_apply.QcApply'
+        self._default_datareader_class = 'readers.MangopareStandardReader'
+        self._default_metareader_class = 'readers.MangopareMetadataReader'
+        self._default_preprocessor_class = 'preprocess.PreProcessMangopare'
+        self._default_qc_class = 'apply_qc.QcApply'
         self.logger = logging
 
     def set_cycle(self, cycle_dt):

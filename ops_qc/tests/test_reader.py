@@ -23,15 +23,15 @@ def test_mangopare_reader():
 
 filename = '/data/obs/mangopare/incoming/0026/MOANA_0026_30_201106230019.csv'
 metafile = '/data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv'
-import qc_readers
-import qc_preprocess
-import qc_apply
-ds = qc_readers.MangopareStandardReader(filename).run()
-metadata = qc_readers.MangopareMetadataReader(metafile).run()
-ds1 = qc_preprocess.PreProcessMangopare(ds,metadata).run()
+import readers
+import preprocess
+import apply_qc
+ds = readers.MangopareStandardReader(filename).run()
+metadata = readers.MangopareMetadataReader(metafile).run()
+ds1 = preprocess.PreProcessMangopare(ds,metadata).run()
 test_list = ['impossible_date', 'impossible_location', 'impossible_speed',
 'global_range', 'remove_ref_location', 'gear_type', 'spike']
-ds2 = qc_apply.QcApply(ds1,test_list,save_flags=True).run()
+ds2 = apply_qc.QcApply(ds1,test_list,save_flags=True).run()
 
 
 filelist = ['/data/obs/mangopare/incoming/0028/MOANA_0028_15_201128004121.csv','/data/obs/mangopare/incoming/0026/MOANA_0026_30_201106230019.csv']
@@ -39,5 +39,5 @@ out_dir = '/data/obs/mangopare/processed/'
 outfile_ext = '_qc'
 test_list = ['impossible_date', 'impossible_location', 'impossible_speed',
 'global_range', 'remove_ref_location', 'gear_type', 'spike']
-import qc_wrapper
-qc_wrapper.QcWrapper(filelist,outfile_ext,out_dir,test_list).run()
+from ops_qc import wrapper
+good,bad=wrapper.QcWrapper(filelist,outfile_ext,out_dir,test_list).run()
