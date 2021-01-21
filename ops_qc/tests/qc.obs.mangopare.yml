@@ -1,21 +1,58 @@
-pycallable:  ops_qc.qc_wrapper.QcWrapper
-description:  'Quality Control of Mangopare Observations'
+pycallable:   ops_transfer.CyclicTransfer
+description:  'Transfer and Quality Control of Mangopare Observations'
+action:       move 
+source:       '/data_exchange/zebratech/incoming/'
+destination:  '/data/obs/mangopare/raw/'
+force: False
+recursive: True
 
-test_list: ['impossible_date',
-            'impossible_location',
-            'impossible_speed',
-            'global_range',
-            remove_ref_location]
-fishing_metafile: '/data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv'
-datareader: 'qc_readers.MangopareStandardReader'
-metareader: 'qc_readers.MangopareMetadataReader'
-preprocessor: 'qc_preprocess.PreProcessMangopare'
-save_flags: True
-convert_p_to_z: True,
-default_latitude: -40
-startstring: "DateTime (UTC)",
-dateformat: '%Y%m%dT%H%M%S',
-gear_class: {'Bottom trawl':'mobile',
-             'Potting':'stationary',
-             'Long lining':'mobile',
-             'Trawling':'mobile'}
+transform:
+    - class:       ops_qc.wrapper.QcWrapper
+      out_dir:     '/data/obs/mangopare/processed/'
+      outfile_ext: '_qc'
+      test_list:   ['impossible_date',
+                    'impossible_location',
+                    'impossible_speed',
+                    'global_range',
+                    'remove_ref_location',
+                    'gear_type',
+                    'spike']
+      fishing_metafile: '/data/obs/mangopare/raw/Fisherman_details/Trial_fisherman_database.csv'
+      attr_file:    '/data/obs/mangopare/attribute_list.yml',
+      datareader:   'readers.MangopareStandardReader'
+      metareader:   'readers.MangopareMetadataReader'
+      preprocessor: 'preprocess.PreProcessMangopare'
+      save_flags:   True
+      convert_p_to_z: True,
+      default_latitude: -40
+      startstring:  "DateTime (UTC)",
+      dateformat:   '%Y%m%dT%H%M%S',
+      gear_class:   {'Bottom trawl':'mobile',
+                    'Potting':'stationary',
+                    'Long lining':'mobile',
+                    'Trawling':'mobile'}
+
+
+
+
+# pycallable:  ops_qc.wrapper.QcWrapper
+# description:  'Quality Control of Mangopare Observations'
+
+# test_list: ['impossible_date',
+#             'impossible_location',
+#             'impossible_speed',
+#             'global_range',
+#             remove_ref_location]
+# fishing_metafile: '/data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv'
+# datareader: 'qc_readers.MangopareStandardReader'
+# metareader: 'qc_readers.MangopareMetadataReader'
+# preprocessor: 'qc_preprocess.PreProcessMangopare'
+# save_flags: True
+# convert_p_to_z: True,
+# default_latitude: -40
+# startstring: "DateTime (UTC)",
+# dateformat: '%Y%m%dT%H%M%S',
+# gear_class: {'Bottom trawl':'mobile',
+#              'Potting':'stationary',
+#              'Long lining':'mobile',
+#              'Trawling':'mobile'}

@@ -55,13 +55,11 @@ class QcWrapper(object):
         self._default_qc_class = 'apply_qc.QcApply'
         self.logger = logging
 
-    def set_cycle(self, cycle_dt):
-        self.cycle_dt = cycle_dt
-        self.basefile = tzstrftime(cycle_dt, self.basefile_tz, self.basefile)
-        self.remote_dir = tzstrftime(cycle_dt, self.basefile_tz, self.remote_dir)
-        self.local_dir = cycle_dt.strftime(self.local_dir)
-        self.local_basefile = cycle_dt.strftime(self.local_basefile)
-        self._proxy.set_cycle(cycle_dt)
+    # def set_cycle(self, cycle_dt):
+    #     self.cycle_dt = cycle_dt
+    #     self.local_dir = cycle_dt.strftime(self.local_dir)
+    #     self.local_basefile = cycle_dt.strftime(self.local_basefile)
+    #     self._proxy.set_cycle(cycle_dt)
 
     def _set_class(self,in_class,default_class):
         klass = in_class.pop('class', default_class)
@@ -79,12 +77,6 @@ class QcWrapper(object):
             self.logger.error('Unable to set required classes for qc: {}'.format(exc))
             raise exc
 
-    def _transfer(self, source=None, transfer=None,
-                  default='ops_transfer.base.LocalTransferBase'):
-        source = source or self._success_files
-        transfer = transfer or self.transfer
-        return self._proxy(source, transfer, 'source', default)
-
     def _set_filelist(self):
         try:
             if hasattr(self, '_success_files'):
@@ -93,6 +85,7 @@ class QcWrapper(object):
                 self.files_to_qc = self.filelist
         except Exception as exc:
             self.logger.error('No file list found, please specify.  No QC performed.')
+            raise exc
 
     def _save_qc_data(self,filename):
         """
@@ -110,6 +103,17 @@ class QcWrapper(object):
         except Exception as exc:
             self.logger.error('Could not save qc data from {}: {}'.format(filename, exc))
             self._failed_files.append(filename)
+    
+    def _initialize_outdir(self):
+        """
+        Check if outdir exists, create if not
+        """
+        try:
+            if not os.path.isdir(self.out_dir):
+                os.mkdir(self.out_dir)
+        except Exception as exc:
+            self.logger.error('Could not create specified directory to save qc files in: {}'.format(exc))
+            raise exc
 
     def convert_pressure_to_depth(self):
         '''
@@ -137,6 +141,8 @@ class QcWrapper(object):
         self._set_filelist()
         self._saved_files = []
         self._failed_files = []
+        # create directory to save files
+        self._initialize_outdir()
         # apply qc
         for filename in self.files_to_qc:
             try:
