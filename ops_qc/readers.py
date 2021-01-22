@@ -82,13 +82,16 @@ class MangopareStandardReader(object):
             self.df['TEMPERATURE'] = [catch(lambda:float(t))
                                       for t in self.df['TEMPERATURE']]
 
-            # Drop rows with bad temp or depth data
-            self.df = self.df.dropna(
-                how='any', subset=['DATETIME', 'TEMPERATURE', 'PRESSURE'])
-
             # Convert 0 lat/lon to nan, since 0 is bad value, but don't drop
             self.df['LONGITUDE'].loc[self.df['LONGITUDE'] == 0] = np.nan
             self.df['LATITUDE'].loc[self.df['LATITUDE'] == 0] = np.nan
+
+            # Drop rows with bad temp or depth data (not sure why I did this, commented out
+            # and replaced with dropped if any variable is nan)
+            #self.df = self.df.dropna(how='any', subset=['DATETIME', 'TEMPERATURE', 'PRESSURE'])
+            # Drop rows with any nan
+            self.df = self.df.dropna(axis=0, how='any')
+        
         except Exception as exc:
             self.logger.error('Formatting of data failed for {}: {}'.format(self.filename, exc))
             raise exc
@@ -128,7 +131,7 @@ class MangopareStandardReader(object):
         # Add attributes from csv file header
         try:
             f = open(self.filename)
-            for i in range(self.start_line):
+            for _ in range(self.start_line):
                 row = f.readline().split(',')
                 attr_name = row[0]
                 # extract units from attr_name and
@@ -184,7 +187,7 @@ class MangopareMetadataReader(object):
                                                "Date supplied", "Date returned"], date_parser=lambda x: pd.to_datetime(x, format="%d/%m/%Y"))
         except Exception as exc:
             self.logger.error(
-                'Could not load fisher metadata from {}'.format(self.metafile))
+                'Could not load fisher metadata from {}: {}'.format(self.metafile, exc))
 
     def _format_fisher_metadata(self):
         """
@@ -200,7 +203,7 @@ class MangopareMetadataReader(object):
                 {pd.NaT: datetime.utcnow()}, inplace=True)
         except Exception as exc:
             self.logger.error(
-                'Could not load fisher metadata from {}'.format(self.metafile))
+                'Could not load fisher metadata from {}: {}'.format(self.metafile,exc))
     def run(self):
         # read file based on self.filetype
         try:
