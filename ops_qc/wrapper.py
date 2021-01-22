@@ -30,7 +30,7 @@ class QcWrapper(object):
                 attr_file = 'attribute_list.yml',
                 startstring = "DateTime (UTC)",
                 dateformat = '%Y%m%dT%H%M%S',
-                gear_class = {'Bottom trawl':'mobile','Potting':'stationary','Long lining':'mobile','Trawling':'mobile'},
+                gear_class = {'Bottom trawl':'mobile','Potting':'stationary','Long lining':'mobile','Trawling':'mobile', 'Midwater trawl': 'mobile'},
                 logger = logging):
 
         self.filelist = filelist
@@ -103,7 +103,7 @@ class QcWrapper(object):
         except Exception as exc:
             self.logger.error('Could not save qc data from {}: {}'.format(filename, exc))
             self._failed_files.append(filename)
-    
+
     def _initialize_outdir(self):
         """
         Check if outdir exists, create if not
@@ -137,7 +137,7 @@ class QcWrapper(object):
         # set all readers/preprocessors
         self._set_all_classes()
         # load metadata common for all files
-        self.fisher_metadata = self.metareader(metafile = self.metafile).run()
+        self.fisher_metadata = self.metareader(metafile = self.metafile, gear_class = self.gear_class).run()
         self._set_filelist()
         self._saved_files = []
         self._failed_files = []
@@ -147,13 +147,16 @@ class QcWrapper(object):
         for filename in self.files_to_qc:
             try:
                 self.ds = self.datareader(filename = filename).run()
-                self.ds = self.preprocessor(self.ds,self.fisher_metadata).run()
-                self.ds = self.qc_class(self.ds,self.test_list,self.save_flags,self.convert_p_to_z,self.default_latitude,self.attr_file).run()
-                # only save files with at least some good data
-                if np.nanmin(self.ds['QC_FLAG']<4):
-                    if self.convert_p_to_z:
-                        self.ds = self.convert_pressure_to_depth()
-                    self._save_qc_data(filename)
+                if not self.ds.attrs['Gear Class'] == 'unknown':
+                    self.ds = self.preprocessor(self.ds,self.fisher_metadata).run()
+                    self.ds = self.qc_class(self.ds,self.test_list,self.save_flags,self.convert_p_to_z,self.default_latitude,self.attr_file).run()
+                    # only save files with at least some good data
+                    if np.nanmin(self.ds['QC_FLAG']<4):
+                        if self.convert_p_to_z:
+                            self.ds = self.convert_pressure_to_depth()
+                        self._save_qc_data(filename)
+                    else:
+                        self._failed_files.append(filename)
                 else:
                     self._failed_files.append(filename)
             except Exception as exc:

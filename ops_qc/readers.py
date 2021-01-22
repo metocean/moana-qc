@@ -201,6 +201,7 @@ class MangopareMetadataReader(object):
         except Exception as exc:
             self.logger.error(
                 'Could not load fisher metadata from {}'.format(self.metafile))
+
     def run(self):
         # read file based on self.filetype
         try:

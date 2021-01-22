@@ -1,6 +1,6 @@
 pycallable:   ops_transfer.CyclicTransfer
 description:  'Transfer and Quality Control of Mangopare Observations'
-action:       move 
+action:       move
 source:       '/data_exchange/zebratech/incoming/'
 destination:  '/data/obs/mangopare/raw/'
 force: False
@@ -31,6 +31,18 @@ transform:
                     'Potting':'stationary',
                     'Long lining':'mobile',
                     'Trawling':'mobile'}
+
+schedule:
+    docker:
+      image:           metocean/ops-qc-v0.1
+    priority:          3
+    hourly_cycles:     [0]
+    countdown:         6h
+    soft_time_limit:   60min
+    memleak_threshold: 5000
+    max_retries:       6     # Maximum number of retries before giving up
+    retry_delay:       20min  # time to wait for next retry [s]
+
 
 
 
