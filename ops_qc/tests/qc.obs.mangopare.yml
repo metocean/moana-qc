@@ -1,6 +1,6 @@
 pycallable:   ops_transfer.CyclicTransfer
 description:  'Transfer and Quality Control of Mangopare Observations'
-action:       move 
+action:       copy  #test with copy, but should be move in the end 
 source:       '/data_exchange/zebratech/incoming/'
 destination:  '/data/obs/mangopare/raw/'
 force: False
