@@ -1,6 +1,7 @@
 import numpy as np
 import yaml
 import datetime as dt
+import glob
 
 """
 Miscellanous functions used by multiple classes in the QC library.
@@ -75,3 +76,14 @@ def append_to_textfile(filename,list_to_append):
     for file in list_to_append:
         f.write(f'{file}\n')
     f.close
+
+def list_new_files(numdays = 4, start_time = dt.datetime.now()):
+    filelist = []
+    for day in np.arange(numdays):    
+        cycle_dt = start_time - dt.timedelta(seconds=float(day*86400))
+        filestring = 'MOANA*_%y%m%d*.csv'
+        filestring = cycle_dt.strftime(filestring)
+
+        for file in glob.glob(f'/data/obs/mangopare/incoming/**/{filestring}', recursive=True):
+            filelist.append(file)
+    return(filelist)
