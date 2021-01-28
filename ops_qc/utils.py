@@ -65,3 +65,13 @@ def load_yaml(filename,dict_name):
                 return(attrs_list[dict_name])
         except yaml.YAMLError as exc:
             print('Could not open attribute file {}: {}'.format(filename, exc))
+
+def append_to_textfile(filename,list_to_append):
+    """
+    Append a list, one item at a time,
+    to a text file with path/name filename.
+    """
+    f=open(filename, "a+")
+    for file in list_to_append:
+        f.write(f'{file}\n')
+    f.close

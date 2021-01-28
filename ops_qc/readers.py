@@ -81,17 +81,16 @@ class MangopareStandardReader(object):
                 self.df['DATETIME'], format=self.dateformat, errors='coerce')
             self.df['TEMPERATURE'] = [catch(lambda:float(t))
                                       for t in self.df['TEMPERATURE']]
-
             # Convert 0 lat/lon to nan, since 0 is bad value, but don't drop
-            self.df['LONGITUDE'].loc[self.df['LONGITUDE'] == 0] = np.nan
-            self.df['LATITUDE'].loc[self.df['LATITUDE'] == 0] = np.nan
+            self.df['LONGITUDE'] = self.df['LONGITUDE'].replace(0, np.nan)
+            self.df['LATITUDE'] = self.df['LATITUDE'].replace(0, np.nan)
 
             # Drop rows with bad temp or depth data (not sure why I did this, commented out
             # and replaced with dropped if any variable is nan)
             #self.df = self.df.dropna(how='any', subset=['DATETIME', 'TEMPERATURE', 'PRESSURE'])
             # Drop rows with any nan
             self.df = self.df.dropna(axis=0, how='any')
-        
+
         except Exception as exc:
             self.logger.error('Formatting of data failed for {}: {}'.format(self.filename, exc))
             raise exc
@@ -203,12 +202,7 @@ class MangopareMetadataReader(object):
                 {pd.NaT: datetime.utcnow()}, inplace=True)
         except Exception as exc:
             self.logger.error(
-<<<<<<< HEAD
-                'Could not load fisher metadata from {}'.format(self.metafile))
-
-=======
                 'Could not load fisher metadata from {}: {}'.format(self.metafile,exc))
->>>>>>> d14b1387bd13c7f55731163756587a717f56557c
     def run(self):
         # read file based on self.filetype
         try:
