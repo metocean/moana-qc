@@ -160,7 +160,7 @@ def spike(self, qc_vars=None, fail_flag=4):
     self.qcdf['flag_spike'] = np.ones_like(self.df['PRESSURE'], dtype='uint8')
     for var, thresh in qc_vars.items():
         val = np.abs(np.convolve(self.df[var], [-0.5, 1, -0.5], mode='same'))
-        val[[0, -1]] = 0
+        val = np.hstack((0,val))[:-1]
         self.qcdf.loc[val > thresh, 'flag_spike'] = fail_flag
 
 
