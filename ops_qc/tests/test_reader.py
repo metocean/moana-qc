@@ -44,3 +44,7 @@ test_list = ['impossible_date', 'impossible_location', 'impossible_speed',
 'global_range', 'remove_ref_location', 'gear_type', 'spike']
 from ops_qc import wrapper
 good,bad=wrapper.QcWrapper(filelist,outfile_ext,out_dir,test_list).run()
+
+
+from utils import list_new_files
+filelist = list_new_files(num_days=300)
