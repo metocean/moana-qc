@@ -108,7 +108,7 @@ class QcWrapper(object):
             self._saved_files.append(savefile)
         except Exception as exc:
             self.logger.error('Could not save qc data from {}: {}'.format(filename, exc))
-            self._failed_files.append(filename)
+            self._failed_files.append(f'{filename}: Save QC File Failed')
 
     def _save_status_data(self):
         """
@@ -159,11 +159,11 @@ class QcWrapper(object):
         except Exception as exc:
             self.logger.error('Could not convert pressure to depth, leaving as pressure: {}'.format(exc))
             pass
-    
+
     def _processed_classified_gear(self,filename):
         """
         If gear class is not unknown, apply QC, convert pressure to depth
-        if desired, check if any bad data, save file.        
+        if desired, check if any bad data, save file.
         """
         self.ds = self.qc_class(self.ds,self.test_list,self.save_flags,self.convert_p_to_z,self.default_latitude,self.attr_file).run()
         # only save files with at least some good data
@@ -175,7 +175,7 @@ class QcWrapper(object):
             if np.nanmax(self.ds['QC_FLAG']) in [3,4]:
                 self._some_bad_data_files.append(filename)
         else:
-            self._failed_files.append(filename)
+            self._failed_files.append(f'{filename}: No Good Data (all QC Flags = 4)')
 
     def run(self):
         # set all readers/preprocessors
@@ -196,9 +196,9 @@ class QcWrapper(object):
                 if not self.ds.attrs['Gear Class'] == 'unknown':
                     self._processed_classified_gear(filename)
                 else:
-                    self._failed_files.append(filename)
+                    self._failed_files.append(f'{filename}: Gear Class Unknown')
             except Exception as exc:
-                self._failed_files.append(filename)
+                self._failed_files.append(f'{filename}: QC Wrapper Error')
                 self.logger.error('Could not qc data from {}. Traceback: {}'.format(filename, exc))
                 continue
         self._save_status_data()

@@ -48,6 +48,7 @@ class PreProcessMangopare(object):
         self.df from qc_readers.load_moana_standard/
         """
         try:
+            self.ds.attrs['Gear Class'] = 'unknown'
             ms = int(self.ds.attrs['Moana Serial Number'])
             sn_data = self.fisher_metadata.loc[self.fisher_metadata['Mangopare serial number'] == ms]
             t_min = pd.to_datetime(np.min(self.ds['DATETIME']).values)
