@@ -77,13 +77,15 @@ def append_to_textfile(filename,list_to_append):
         f.write(f'{file}\n')
     f.close
 
-def list_new_files(numdays = 4, start_time = dt.datetime.now()):
+def list_new_files(numdays = 4, filestring = None, filedir = None, start_time = dt.datetime.now()):
     filelist = []
+    if not filestring:
+        filestring = 'MOANA*_%y%m%d*.csv'
+    if not filedir:
+        filedir = '/data/obs/mangopare/incoming/**/'
     for day in np.arange(numdays):    
         cycle_dt = start_time - dt.timedelta(seconds=float(day*86400))
-        filestring = 'MOANA*_%y%m%d*.csv'
         filestring = cycle_dt.strftime(filestring)
-
-        for file in glob.glob(f'/data/obs/mangopare/incoming/**/{filestring}', recursive=True):
+        for file in glob.glob(f'{filedir}{filestring}', recursive=True):
             filelist.append(file)
     return(filelist)

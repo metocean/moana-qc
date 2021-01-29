@@ -159,6 +159,23 @@ class QcWrapper(object):
         except Exception as exc:
             self.logger.error('Could not convert pressure to depth, leaving as pressure: {}'.format(exc))
             pass
+    
+    def _processed_classified_gear(self,filename):
+        """
+        If gear class is not unknown, apply QC, convert pressure to depth
+        if desired, check if any bad data, save file.        
+        """
+        self.ds = self.qc_class(self.ds,self.test_list,self.save_flags,self.convert_p_to_z,self.default_latitude,self.attr_file).run()
+        # only save files with at least some good data
+        #import ipdb; ipdb.set_trace()
+        if np.nanmin(self.ds['QC_FLAG'])<4:
+            if self.convert_p_to_z:
+                self.ds = self.convert_pressure_to_depth()
+            self._save_qc_data(filename)
+            if np.nanmax(self.ds['QC_FLAG']) in [3,4]:
+                self._some_bad_data_files.append(filename)
+        else:
+            self._failed_files.append(filename)
 
     def run(self):
         # set all readers/preprocessors
@@ -167,23 +184,17 @@ class QcWrapper(object):
         # load metadata common for all files
         self.fisher_metadata = self.metareader(metafile = self.metafile, gear_class = self.gear_class).run()
         self._set_filelist()
+        # initialize status files
         self._saved_files = []
         self._failed_files = []
+        self._some_bad_data_files = []
         # apply qc
         for filename in self.files_to_qc:
             try:
-                #import ipdb; ipdb.set_trace()
                 self.ds = self.datareader(filename = filename).run()
                 self.ds = self.preprocessor(self.ds,self.fisher_metadata).run()
                 if not self.ds.attrs['Gear Class'] == 'unknown':
-                    self.ds = self.qc_class(self.ds,self.test_list,self.save_flags,self.convert_p_to_z,self.default_latitude,self.attr_file).run()
-                    # only save files with at least some good data
-                    if np.nanmin(self.ds['QC_FLAG']<4):
-                        if self.convert_p_to_z:
-                            self.ds = self.convert_pressure_to_depth()
-                        self._save_qc_data(filename)
-                    else:
-                        self._failed_files.append(filename)
+                    self._processed_classified_gear(filename)
                 else:
                     self._failed_files.append(filename)
             except Exception as exc:
