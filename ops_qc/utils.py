@@ -2,6 +2,7 @@ import numpy as np
 import yaml
 import datetime as dt
 import glob
+import os
 
 """
 Miscellanous functions used by multiple classes in the QC library.
@@ -83,9 +84,9 @@ def list_new_files(numdays = 4, filestring = None, filedir = None, start_time = 
         filestring = 'MOANA*_%y%m%d*.csv'
     if not filedir:
         filedir = '/data/obs/mangopare/incoming/**/'
-    for day in np.arange(numdays):    
+    for day in np.arange(numdays):
         cycle_dt = start_time - dt.timedelta(seconds=float(day*86400))
-        filestring = cycle_dt.strftime(filestring)
-        for file in glob.glob(f'{filedir}{filestring}', recursive=True):
+        fs = cycle_dt.strftime(filestring)
+        for file in glob.glob(os.path.join(filedir,fs), recursive=True):
             filelist.append(file)
     return(filelist)

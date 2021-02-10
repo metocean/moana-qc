@@ -27,6 +27,7 @@ class PreProcessMangopare(object):
     def __init__(self,
                  ds,
                  fisher_metadata,
+                 filename,
                  attr_file = 'attribute_list.yml',
                  attr_dict_name = 'var_attr_info',
                  surface_pressure=5,
@@ -34,6 +35,7 @@ class PreProcessMangopare(object):
 
         self.ds = ds
         self.fisher_metadata = fisher_metadata
+        self.filename = filename
         self.attr_file = attr_file
         self.attr_dict_name = attr_dict_name
         self.surface_pressure = surface_pressure
@@ -47,27 +49,25 @@ class PreProcessMangopare(object):
         Inputs include self.fisher_metadata from qc_readers.load_fisher_metadata and
         self.df from qc_readers.load_moana_standard/
         """
+        self.ds.attrs['Gear Class'] = 'unknown'
         try:
-            self.ds.attrs['Gear Class'] = 'unknown'
             ms = int(self.ds.attrs['Moana Serial Number'])
             sn_data = self.fisher_metadata.loc[self.fisher_metadata['Mangopare serial number'] == ms]
             t_min = pd.to_datetime(np.min(self.ds['DATETIME']).values)
             t_max = pd.to_datetime(np.max(self.ds['DATETIME']).values)
             time_check = 0
-            for idx, row in sn_data.iterrows():
+            for _, row in sn_data.iterrows():
                 if t_min >= row['Date supplied'] and t_max <= row['Date returned']:
                     self.ds.attrs['Gear Class'] = row['Gear Class']
                     time_check += 1
             if time_check < 1:
-                self.logger.error(
-                    'No valid time range found in fisher metadata.')
+                self.logger.info(
+                    f'No valid time range found in fisher metadata for {self.filename}.')
             if time_check > 1:
                 self.logger.error(
                     'Multiple entries found for this SN and time range in fisher metadata, skipping {}.'.format(self.filename))
         except Exception as exc:
-            self.ds.attrs['Gear Class'] = 'unknown'
             self.logger.error('Gear Class calculation failed, labeled as unknown: {}'.format(exc))
-            raise exc
 
     def _calc_positions(self, surface_pressure=5):
         """
@@ -155,9 +155,10 @@ class PreProcessMangopare(object):
     def run(self):
         try:
             self._classify_gear()
-            self._calc_positions()
-            self._find_bottom()
-            self._add_variable_attrs()
+            if self.ds.attrs['Gear Class'] != 'unknown':
+                self._calc_positions()
+                self._find_bottom()
+                self._add_variable_attrs()
             return(self.ds)
         except Exception as exc:
             self.logger.error('Could not preprocess data from {}: {}'.format(self.filename, exc))

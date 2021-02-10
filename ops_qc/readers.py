@@ -67,6 +67,8 @@ class MangopareStandardReader(object):
     def _format_df_data(self):
         """
         Miscellaneous Mangopare data formatting
+        If there is more than one observation at the same time,
+        only keeps first one.
         """
         try:
             depth_col = [col for col in self.df.columns if (
@@ -79,6 +81,8 @@ class MangopareStandardReader(object):
                     'Column name not recognized in {}'.format(self.filename))
             self.df['DATETIME'] = pd.to_datetime(
                 self.df['DATETIME'], format=self.dateformat, errors='coerce')
+            # if duplicate datetimes, only keep first
+            self.df = self.df.drop_duplicates(subset=['DATETIME'],keep='first')
             self.df['TEMPERATURE'] = [catch(lambda:float(t))
                                       for t in self.df['TEMPERATURE']]
             # Convert 0 lat/lon to nan, since 0 is bad value, but don't drop
