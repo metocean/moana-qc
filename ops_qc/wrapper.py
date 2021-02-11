@@ -22,7 +22,7 @@ class QcWrapper(object):
                 out_dir = None,
                 test_list = None,
                 fishing_metafile = '/data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv',
-                status_file_ext = '_%Y%m',
+                status_file_ext = '_%y%m',
                 status_file_dir = '',
                 datareader = {},
                 metareader = {},
@@ -189,10 +189,11 @@ class QcWrapper(object):
         self._failed_files = []
         self._some_bad_data_files = []
         # apply qc
+        #import ipdb; ipdb.set_trace()
         for filename in self.files_to_qc:
             try:
                 self.ds = self.datareader(filename = filename).run()
-                self.ds = self.preprocessor(self.ds,self.fisher_metadata).run()
+                self.ds = self.preprocessor(self.ds,self.fisher_metadata,filename).run()
                 if not self.ds.attrs['Gear Class'] == 'unknown':
                     self._processed_classified_gear(filename)
                 else:

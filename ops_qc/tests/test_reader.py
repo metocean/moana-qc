@@ -46,5 +46,5 @@ from ops_qc import wrapper
 good,bad=wrapper.QcWrapper(filelist,outfile_ext,out_dir,test_list).run()
 
 
-from utils import list_new_files
-filelist = list_new_files(num_days=300)
+import utils
+filelist = utils.list_new_files(numdays=300)
