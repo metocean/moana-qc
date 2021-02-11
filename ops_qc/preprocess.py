@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 import logging
+import datetime
 from utils import load_yaml
 #from ops_core.utils import import_pycallable, catch_exception
 
@@ -57,7 +58,8 @@ class PreProcessMangopare(object):
             t_max = pd.to_datetime(np.max(self.ds['DATETIME']).values)
             time_check = 0
             for _, row in sn_data.iterrows():
-                if t_min >= row['Date supplied'] and t_max <= row['Date returned']:
+                # round max date to the first minute of the next day in spreadsheet
+                if t_min >= row['Date supplied'] and t_max <= pd.to_datetime(row['Date returned'].date()+datetime.timedelta(days=1)):
                     self.ds.attrs['Gear Class'] = row['Gear Class']
                     time_check += 1
             if time_check < 1:
@@ -67,7 +69,7 @@ class PreProcessMangopare(object):
                 self.logger.error(
                     'Multiple entries found for this SN and time range in fisher metadata, skipping {}.'.format(self.filename))
         except Exception as exc:
-            self.logger.error('Gear Class calculation failed, labeled as unknown: {}'.format(exc))
+            self.logger.info('Gear Class calculation failed, labeled as unknown: {}'.format(exc))
 
     def _calc_positions(self, surface_pressure=5):
         """
