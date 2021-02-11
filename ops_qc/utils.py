@@ -78,12 +78,19 @@ def append_to_textfile(filename,list_to_append):
     f.close
 
 def list_new_files(numdays = 4, filestring = None, filedir = None, start_time = dt.datetime.now()):
+    """
+    Searches in filedir for all files that match filestring.
+    Formats filestring and filedir with datetime strftime
+    with numdays before start_date.  i.e. loops to search
+    for all files between start_date and numdays before start_date
+    and returns a list of all those files including path.
+    """
     filelist = []
     if not filestring:
         filestring = 'MOANA*_%y%m%d*.csv'
     if not filedir:
         filedir = '/data/obs/mangopare/incoming/**/'
-    for day in np.arange(numdays):    
+    for day in np.arange(numdays):
         cycle_dt = start_time - dt.timedelta(seconds=float(day*86400))
         filestring = cycle_dt.strftime(filestring)
         for file in glob.glob(f'{filedir}{filestring}', recursive=True):

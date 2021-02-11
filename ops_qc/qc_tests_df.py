@@ -57,13 +57,14 @@ def timing_gap_test(self, fail_flag=3):
 
 # 5. Impossible date test
 
-def impossible_date(self, min_date=datetime(2010, 1, 1), fail_flag=4):
+def impossible_date(self, min_date=datetime(2010, 1, 1), max_date = datetime.utcnow(), fail_flag=4):
     """
+    Makes sure observation data is within a specified valid range.
     Min_date here should really come from fishing metadata
     """
     self.qcdf['flag_date'] = np.ones_like(self.df['DATETIME'], dtype='uint8')
     curr_date = datetime.utcnow()
-    self.qcdf.loc[(self.df['DATETIME'] >= curr_date), 'flag_date'] = fail_flag
+    self.qcdf.loc[(self.df['DATETIME'] >= max_date), 'flag_date'] = fail_flag
     # min date could be a spreadsheet error
     self.qcdf.loc[(self.df['DATETIME'] <= min_date), 'flag_date'] = 3
 
@@ -71,6 +72,12 @@ def impossible_date(self, min_date=datetime(2010, 1, 1), fail_flag=4):
 # 6. Impossible location test
 
 def impossible_location(self, lonrange=None, latrange=None, fail_flag=4):
+    """
+    Check if lat,lon within  specified lat and lon ranges.
+    Could actually be any two ranges...one day might update
+    to be general and not just lat/lon.  Lonrange is [-180,360]
+    to account for either -180 to 180 or 0 to 360.
+    """
     if latrange is None:
         latrange = [-90, 90]
     if lonrange is None:
