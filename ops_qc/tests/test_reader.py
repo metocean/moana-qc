@@ -46,5 +46,15 @@ from ops_qc import wrapper
 good,bad=wrapper.QcWrapper(filelist,outfile_ext,out_dir,test_list).run()
 
 
+docker run -ti -v /source:/source -v /data:/data metocean/ops-qc:v0.2
+cd /source/ops-qc/ops_qc
 import utils
+import wrapper
 filelist = utils.list_new_files(numdays=300)
+out_dir = '/data/obs/mangopare/processed/'
+outfile_ext = '_qc'
+test_list = ['impossible_date', 'impossible_location', 'impossible_speed',
+'global_range', 'remove_ref_location', 'gear_type', 'spike']
+good,bad=wrapper.QcWrapper(filelist,outfile_ext,out_dir,test_list).run()
+
+/data/obs/mangopare/incoming/0005/MOANA_0005_51_201017223643.csv
