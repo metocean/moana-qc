@@ -147,10 +147,10 @@ class PreProcessMangopare(object):
             var_attr_info = load_yaml(self.attr_file,self.attr_dict_name)
             for var, [standard_name, units] in var_attr_info.items():
                 if var in self.ds.keys():
-                    self.ds[var].attrs.update({'standard_name': standard_name,
-                                                   'units': units})
-    #                if standard_name=='time':
-#                        self.ds[var].attrs.pop['units']
+                    if standard_name:
+                        self.ds[var].attrs.update({'standard_name': standard_name})
+                    if units:
+                        self.ds[var].attrs.update({'units': units})                        
         except Exception as exc:
             self.logger.error('Could not assign variable attributes for {}: {}'.format(self.filename, exc))
 

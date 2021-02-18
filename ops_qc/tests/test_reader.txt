@@ -31,7 +31,7 @@ import preprocess
 import apply_qc
 ds = readers.MangopareStandardReader(filename).run()
 metadata = readers.MangopareMetadataReader(metafile).run()
-ds1 = preprocess.PreProcessMangopare(ds,metadata).run()
+ds1 = preprocess.PreProcessMangopare(ds,metadata,filename).run()
 test_list = ['impossible_date', 'impossible_location', 'impossible_speed',
 'global_range', 'remove_ref_location', 'gear_type', 'spike']
 ds2 = apply_qc.QcApply(ds1,test_list,save_flags=True).run()
@@ -46,7 +46,7 @@ from ops_qc import wrapper
 good,bad=wrapper.QcWrapper(filelist,outfile_ext,out_dir,test_list).run()
 
 
-docker run -ti -v /source:/source -v /data:/data metocean/ops-qc:v0.2
+docker run -ti -v /source:/source -v /data:/data -v /data_exchange:/data_exchange --network=host metocean/ops-qc:v0.3
 cd /source/ops-qc/ops_qc
 import utils
 import wrapper
@@ -61,4 +61,24 @@ good,bad=wrapper.QcWrapper(filelist,outfile_ext,out_dir,test_list).run()
 
 ----------------------------
 Manual Import of Data into Obs-Api:
+from ops_obs.ingest import IngestRecordsObsApi
+import ops_obs.ingest
+#from nctrack import NetCDFAlongTrackProfileReader
+basefile = '/data/obs/mangopare/processed/MOANA_0008_120_210203092855_qc.nc'
+basefile = '/data/obs/mangopare/processed/MOANA_0028_15_201128004121_qc.nc'
+variables = {'time':'DATETIME','lat':'LATITUDE','lon':'LONGITUDE','lev':'DEPTH','temp':'TEMPERATURE'}
+attributes = {'site':'Moana Serial Number'}
+site_prefix = 'MOANA_SN'
+qc_flag_name = 'QC_FLAG'
+qc_flag_range = [1,2]
+obsapi = 'http://proxy.tetiro-moana-api-v1p5.service.consul/'
+#obsapi = 'http://172.18.238.7/api/'
+import nctrack
+data = nctrack.NetCDFAlongTrackProfileReader(basefile = basefile, variables = variables, attributes = attributes, site_prefix = site_prefix, qc_flag_name = qc_flag_name, qc_flag_range = qc_flag_range).run()
+ops_obs.ingest.IngestRecordsObsApi(data,obsapi=obsapi,provider='metocean',dataset='mangopare_test_1',mobile_stations=True).run()
 
+To compare to CORA:
+basefile = '/data/obs/cora/GL_TS_DB_1601540_20200224.nc'
+variables = {'time':'TIME','lat':'LATITUDE','lon':'LONGITUDE','lev':'DEPH','temp':'TEMP'}
+attributes = {'site':'platform_code'}
+site_prefix = 'wmo'
