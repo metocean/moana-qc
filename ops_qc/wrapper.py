@@ -2,6 +2,7 @@ import os
 import logging
 import pytz
 import numpy as np
+import pandas as pd
 import xarray as xr
 import seawater as sw
 import netCDF4
@@ -22,7 +23,7 @@ class QcWrapper(object):
                 out_dir = None,
                 test_list = None,
                 fishing_metafile = '/data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv',
-                status_file_ext = '_%y%m',
+                status_file_ext = '_%y%m%d',
                 status_file_dir = '',
                 datareader = {},
                 metareader = {},
@@ -59,7 +60,28 @@ class QcWrapper(object):
         self._default_metareader_class = 'readers.MangopareMetadataReader'
         self._default_preprocessor_class = 'preprocess.PreProcessMangopare'
         self._default_qc_class = 'apply_qc.QcApply'
+#        self.save_file_dict = {'status_file':self._status_data}
         self.logger = logging
+        self.status_dict_keys = ['Baseline',
+                                 'Celular signal strength',
+                                 'Date quality controlled',
+                                 'Deck unit battery percent',
+                                 'Deck unit battery voltage',
+                                 'Download Time',
+                                 'Gear Class',
+                                 'Max Lifetime Depth',
+                                 'Moana Battery',
+                                 'Moana Serial Number',
+                                 'Moana calibration date',
+                                 'QC=1',
+                                 'QC=2',
+                                 'QC=3',
+                                 'QC=4',
+                                 'Reset Codes',
+                                 'Saved',
+                                 'Failed',
+                                 'Failure Mode',
+                                 'Total Obs']
 
     def set_cycle(self, cycle_dt):
         self.cycle_dt = cycle_dt
@@ -105,10 +127,13 @@ class QcWrapper(object):
             self._initialize_outdir(self.out_dir)
             savefile = '{}{}{}{}'.format(self.out_dir,os.path.splitext(tail)[0],self.outfile_ext,'.nc')
             self.ds.to_netcdf(savefile,mode="w",format="NETCDF4")
-            self._saved_files.append(savefile)
+            #self._saved_files.append(savefile)
+            self.status_dict.update({'Saved':'yes'})
         except Exception as exc:
             self.logger.error('Could not save qc data from {}: {}'.format(filename, exc))
-            self._failed_files.append(f'{filename}: Save QC File Failed')
+            #self._failed_files.append(f'{filename}: Save QC File Failed')
+            self.status_dict.update({'Failed':'yes','Failure Mode':'Save QC File Failed'})
+
 
     def _save_status_data(self):
         """
@@ -120,14 +145,13 @@ class QcWrapper(object):
             if not self.status_file_dir:
                 self.status_file_dir = self.out_dir
             # create (mkdir) status_file_dir if it doesn't exist
-            goodfiles = '{}{}{}{}'.format(self.status_file_dir,'success_files',self.status_file_ext,'.txt')
-            badfiles = '{}{}{}{}'.format(self.status_file_dir,'failed_files',self.status_file_ext,'.txt')
-            goodfiles = cycle_dt.strftime(goodfiles)
-            badfiles = cycle_dt.strftime(badfiles)
-            self.status_file_dir, _ = os.path.split(goodfiles)
             self._initialize_outdir(self.status_file_dir)
-            append_to_textfile(goodfiles,self._saved_files)
-            append_to_textfile(badfiles,self._failed_files)
+            # create all the status files in self.save_file_dict
+ #           for name,data in save_file_dict:
+            basefile = f'status_file{self.status_file_ext}.csv'
+            filename = cycle_dt.strftime(os.path.join(self.status_file_dir,basefile))
+#                append_to_textfile(filename,filelist)
+            pd.DataFrame.from_dict(self._status_data).transpose().to_csv(filename)
         except Exception as exc:
             self.logger.error('Could not save status files: {}'.format(exc))
 
@@ -172,10 +196,19 @@ class QcWrapper(object):
             if self.convert_p_to_z:
                 self.ds = self.convert_pressure_to_depth()
             self._save_qc_data(filename)
-            if np.nanmax(self.ds['QC_FLAG']) in [3,4]:
-                self._some_bad_data_files.append(filename)
+#            if np.nanmax(self.ds['QC_FLAG']) in [3,4]:
+#                self._some_bad_data_files.append(filename)
+            self.status_dict['Total Obs'] = len(self.ds['DATETIME'])
+            # this is annoying but it didn't want to unpack single tuples...
+            values, counts = np.unique(self.ds['QC_FLAG'].values,return_counts=True)
+            if len(values)>1:
+                for values, counts in zip(values,counts):
+                    self.status_dict[f'QC={values}'] = counts
+            else:
+                self.status_dict[f'QC={values[0]}'] = counts[0]
         else:
-            self._failed_files.append(f'{filename}: No Good Data (all QC Flags = 4)')
+            self.status_dict.update({'Failed':'yes','Failure Mode':'No Good Data (all QC Flags = 4)'})
+            #self._failed_files.append(f'{filename}: No Good Data (all QC Flags = 4)')
 
     def run(self):
         # set all readers/preprocessors
@@ -185,22 +218,30 @@ class QcWrapper(object):
         self.fisher_metadata = self.metareader(metafile = self.metafile, gear_class = self.gear_class).run()
         self._set_filelist()
         # initialize status files
-        self._saved_files = []
-        self._failed_files = []
-        self._some_bad_data_files = []
+        self._status_data = {}
+
         # apply qc
-        #import ipdb; ipdb.set_trace()
         for filename in self.files_to_qc:
+            self.status_dict = {}
             try:
                 self.ds = self.datareader(filename = filename).run()
                 self.ds = self.preprocessor(self.ds,self.fisher_metadata,filename).run()
+                self.status_dict = self.ds.attrs
                 if not self.ds.attrs['Gear Class'] == 'unknown':
                     self._processed_classified_gear(filename)
                 else:
-                    self._failed_files.append(f'{filename}: Gear Class Unknown')
+                    self.status_dict.update({'Failed':'yes','Failure Mode':'Gear Class Unknown'})
+                    #self._failed_files.append(f'{filename}: Gear Class Unknown')
             except Exception as exc:
-                self._failed_files.append(f'{filename}: QC Wrapper Error')
+                self.status_dict.update({'Failed':'yes','Failure Mode':'QC Wrapper Error'})
+                #self._failed_files.append(f'{filename}: QC Wrapper Error')
                 self.logger.error('Could not qc data from {}. Traceback: {}'.format(filename, exc))
                 continue
+            try:
+                self.status_dict = {k: self.status_dict[k] for k in self.status_dict_keys if k in self.status_dict}
+                self._status_data[filename] = self.status_dict
+            except Exception:
+                self.logger.error(f'Could not append status info for {filename}')
+                continue
         self._save_status_data()
-        return(self._saved_files,self._failed_files)
+#        return(self._saved_files,self._failed_files)

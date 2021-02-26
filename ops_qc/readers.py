@@ -38,19 +38,21 @@ class MangopareStandardReader(object):
                  dateformat='%Y%m%dT%H%M%S',
                  startstring="DateTime (UTC)",
                  skip_rows=11,
+                 default_reset_value = 44.444,
                  logger=logging):
         self.filename = filename
         self.filetype = filetype
         self.dateformat = dateformat
         self.startstring = startstring
         self.skip_rows = skip_rows
+        self.default_reset_value = default_reset_value
         self.logger = logger
 
         self.global_attrs = {
             'Date quality controlled': datetime.utcnow().astimezone().strftime("%Y-%m-%dT%H:%M:%S %z"),
             'Quality control repository': 'https://github.com/metocean/ops-qc',
             'QC git revision': str(subprocess.check_output(['git', 'log', '-n', '1', '--pretty=tformat:%h-%ad', '--date=short']).strip()),
-            'Raw data filename': self.filename
+            'Raw data filename': self.filename,
         }
 
     def _read_mangopare_csv(self):
@@ -89,12 +91,6 @@ class MangopareStandardReader(object):
             self.df['LONGITUDE'] = self.df['LONGITUDE'].replace(0, np.nan)
             self.df['LATITUDE'] = self.df['LATITUDE'].replace(0, np.nan)
 
-            # Drop rows with bad temp or depth data (not sure why I did this, commented out
-            # and replaced with dropped if any variable is nan)
-            #self.df = self.df.dropna(how='any', subset=['DATETIME', 'TEMPERATURE', 'PRESSURE'])
-            # Drop rows with any nan
-            self.df = self.df.dropna(axis=0, how='any')
-
         except Exception as exc:
             self.logger.error('Formatting of data failed for {}: {}'.format(self.filename, exc))
             raise exc
@@ -103,12 +99,33 @@ class MangopareStandardReader(object):
         """
         Sets dims and coords, converts to xaxrray dataset.
         """
+        # Drop rows with bad temp or depth data (not sure why I did this, commented out
+        # and replaced with dropped if any variable is nan)
+        #self.df = self.df.dropna(how='any', subset=['DATETIME', 'TEMPERATURE', 'PRESSURE'])
+        # Drop rows with any nan
+        self.df = self.df.dropna(axis=0, how='any')
         try:
             self.df = self.df.set_index(['DATETIME'])
             self.ds = self.df.to_xarray().set_coords(['LATITUDE', 'LONGITUDE'])
         except Exception as exc:
             self.logger.error('Could not convert df to ds for {}: {}'.format(self.filename, exc))
             raise exc
+    
+    def _identify_sensor_resets(self):
+        """
+        Creates a list of the reset codes, if any, that correspond to any rows with
+        the default reset value (temp = 44.444).  This is later added as a global
+        attribute to the xarray dataset.  This is kind of a mess now.
+        """
+        try:
+            found_reset_codes = None
+            resetmask = np.isclose(self.df['TEMPERATURE'].to_numpy(),self.default_reset_value,.001)
+            if resetmask.any():
+                found_reset_codes =  self.df.loc[resetmask,['PRESSURE']].to_numpy()
+            if found_reset_codes:
+                self.global_attrs['Reset Codes'] = ', '.join(str(int(x[0])) for x in found_reset_codes)
+        except Exception as exc:
+            self.logger.error('Unable to calculate sensor resets for {}: {}'.format(self.filename, exc))
 
     def _calc_header_rows(self, default_skiprows=13):
         """
@@ -158,6 +175,7 @@ class MangopareStandardReader(object):
         # read file based on self.filetype
         self._read_mangopare_csv()
         self._format_df_data()
+        self._identify_sensor_resets()
         self._convert_df_to_ds()
         self._load_global_attributes()
         return(self.ds)
