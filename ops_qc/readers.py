@@ -118,12 +118,11 @@ class MangopareStandardReader(object):
         attribute to the xarray dataset.  This is kind of a mess now.
         """
         try:
-            found_reset_codes = None
+            self.global_attrs['Reset Codes Data'] = 'None'
             resetmask = np.isclose(self.df['TEMPERATURE'].to_numpy(),self.default_reset_value,.001)
             if resetmask.any():
-                found_reset_codes =  self.df.loc[resetmask,['PRESSURE']].to_numpy()
-            if found_reset_codes:
-                self.global_attrs['Reset Codes'] = ', '.join(str(int(x[0])) for x in found_reset_codes)
+                found_reset_codes = self.df.loc[resetmask,'PRESSURE'].to_numpy(dtype='int')
+                self.global_attrs['Reset Codes Data'] = ', '.join(str(x) for x in found_reset_codes)
         except Exception as exc:
             self.logger.error('Unable to calculate sensor resets for {}: {}'.format(self.filename, exc))
 

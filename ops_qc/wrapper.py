@@ -78,6 +78,7 @@ class QcWrapper(object):
                                  'QC=3',
                                  'QC=4',
                                  'Reset Codes',
+                                 'Reset Codes Data',
                                  'Saved',
                                  'Failed',
                                  'Failure Mode',

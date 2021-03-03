@@ -50,7 +50,7 @@ docker run -ti -v /source:/source -v /data:/data -v /data_exchange:/data_exchang
 cd /source/ops-qc/ops_qc
 import utils
 import wrapper
-filelist = utils.list_new_files(numdays=600)
+filelist = utils.list_new_files(numdays=2)
 out_dir = '/data/obs/mangopare/processed/'
 outfile_ext = '_qc'
 test_list = ['impossible_date', 'impossible_location', 'impossible_speed',
