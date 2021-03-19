@@ -125,7 +125,7 @@ def global_range(self, ranges=None, fail_flag=4):
     Applies as many ranges tests to as many variables as you'd like.
     """
     if ranges is None:
-        ranges = {'PRESSURE': [0, 10000], 'TEMPERATURE': [-2, 50]}
+        ranges = {'PRESSURE': [0, 2000], 'TEMPERATURE': [-2, 35]}
     self.qcdf['flag_global_range'] = np.ones_like(self.df['PRESSURE'], dtype='uint8')
     for var, limit in ranges.items():
         self.qcdf.loc[(self.df[var] < limit[0]) | (self.df[var] > limit[1]), 'flag_global_range'] = fail_flag
@@ -181,7 +181,7 @@ def stuck_value(self, qc_vars=None, rep_num=5, fail_flag=2):
     same.  Or write different thresholds for stationary vs mobile.
     """
     if qc_vars is None:
-        qc_vars = {'TEMPERATURE': .05, 'PRESSURE': .001}
+        qc_vars = {'TEMPERATURE': .05, 'PRESSURE': .01}
     self.qcdf['flag_stuck_value'] = np.ones_like(self.df['PRESSURE'], dtype='uint8')
 
     if not isinstance(rep_num, int):
