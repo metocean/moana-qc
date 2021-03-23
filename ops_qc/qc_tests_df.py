@@ -3,8 +3,12 @@ import numpy as np
 from datetime import datetime
 from global_land_mask import globe
 import logging
-from utils import calc_speed
+from utils import calc_speed, point_on_land
 import seawater as sw
+import shapefile
+from shapely.geometry import Point, shape
+from shapely.ops import nearest_points
+
 
 """
 QC Tests for ocean observations.  The test options are:
@@ -91,6 +95,16 @@ def impossible_location(self, lonrange=None, latrange=None, fail_flag=4):
 # 7. Position on land test
 
 
+def position_on_land_old(self, fail_flag=3):
+    """
+    Spatial resolution of globe.is_land is 1km.  Not sufficient,
+    but need to think about how to efficientlly import higher res mask.
+    Leaving this test out for now.
+    """
+    self.qcdf['flag_land'] = np.ones_like(self.df['LATITUDE'], dtype='uint8')
+    self.qcdf.loc[(globe.is_land(self.df['LATITUDE'],
+                                 self.df['LONGITUDE'])), 'flag_land'] = fail_flag
+
 def position_on_land(self, fail_flag=3):
     """
     Spatial resolution of globe.is_land is 1km.  Not sufficient,
@@ -98,6 +112,16 @@ def position_on_land(self, fail_flag=3):
     Leaving this test out for now.
     """
     self.qcdf['flag_land'] = np.ones_like(self.df['LATITUDE'], dtype='uint8')
+
+    all_shapes = shapefile.Reader("/source/ops-qc/ops_qc/land_mask/ne_10m_land.shp").shapes()
+    
+    
+
+
+
+
+    
+    
     self.qcdf.loc[(globe.is_land(self.df['LATITUDE'],
                                  self.df['LONGITUDE'])), 'flag_land'] = fail_flag
 

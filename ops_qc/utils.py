@@ -97,3 +97,14 @@ def list_new_files(numdays = 4, filestring = None, filedir = None, start_time = 
         for file in glob.glob(os.path.join(filedir,fs), recursive=True):
             filelist.append(file)
     return(filelist)
+
+def point_on_land(point,all_shapes):
+    """
+    Takes a lat/lon point and a shapefile and determines if the point lies within
+    the polygons defined by the shapefile.  If it does not, then it calculates the
+    minimum distance of the point from the polygon boundary.
+    """
+    is_on_land = sum([Point(point).within(shape(item)) for item in all_shapes])
+    if is_one_land:
+        close_points = [nearest_points(shape(item),Point(point)) for item in all_shapes]
+        min([haversine() for locs in close_points]) 
