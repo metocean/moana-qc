@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime
-from global_land_mask import globe
+#from global_land_mask import globe
 import logging
 from utils import calc_speed, point_on_land
 import seawater as sw
@@ -112,19 +112,12 @@ def position_on_land(self, fail_flag=3):
     Leaving this test out for now.
     """
     self.qcdf['flag_land'] = np.ones_like(self.df['LATITUDE'], dtype='uint8')
-
     all_shapes = shapefile.Reader("/source/ops-qc/ops_qc/land_mask/ne_10m_land.shp").shapes()
-    
-    
-
-
-
-
-    
-    
-    self.qcdf.loc[(globe.is_land(self.df['LATITUDE'],
-                                 self.df['LONGITUDE'])), 'flag_land'] = fail_flag
-
+    failed = []
+    for lon,lat in zip(self.df['LONGITUDE'],self.df['LATITUDE']):
+        lon = (lon+180)%360-180
+        failed.append(point_on_land(point=(lon,lat),all_shapes=all_shapes,tol=200))
+    self.qcdf.loc[failed, 'flag_land'] = fail_flag
 
 # 8. Impossible speed test
 
