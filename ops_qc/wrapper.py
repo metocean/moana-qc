@@ -227,7 +227,7 @@ class QcWrapper(object):
             try:
                 self.ds = self.datareader(filename = filename).run()
                 self.ds = self.preprocessor(self.ds,self.fisher_metadata,filename).run()
-                self.status_dict = self.ds.attrs
+                self.status_dict.update(self.ds.attrs)
                 if not self.ds.attrs['Gear Class'] == 'unknown':
                     self._processed_classified_gear(filename)
                 else:
