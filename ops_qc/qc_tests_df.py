@@ -67,7 +67,6 @@ def impossible_date(self, min_date=datetime(2010, 1, 1), max_date = datetime.utc
     Min_date here should really come from fishing metadata
     """
     self.qcdf['flag_date'] = np.ones_like(self.df['DATETIME'], dtype='uint8')
-    curr_date = datetime.utcnow()
     self.qcdf.loc[(self.df['DATETIME'] >= max_date), 'flag_date'] = fail_flag
     # min date could be a spreadsheet error
     self.qcdf.loc[(self.df['DATETIME'] <= min_date), 'flag_date'] = 3
@@ -233,7 +232,7 @@ def rate_of_change_test(self, thresh=5, fail_flag=3):
             roc = np.abs(np.divide(np.diff(y), np.diff(x)))
         exceed = np.insert(roc > thresh, 0, False)
         self.qcdf['flag_roc'].loc[exceed] = fail_flag
-    except Excpetion as exc:
+    except Exception as exc:
         self.logger.error('Could not apply rate of change test: {}'. format(exc))
 
 
