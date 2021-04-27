@@ -3,7 +3,7 @@ import numpy as np
 from datetime import datetime
 #from global_land_mask import globe
 import logging
-from utils import calc_speed, point_on_land
+from ops_qc.utils import calc_speed, point_on_land
 import seawater as sw
 import shapefile
 from shapely.geometry import Point, shape

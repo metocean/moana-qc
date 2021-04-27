@@ -3,7 +3,7 @@ import numpy as np
 import xarray as xr
 import logging
 import datetime
-from utils import load_yaml
+from ops_qc.utils import load_yaml
 #from ops_core.utils import import_pycallable, catch_exception
 
 # Note DATETIME not included below because xaxrray
