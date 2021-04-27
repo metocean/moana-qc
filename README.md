@@ -36,7 +36,7 @@ Currently, all QC'd files are saved in netCDF format (see wrapper.py).  If neede
 
 ## Building and running the docker image
 
-Current latest version of docker image: ops-qc:v0.2.
+Current latest version of docker image: ops-qc:v0.4.
 
 The metocean/ops-qc docker image requires some libraries in private git repositories.  They are accessed via a github token.  To run from a computer with the github token under variable GIT_TOKEN, build the docker image via
 

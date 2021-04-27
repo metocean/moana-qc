@@ -35,7 +35,7 @@ class QcWrapper(object):
                 attr_file = 'attribute_list.yml',
                 startstring = "DateTime (UTC)",
                 dateformat = '%Y%m%dT%H%M%S',
-                gear_class = {'Bottom trawl':'mobile','Potting':'stationary','Long lining':'mobile','Trawling':'mobile', 'Midwater trawl': 'mobile'},
+                gear_class = {'Bottom trawl':'mobile','Potting':'stationary','Long lining':'mobile','Trawling':'mobile', 'Midwater trawl': 'mobile','Purse seine netting':'mobile'},
                 logger = logging):
 
         self.filelist = filelist

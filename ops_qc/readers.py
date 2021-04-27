@@ -216,6 +216,7 @@ class MangopareMetadataReader(object):
         """
         try:
             self.fisher_metadata['Gear Class'] = 'unknown'
+            self.fisher_metadata['Fishing method'] = self.fisher_metadata['Fishing method'].str.strip()
             for gvessel, gclass in self.gear_class.items():
                 self.fisher_metadata.loc[self.fisher_metadata['Fishing method']
                                          == gvessel, 'Gear Class'] = gclass
