@@ -1,3 +1,4 @@
 git+https://${GIT_TOKEN}@github.com/metocean/ops-core
 git+https://${GIT_TOKEN}@github.com/metocean/ops-transfer
 git+https://${GIT_TOKEN}@github.com/metocean/ops-qc
+git+https://${GIT_TOKEN}@github.com/metocean/ops-obs

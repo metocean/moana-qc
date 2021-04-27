@@ -1,0 +1,84 @@
+from ops_qc.qc_readers import qc_readers
+from .. import qc_preprocess
+from importlib import reload
+
+docker run -ti -v /Users/jjakoboski/Desktop/MetOcean/Data/mangopare:/data/obs/mangopare -
+v /Users/jjakoboski/Desktop/MetOcean/ops-qc:/source/ops-qc metocean/ops-qc:v0.1
+
+def test_mangopare_reader():
+    # for mobile gear:
+    filename = '/Users/jjakoboski/Desktop/MetOcean/MOANA_0028_15_201128004121.csv'
+    filename = '/Users/jjakoboski/Desktop/MetOcean/MOANA_0026_30_201106230019.csv'
+
+    filename = '/data/obs/mangopare/incoming/0028/MOANA_0028_15_201128004121.csv'
+    filename = '/data/obs/mangopare/incoming/0026/MOANA_0026_30_201106230019.csv'
+
+
+    # for stationary gear:
+    metafile = '/Users/jjakoboski/Desktop/MetOcean/Trial_fisherman_database.csv'
+    metafile = '/data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv'
+
+    ds = qc_readers.MangopareStandardReader(filename).run()
+    metadata = qc_readers.MangopareMetadataReader(metafile).run()
+    ds1 = qc_preprocess.PreProcessMangopare(ds,metadata).run()
+    return(ds1,metadata)
+
+
+filename = '/data/obs/mangopare/incoming/0026/MOANA_0026_30_201106230019.csv'
+metafile = '/data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv'
+import readers
+import preprocess
+import apply_qc
+ds = readers.MangopareStandardReader(filename).run()
+metadata = readers.MangopareMetadataReader(metafile).run()
+ds1 = preprocess.PreProcessMangopare(ds,metadata,filename).run()
+test_list = ['impossible_date', 'impossible_location', 'impossible_speed',
+'global_range', 'remove_ref_location', 'gear_type', 'spike']
+ds2 = apply_qc.QcApply(ds1,test_list,save_flags=True).run()
+
+
+filelist = ['/data/obs/mangopare/incoming/0028/MOANA_0028_15_201128004121.csv','/data/obs/mangopare/incoming/0026/MOANA_0026_30_201106230019.csv']
+out_dir = '/data/obs/mangopare/processed/'
+outfile_ext = '_qc'
+test_list = ['impossible_date', 'impossible_location', 'impossible_speed',
+'global_range', 'remove_ref_location', 'gear_type', 'spike']
+from ops_qc import wrapper
+good,bad=wrapper.QcWrapper(filelist,outfile_ext,out_dir,test_list).run()
+
+
+docker run -ti -v /source:/source -v /data:/data -v /data_exchange:/data_exchange --network=host metocean/ops-qc:v0.3
+cd /source/ops-qc/ops_qc
+import utils
+import wrapper
+filelist = utils.list_new_files(numdays=2)
+out_dir = '/data/obs/mangopare/processed/'
+outfile_ext = '_qc'
+test_list = ['impossible_date', 'impossible_location', 'impossible_speed', 
+'global_range', 'remove_ref_location', 'gear_type', 'spike']
+wrapper.QcWrapper(filelist,outfile_ext,out_dir,test_list).run()
+
+/data/obs/mangopare/incoming/0005/MOANA_0005_51_201017223643.csv
+
+----------------------------
+Manual Import of Data into Obs-Api:
+from ops_obs.ingest import IngestRecordsObsApi
+import ops_obs.ingest
+#from nctrack import NetCDFAlongTrackProfileReader
+basefile = '/data/obs/mangopare/processed/MOANA_0008_120_210203092855_qc.nc'
+basefile = '/data/obs/mangopare/processed/MOANA_0028_15_201128004121_qc.nc'
+variables = {'time':'DATETIME','lat':'LATITUDE','lon':'LONGITUDE','lev':'DEPTH','temp':'TEMPERATURE'}
+attributes = {'site':'Moana Serial Number'}
+site_prefix = 'MOANA_SN'
+qc_flag_name = 'QC_FLAG'
+qc_flag_range = [1,2]
+obsapi = 'http://proxy.tetiro-moana-api-v1p5.service.consul/api/'
+#obsapi = 'http://172.18.238.7/api/'
+import nctrack
+data = nctrack.NetCDFAlongTrackProfileReader(basefile = basefile, variables = variables, attributes = attributes, site_prefix = site_prefix, qc_flag_name = qc_flag_name, qc_flag_range = qc_flag_range).run()
+ops_obs.ingest.IngestRecordsObsApi(data,obsapi=obsapi,provider='metocean',dataset='mangopare_test_1',mobile_stations=True).run()
+
+To compare to CORA:
+basefile = '/data/obs/cora/GL_TS_DB_1601540_20200224.nc'
+variables = {'time':'TIME','lat':'LATITUDE','lon':'LONGITUDE','lev':'DEPH','temp':'TEMP'}
+attributes = {'site':'platform_code'}
+site_prefix = 'wmo'

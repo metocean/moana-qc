@@ -5,5 +5,7 @@ xarray==0.11.3
 pytz
 PyYaml<5
 seawater
-global_land_mask
+pyshp
 mandrill
+glob2
+shapely

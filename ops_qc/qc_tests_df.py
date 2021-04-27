@@ -1,10 +1,14 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime
-from global_land_mask import globe
+#from global_land_mask import globe
 import logging
-from ops_qc.qc_utils import calc_speed
+from utils import calc_speed, point_on_land
 import seawater as sw
+import shapefile
+from shapely.geometry import Point, shape
+from shapely.ops import nearest_points
+
 
 """
 QC Tests for ocean observations.  The test options are:
@@ -57,13 +61,14 @@ def timing_gap_test(self, fail_flag=3):
 
 # 5. Impossible date test
 
-def impossible_date(self, min_date=datetime(2010, 1, 1), fail_flag=4):
+def impossible_date(self, min_date=datetime(2010, 1, 1), max_date = datetime.utcnow(), fail_flag=4):
     """
+    Makes sure observation data is within a specified valid range.
     Min_date here should really come from fishing metadata
     """
     self.qcdf['flag_date'] = np.ones_like(self.df['DATETIME'], dtype='uint8')
     curr_date = datetime.utcnow()
-    self.qcdf.loc[(self.df['DATETIME'] >= curr_date), 'flag_date'] = fail_flag
+    self.qcdf.loc[(self.df['DATETIME'] >= max_date), 'flag_date'] = fail_flag
     # min date could be a spreadsheet error
     self.qcdf.loc[(self.df['DATETIME'] <= min_date), 'flag_date'] = 3
 
@@ -71,6 +76,12 @@ def impossible_date(self, min_date=datetime(2010, 1, 1), fail_flag=4):
 # 6. Impossible location test
 
 def impossible_location(self, lonrange=None, latrange=None, fail_flag=4):
+    """
+    Check if lat,lon within  specified lat and lon ranges.
+    Could actually be any two ranges...one day might update
+    to be general and not just lat/lon.  Lonrange is [-180,360]
+    to account for either -180 to 180 or 0 to 360.
+    """
     if latrange is None:
         latrange = [-90, 90]
     if lonrange is None:
@@ -84,7 +95,7 @@ def impossible_location(self, lonrange=None, latrange=None, fail_flag=4):
 # 7. Position on land test
 
 
-def position_on_land(self, fail_flag=3):
+def position_on_land_old(self, fail_flag=3):
     """
     Spatial resolution of globe.is_land is 1km.  Not sufficient,
     but need to think about how to efficientlly import higher res mask.
@@ -94,6 +105,19 @@ def position_on_land(self, fail_flag=3):
     self.qcdf.loc[(globe.is_land(self.df['LATITUDE'],
                                  self.df['LONGITUDE'])), 'flag_land'] = fail_flag
 
+def position_on_land(self, fail_flag=3):
+    """
+    Spatial resolution of globe.is_land is 1km.  Not sufficient,
+    but need to think about how to efficientlly import higher res mask.
+    Leaving this test out for now.
+    """
+    self.qcdf['flag_land'] = np.ones_like(self.df['LATITUDE'], dtype='uint8')
+    all_shapes = shapefile.Reader("/source/ops-qc/ops_qc/land_mask/ne_10m_land.shp").shapes()
+    failed = []
+    for lon,lat in zip(self.df['LONGITUDE'],self.df['LATITUDE']):
+        lon = (lon+180)%360-180
+        failed.append(point_on_land(point=(lon,lat),all_shapes=all_shapes,tol=200))
+    self.qcdf.loc[failed, 'flag_land'] = fail_flag
 
 # 8. Impossible speed test
 
@@ -118,7 +142,7 @@ def global_range(self, ranges=None, fail_flag=4):
     Applies as many ranges tests to as many variables as you'd like.
     """
     if ranges is None:
-        ranges = {'PRESSURE': [0, 10000], 'TEMPERATURE': [-2, 50]}
+        ranges = {'PRESSURE': [0, 2000], 'TEMPERATURE': [-2, 35]}
     self.qcdf['flag_global_range'] = np.ones_like(self.df['PRESSURE'], dtype='uint8')
     for var, limit in ranges.items():
         self.qcdf.loc[(self.df[var] < limit[0]) | (self.df[var] > limit[1]), 'flag_global_range'] = fail_flag
@@ -160,7 +184,7 @@ def spike(self, qc_vars=None, fail_flag=4):
     self.qcdf['flag_spike'] = np.ones_like(self.df['PRESSURE'], dtype='uint8')
     for var, thresh in qc_vars.items():
         val = np.abs(np.convolve(self.df[var], [-0.5, 1, -0.5], mode='same'))
-        val[[0, -1]] = 0
+        val = np.hstack((0,val))[:-1]
         self.qcdf.loc[val > thresh, 'flag_spike'] = fail_flag
 
 
@@ -174,7 +198,7 @@ def stuck_value(self, qc_vars=None, rep_num=5, fail_flag=2):
     same.  Or write different thresholds for stationary vs mobile.
     """
     if qc_vars is None:
-        qc_vars = {'TEMPERATURE': .05, 'PRESSURE': .001}
+        qc_vars = {'TEMPERATURE': .05, 'PRESSURE': .01}
     self.qcdf['flag_stuck_value'] = np.ones_like(self.df['PRESSURE'], dtype='uint8')
 
     if not isinstance(rep_num, int):
