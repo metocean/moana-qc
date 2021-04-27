@@ -8,7 +8,7 @@ import seawater as sw
 import netCDF4
 import datetime as dt
 from ops_core.utils import import_pycallable
-from utils import catch, append_to_textfile
+from ops_qc.utils import catch, append_to_textfile
 
 cycle_dt = dt.datetime.now()
 
@@ -56,10 +56,10 @@ class QcWrapper(object):
         self.startstring = startstring
         self.dateformat = dateformat
         self.gear_class = gear_class
-        self._default_datareader_class = 'readers.MangopareStandardReader'
-        self._default_metareader_class = 'readers.MangopareMetadataReader'
-        self._default_preprocessor_class = 'preprocess.PreProcessMangopare'
-        self._default_qc_class = 'apply_qc.QcApply'
+        self._default_datareader_class = 'ops_qc.readers.MangopareStandardReader'
+        self._default_metareader_class = 'ops_qc.readers.MangopareMetadataReader'
+        self._default_preprocessor_class = 'ops_qc.preprocess.PreProcessMangopare'
+        self._default_qc_class = 'ops_qc.apply_qc.QcApply'
 #        self.save_file_dict = {'status_file':self._status_data}
         self.logger = logging
         self.status_dict_keys = ['Baseline',
