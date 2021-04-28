@@ -50,12 +50,13 @@ docker run -ti -v /source:/source -v /data:/data -v /data_exchange:/data_exchang
 cd /source/ops-qc/ops_qc
 import utils
 import wrapper
-filelist = utils.list_new_files(numdays=2)
+filelist = utils.list_new_files(numdays=3)
 out_dir = '/data/obs/mangopare/processed/'
 outfile_ext = '_qc'
+attr_file = '/data/obs/mangopare/attribute_list.yml'
 test_list = ['impossible_date', 'impossible_location', 'impossible_speed', 
 'global_range', 'remove_ref_location', 'gear_type', 'spike']
-wrapper.QcWrapper(filelist,outfile_ext,out_dir,test_list).run()
+wrapper.QcWrapper(filelist,outfile_ext,out_dir,test_list,attr_file = attr_file).run()
 
 /data/obs/mangopare/incoming/0005/MOANA_0005_51_201017223643.csv
 
