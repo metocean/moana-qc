@@ -6,6 +6,7 @@ import subprocess
 import io
 import re
 
+import ops_qc
 from ops_qc.utils import catch
 
 
@@ -51,7 +52,8 @@ class MangopareStandardReader(object):
         self.global_attrs = {
             'Date quality controlled': datetime.utcnow().astimezone().strftime("%Y-%m-%dT%H:%M:%S %z"),
             'Quality control repository': 'https://github.com/metocean/ops-qc',
-            'QC git revision': str(subprocess.check_output(['git', 'log', '-n', '1', '--pretty=tformat:%h-%ad', '--date=short']).strip()),
+            #'QC git revision': str(subprocess.check_output(['git', 'log', '-n', '1', '--pretty=tformat:%h-%ad', '--date=short']).strip()),
+            'QC package version': ops_qc.__version__,
             'Raw data filename': self.filename,
         }
 
