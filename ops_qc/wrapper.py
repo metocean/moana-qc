@@ -130,6 +130,7 @@ class QcWrapper(object):
             self.ds.to_netcdf(savefile,mode="w",format="NETCDF4")
             #self._saved_files.append(savefile)
             self.status_dict.update({'Saved':'yes'})
+            self._saved_files.append(savefile)
         except Exception as exc:
             self.logger.error('Could not save qc data from {}: {}'.format(filename, exc))
             #self._failed_files.append(f'{filename}: Save QC File Failed')
@@ -220,6 +221,7 @@ class QcWrapper(object):
         self._set_filelist()
         # initialize status files
         self._status_data = {}
+        self._saved_files = []
 
         # apply qc
         for filename in self.files_to_qc:
@@ -245,4 +247,11 @@ class QcWrapper(object):
                 self.logger.error(f'Could not append status info for {filename}')
                 continue
         self._save_status_data()
-#        return(self._saved_files,self._failed_files)
+        # note this is a bit tricky, before now,
+        # self._success_files referred to files
+        # that were successfully transferred, now
+        # it's files that were successfully qc'd
+        # and saved.  Using this name so it's compatiable
+        # with the next linked task (ops-api ingestion)
+        self._success_files = self._saved_files
+        return(self._success_files)
