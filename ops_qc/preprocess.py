@@ -46,7 +46,7 @@ class PreProcessMangopare(object):
     def _classify_gear(self):
         """
         Takes fisher metadata spreadsheet info and matches it with the file being
-        processed.
+        processed.  Also adds vessel email to dataset attributes.
         Inputs include self.fisher_metadata from qc_readers.load_fisher_metadata and
         self.df from qc_readers.load_moana_standard/
         """
@@ -61,6 +61,7 @@ class PreProcessMangopare(object):
                 # round max date to the first minute of the next day in spreadsheet
                 if t_min >= row['Date supplied'] and t_max <= pd.to_datetime(row['Date returned'].date()+datetime.timedelta(days=1)):
                     self.ds.attrs['Gear Class'] = row['Gear Class']
+                    self.ds.attrs['Vessel Email'] = row['Contact email']
                     time_check += 1
             if time_check < 1:
                 self.logger.info(
@@ -150,7 +151,7 @@ class PreProcessMangopare(object):
                     if standard_name:
                         self.ds[var].attrs.update({'standard_name': standard_name})
                     if units:
-                        self.ds[var].attrs.update({'units': units})                        
+                        self.ds[var].attrs.update({'units': units})
         except Exception as exc:
             self.logger.error('Could not assign variable attributes for {}: {}'.format(self.filename, exc))
 
