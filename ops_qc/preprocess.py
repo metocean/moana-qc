@@ -62,6 +62,8 @@ class PreProcessMangopare(object):
                 if t_min >= row['Date supplied'] and t_max <= pd.to_datetime(row['Date returned'].date()+datetime.timedelta(days=1)):
                     self.ds.attrs['Gear Class'] = row['Gear Class']
                     self.ds.attrs['Vessel Email'] = row['Contact email']
+                    self.ds.attrs['Vessel Name'] = row['Vessel name']
+                    self.ds.attrs['Vessel ID'] = row['Vessel id']
                     time_check += 1
             if time_check < 1:
                 self.logger.info(
