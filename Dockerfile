@@ -1,4 +1,4 @@
-FROM metocean/ops-libs:3.6-buster
+FROM metocean/ops-libs:3.6-master
 
 ADD . $SOURCE/ops-qc
 
