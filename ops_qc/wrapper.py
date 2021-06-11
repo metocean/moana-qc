@@ -19,7 +19,7 @@ class QcWrapper(object):
     '''
     def __init__(self,
                 filelist = None,
-                outfile_ext = '_qc',
+                outfile_ext = '_qc_%y%m%d',
                 out_dir = None,
                 test_list = None,
                 fishing_metafile = '/data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv',
@@ -87,6 +87,7 @@ class QcWrapper(object):
     def set_cycle(self, cycle_dt):
         self.cycle_dt = cycle_dt
         self.out_dir = cycle_dt.strftime(self.out_dir)
+        self.outfile_ext = cycle_dt.strftime(self.outfile_ext)
     #     self._proxy.set_cycle(cycle_dt)
 
     def _set_class(self,in_class,default_class):
