@@ -177,15 +177,17 @@ def spike(self, qc_vars=None, fail_flag=4):
     So far this has only removed good data...need really high
     thresholds. Because I think all of the spike section could
     be rethought and I'm not sure how it should be done yet.
+    qc_vars maps variable to number of standard deviations to be
+    the threshold
     """
     if qc_vars is None:
-        qc_vars = {'TEMPERATURE': 10, 'PRESSURE': 100}
+        qc_vars = {'TEMPERATURE': 3, 'PRESSURE': 2}
     self.qcdf['flag_spike'] = np.ones_like(self.df['PRESSURE'], dtype='uint8')
-    for var, thresh in qc_vars.items():
+    for var, sdfactor in qc_vars.items():
+        thresh = np.std(self.df[var])*sdfactor
         val = np.abs(np.convolve(self.df[var], [-0.5, 1, -0.5], mode='same'))
-        val = np.hstack((0,val))[:-1]
+        #val = np.hstack((0,val))[:-1]
         self.qcdf.loc[val > thresh, 'flag_spike'] = fail_flag
-
 
 # 12. Stuck value test
 
@@ -211,27 +213,32 @@ def stuck_value(self, qc_vars=None, rep_num=5, fail_flag=2):
             if idx >= rep_num:
                 is_suspect = np.all(np.abs(arr[idx - rep_num: idx] - elem) < thresh)
                 if is_suspect:
-                    self.qcdf['flag_stuck_value'].iloc[idx] = fail_flag
+                    self.qcdf['flag_stuck_value'].iloc[idx - rep_num: idx] = fail_flag
 
 
 # 13. Rate of change test
 
-def rate_of_change_test(self, thresh=5, fail_flag=3):
+def rate_of_change_test(self, thresh=2, fail_flag=3):
     """
-    Thresh is in units of y/x, or temp (degC) per dbar.
-    Old version doesn't really work for Mangopare, because the time
+    Thresh is in units of y/x, or temp (degC) per dbar.  Actual threshold
+    is thresh + 2SD (standard deviation)
+    first_thresh applies only to the first data point.  It's more strict
+    because the first point is often bad due to adjustment from air temp.
+    Old version doesn't really work for Mangopare, because the pressure
     delta isn't taken into consideration.  Another QARTOD-ish version:
     """
     y = self.df['TEMPERATURE']
     x = self.df['PRESSURE']
     try:
+        sd = np.std(y)
+        thresh = thresh + 2*sd
         self.qcdf['flag_roc'] = np.ones_like(x, dtype='uint8')
         # express rate of change as seconds, unit conversions will handle proper
         # comparison to threshold later
         with np.errstate(divide='ignore', invalid='ignore'):
             roc = np.abs(np.divide(np.diff(y), np.diff(x)))
         exceed = np.insert(roc > thresh, 0, False)
-        self.qcdf['flag_roc'].loc[exceed] = fail_flag
+        self.qcdf['flag_roc'].loc[exceed] = fail_flag 
     except Exception as exc:
         self.logger.error('Could not apply rate of change test: {}'. format(exc))
 

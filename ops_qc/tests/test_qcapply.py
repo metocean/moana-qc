@@ -1,39 +1,26 @@
-import qc_apply
-
-
-test_list = ['impossible_date', 'impossible_location', 'impossible_speed',
-'global_range', 'remove_ref_location', 'gear_type', 'spike', 'stuck_value', 'rate_of_change_test']
-
 import unittest
-import qc_tests_df as qc_tests
+import os
+import pandas as pd
+import xarray as xr
+
+from ops_qc.readers import MangopareStandardReader
+from ops_qc.readers import MangopareMetadataReader
 from ops_qc.apply_qc import QcApply
+from ops_qc.preprocess import PreProcessMangopare
 
-ds = MagicMock()
+#ds = MagicMock()
 
-qcapply = QcApply(ds = ds,
-                 test_list=None,
-                 save_flags=False,
-                 convert_p_to_z=True,
-                 default_latitude=-40,
-                 attr_file='attribute_list.yml',
-                 logger=logging)
+class TestApplyQC(unittest.TestCase):
 
+    def setUp(self):
+        self.attr_file = 'tests/testdata/attribute_list.yml'
+        self.test_list = ['impossible_date', 'impossible_location', 'impossible_speed','global_range', 'remove_ref_location', 'gear_type', 'spike', 'stuck_value', 'rate_of_change_test']
+        filename = 'tests/testdata/MOANA_0038_13_210624041106.csv'
+        metafile = 'tests/testdata/Trial_fisherman_database_tests.csv'
+        ds = MangopareStandardReader(filename).run()
+        metadata = MangopareMetadataReader(metafile).run()
+        self.ds = PreProcessMangopare(ds,metadata,filename).run()
 
-class QcTestsTestCase(unittest.TestCase):
-
-    def test_if_qctest_exists(self,test_list):
-       """
-       Check if all tests in test_list are
-       available in qc_tests_df.py
-       """
-       for test_name in test_list:
-           try:
-               qc_test = getattr(qc_tests,test_name)
-               qc_test(self)
-               success_tests.append(test_name)
-           except Exception as exc:
-               tests_not_applied.append(test_name)
-       self.assertEqual(sucess_tests, test_list)
-
-#    def test_global_qc_flag(self):
-#        qcapply._global_qc_flag
+    def test_applyqc(self):
+        ds = QcApply(self.ds,self.test_list,save_flags=True,attr_file=self.attr_file).run()
+        assert isinstance(ds,xr.core.dataset.Dataset)

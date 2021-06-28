@@ -1,23 +1,33 @@
 import unittest
 import numpy as np
-from ops_qc.utils import calc_speed, load_yaml
+import pandas as pd
+from datetime import datetime
+from ops_qc.utils import haversine, calc_speed, load_yaml
 
 
 class TestVariousUtils(unittest.TestCase):
 
     def setUp(self):
-        self.df = np.array([1.00,1.20,1.50,1.60,1.80,1.90,1.90,1.80,1.80,
-                          1.60,1.80,1.40,1.20,1.00,1.10,1.50,1.90,2.50,
-                          3.00,3.00,2.80,2.50,2.00])
-        self.tm02 = np.array([10, 15, 12, 12, 12, 12, 12, 15, 15, 15, 15,
-                             15, 15, 12, 12, 13, 15, 14, 15, 12, 13, 12, 11,])
+        self.df = pd.DataFrame()
+        self.df['LATITUDE'] = np.array([-36,-37,-38,-39,-42,-45])
+        self.df['LONGITUDE'] = np.array([168,169,175,180,183,185])
+        start_date = datetime.strptime('2020-10-05','%Y-%m-%d')
+        self.df['DATETIME'] = pd.date_range(start_date,periods=6).tolist()
 
 
-    def test_peak_detection(self):
-        peaks = detect_peaks(self.hs, edge='falling', mpd=3)
-        expected_peaks = [6,10,19]
-        assert expected_peaks == peaks.tolist()
+    def test_haversine(self):
+        dist_value = haversine(lat1=-36.5, lon1=160, lat2=-38, lon2=165)
+        expected_value = 472.8638055302368
+        assert expected_value == dist_value
 
-    def test_calculate_storm_hmp(self):
-        result = calculate_storm_Hmp(self.hs, self.tm02)
-        assert result.any()
+    def test_calc_speed(self):
+        df = calc_speed(self.df,units='kts')
+        speed_knots = df['speed'].dropna().to_numpy()
+        df = calc_speed(self.df,units='mph')
+        speed_mph = df['speed'].dropna().to_numpy()
+        expected_knots = [3.2097104442373157, 12.165883268608592, 10.10229090435196, 9.426965412500206, 8.335832484291391]
+        assert np.allclose(speed_knots,expected_knots)
+        expected_mph = [speed*1.15077867312 for speed in speed_knots]
+        assert np.allclose(speed_mph,expected_mph)
+
+
