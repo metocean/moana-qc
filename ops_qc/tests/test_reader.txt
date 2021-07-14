@@ -54,7 +54,7 @@ filelist = utils.list_new_files(numdays=3)
 out_dir = '/data/obs/mangopare/processed/'
 outfile_ext = '_qc'
 attr_file = '/data/obs/mangopare/attribute_list.yml'
-test_list = ['impossible_date', 'impossible_location', 'impossible_speed', 
+test_list = ['impossible_date', 'impossible_location', 'impossible_speed',
 'global_range', 'remove_ref_location', 'gear_type', 'spike']
 wrapper.QcWrapper(filelist,outfile_ext,out_dir,test_list,attr_file = attr_file).run()
 
@@ -83,3 +83,9 @@ basefile = '/data/obs/cora/GL_TS_DB_1601540_20200224.nc'
 variables = {'time':'TIME','lat':'LATITUDE','lon':'LONGITUDE','lev':'DEPH','temp':'TEMP'}
 attributes = {'site':'platform_code'}
 site_prefix = 'wmo'
+
+for x,y in zip(listx,listy):
+  if x!=y:
+    print('x does not equal y')
+    continue
+  print('x does equal y')

@@ -35,7 +35,7 @@ class QcWrapper(object):
                 attr_file = 'attribute_list.yml',
                 startstring = "DateTime (UTC)",
                 dateformat = '%Y%m%dT%H%M%S',
-                gear_class = {'Bottom trawl':'mobile','Potting':'stationary','Long lining':'mobile','Trawling':'mobile', 'Midwater trawl': 'mobile','Purse seine netting':'mobile'},
+                gear_class = {'Bottom trawl':'mobile','Potting':'stationary','Long lining':'mobile','Trawling':'mobile', 'Midwater trawl': 'mobile','Purse seine netting':'mobile', 'Bottom trawling':'mobile', 'Research':'mobile', 'Education':'mobile'},
                 logger = logging):
 
         self.filelist = filelist
@@ -133,9 +133,10 @@ class QcWrapper(object):
             self.status_dict.update({'Saved':'yes'})
             self._saved_files.append(savefile)
         except Exception as exc:
+            self.status_dict.update({'Failed':'yes','Failure Mode':'Save QC File Failed'})
             self.logger.error('Could not save qc data from {}: {}'.format(filename, exc))
             #self._failed_files.append(f'{filename}: Save QC File Failed')
-            self.status_dict.update({'Failed':'yes','Failure Mode':'Save QC File Failed'})
+
 
 
     def _save_status_data(self):
@@ -192,28 +193,40 @@ class QcWrapper(object):
         If gear class is not unknown, apply QC, convert pressure to depth
         if desired, check if any bad data, save file.
         """
-        self.ds = self.qc_class(self.ds,self.test_list,self.save_flags,self.convert_p_to_z,self.default_latitude,self.attr_file).run()
-        # only save files with at least some good data
-        #import ipdb; ipdb.set_trace()
-        if np.nanmin(self.ds['QC_FLAG'])<4:
-            if self.convert_p_to_z:
-                self.ds = self.convert_pressure_to_depth()
-            self._save_qc_data(filename)
-#            if np.nanmax(self.ds['QC_FLAG']) in [3,4]:
-#                self._some_bad_data_files.append(filename)
-            self.status_dict['Total Obs'] = len(self.ds['DATETIME'])
-            # this is annoying but it didn't want to unpack single tuples...
-            values, counts = np.unique(self.ds['QC_FLAG'].values,return_counts=True)
-            if len(values)>1:
-                for values, counts in zip(values,counts):
-                    self.status_dict[f'QC={values}'] = counts
+        try:
+            self.ds = self.qc_class(self.ds,self.test_list,self.save_flags,self.convert_p_to_z,self.default_latitude,self.attr_file).run()
+            # only save files with at least some good data
+            #import ipdb; ipdb.set_trace()
+            if np.nanmin(self.ds['QC_FLAG'])<4:
+                if self.convert_p_to_z:
+                    self.ds = self.convert_pressure_to_depth()
+                self._save_qc_data(filename)
+    #            if np.nanmax(self.ds['QC_FLAG']) in [3,4]:
+    #                self._some_bad_data_files.append(filename)
+                self.status_dict['Total Obs'] = len(self.ds['DATETIME'])
+                # this is annoying but it didn't want to unpack single tuples...
+                values, counts = np.unique(self.ds['QC_FLAG'].values,return_counts=True)
+                if len(values)>1:
+                    for values, counts in zip(values,counts):
+                        self.status_dict[f'QC={values}'] = counts
+                else:
+                    self.status_dict[f'QC={values[0]}'] = counts[0]
             else:
-                self.status_dict[f'QC={values[0]}'] = counts[0]
-        else:
-            self.status_dict.update({'Failed':'yes','Failure Mode':'No Good Data (all QC Flags = 4)'})
-            #self._failed_files.append(f'{filename}: No Good Data (all QC Flags = 4)')
+                self.status_dict.update({'Failed':'yes','Failure Mode':'No Good Data (all QC Flags = 4)'})
+                #self._failed_files.append(f'{filename}: No Good Data (all QC Flags = 4)')
+        except Exception as exc:
+            self.status_dict.update({'Failed':'yes','Failure Mode':'QC Failed'})
+            self.logger.error(f'Could not apply qc for {filename} due to {exc}')
+
+    def _update_status(self,filename):
+        try:
+            status_dict2 = {k: self.status_dict[k] for k in self.status_dict_keys if k in self.status_dict}
+            self._status_data[filename] = status_dict2
+        except Exception:
+            self.logger.error(f'Could not append status info for {filename}')
 
     def run(self):
+        #import ipdb; ipdb.set_trace()
         # set all readers/preprocessors
         self.set_cycle(cycle_dt)
         self._set_all_classes()
@@ -229,24 +242,30 @@ class QcWrapper(object):
             self.status_dict = {}
             try:
                 self.ds = self.datareader(filename = filename).run()
-                self.ds = self.preprocessor(self.ds,self.fisher_metadata,filename,self.attr_file).run()
+                self.ds,status_dict_preprocess = self.preprocessor(self.ds,self.fisher_metadata,filename,self.attr_file).run()
                 self.status_dict.update(self.ds.attrs)
-                if not self.ds.attrs['Gear Class'] == 'unknown':
-                    self._processed_classified_gear(filename)
-                else:
+                self.status_dict.update(status_dict_preprocess)
+                if not hasattr(self.ds,'Expected Deck Unit Serial Number'):
+                    if 'Failed' not in self.status_dict:
+                        self.status_dict.update({'Failed':'yes','Failure Mode':'Expected deck unit unknown.'})
+                    self._update_status(filename)
+                    continue
+                if int(self.ds.attrs['Deck unit serial number'])!=int(self.ds.attrs['Expected Deck Unit Serial Number']):
+                    self.status_dict.update({'Failed':'yes','Failure Mode':'Deck units do not match!'})
+                    self._update_status(filename)
+                    continue
+                if self.ds.attrs['Gear Class'] == 'unknown':
                     self.status_dict.update({'Failed':'yes','Failure Mode':'Gear Class Unknown'})
                     #self._failed_files.append(f'{filename}: Gear Class Unknown')
+                    self._update_status(filename)
+                    continue
+                self._processed_classified_gear(filename)
+                self._update_status(filename)
             except Exception as exc:
-                self.status_dict.update({'Failed':'yes','Failure Mode':'QC Wrapper Error'})
+                self.status_dict.update({'Failed':'yes'})
+                self._update_status(filename)
                 #self._failed_files.append(f'{filename}: QC Wrapper Error')
                 self.logger.error('Could not qc data from {}. Traceback: {}'.format(filename, exc))
-                continue
-            try:
-                self.status_dict = {k: self.status_dict[k] for k in self.status_dict_keys if k in self.status_dict}
-                self._status_data[filename] = self.status_dict
-            except Exception:
-                self.logger.error(f'Could not append status info for {filename}')
-                continue
         self._save_status_data()
         # note this is a bit tricky, before now,
         # self._success_files referred to files

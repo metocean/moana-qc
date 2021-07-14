@@ -42,6 +42,7 @@ class PreProcessMangopare(object):
         self.surface_pressure = surface_pressure
         self.logger = logging
         self.filename = self.ds.attrs['Raw data filename']
+        self.status_dict = {}
 
     def _classify_gear(self):
         """
@@ -64,11 +65,14 @@ class PreProcessMangopare(object):
                     self.ds.attrs['Vessel Email'] = row['Contact email']
                     self.ds.attrs['Vessel Name'] = row['Vessel name']
                     self.ds.attrs['Vessel ID'] = row['Vessel id']
+                    self.ds.attrs['Expected Deck Unit Serial Number'] = row['Deck unit serial number']
                     time_check += 1
             if time_check < 1:
+                self.status_dict.update({'Failed':'yes','Failure Mode':'No valid time range in fisher metadata.'})
                 self.logger.info(
                     f'No valid time range found in fisher metadata for {self.filename}.')
             if time_check > 1:
+                self.status_dict.update({'Failed':'yes','Failure Mode':'Multiple entries in fisher metadata for this SN and time range.'})
                 self.logger.error(
                     'Multiple entries found for this SN and time range in fisher metadata, skipping {}.'.format(self.filename))
         except Exception as exc:
@@ -164,6 +168,6 @@ class PreProcessMangopare(object):
                 self._calc_positions()
                 self._find_bottom()
                 self._add_variable_attrs()
-            return(self.ds)
+            return(self.ds,self.status_dict)
         except Exception as exc:
             self.logger.error('Could not preprocess data from {}: {}'.format(self.filename, exc))

@@ -112,7 +112,7 @@ class MangopareStandardReader(object):
         except Exception as exc:
             self.logger.error('Could not convert df to ds for {}: {}'.format(self.filename, exc))
             raise exc
-    
+
     def _identify_sensor_resets(self):
         """
         Creates a list of the reset codes, if any, that correspond to any rows with
@@ -194,7 +194,7 @@ class MangopareMetadataReader(object):
                  logger=logging):
         if gear_class is None:
             gear_class = {'Bottom trawl': 'mobile', 'Potting': 'stationary',
-                          'Long lining': 'mobile', 'Trawling': 'mobile', 
+                          'Long lining': 'mobile', 'Trawling': 'mobile',
                           'Midwater trawl': 'mobile'}
         self.metafile = metafile
         self.dateformat = dateformat
