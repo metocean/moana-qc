@@ -32,7 +32,7 @@ class QcWrapper(object):
                 save_flags = False,
                 convert_p_to_z = True,
                 default_latitude = -40,
-                attr_file = 'attribute_list.yml',
+                attr_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),'attribute_list.yml'),
                 startstring = "DateTime (UTC)",
                 dateformat = '%Y%m%dT%H%M%S',
                 gear_class = {'Bottom trawl':'mobile','Potting':'stationary','Long lining':'mobile','Trawling':'mobile', 'Midwater trawl': 'mobile','Purse seine netting':'mobile', 'Bottom trawling':'mobile', 'Research':'mobile', 'Education':'mobile'},
@@ -183,6 +183,7 @@ class QcWrapper(object):
             depth = [sw.eos80.dpth(catch(lambda: float(z)),d_lat) for z in self.ds['PRESSURE']]
             self.ds['DEPTH'] = xr.Variable(dims = 'DATETIME', data = depth, attrs={'units':'[m]','standard_name':'depth'})
             self.ds = self.ds.drop('PRESSURE')
+            self.ds = self.ds.rename({'PRESSURE_QC':'DEPTH_QC'})
             return(self.ds)
         except Exception as exc:
             self.logger.error('Could not convert pressure to depth, leaving as pressure: {}'.format(exc))

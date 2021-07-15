@@ -64,7 +64,7 @@ class PreProcessMangopare(object):
                     self.ds.attrs['Gear Class'] = row['Gear Class']
                     self.ds.attrs['Vessel Email'] = row['Contact email']
                     self.ds.attrs['Vessel Name'] = row['Vessel name']
-                    self.ds.attrs['Vessel ID'] = row['Vessel id']
+                    self.ds.attrs['Vessel ID'] = int(row['Vessel id'])
                     self.ds.attrs['Expected Deck Unit Serial Number'] = row['Deck unit serial number']
                     time_check += 1
             if time_check < 1:

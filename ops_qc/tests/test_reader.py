@@ -6,10 +6,12 @@ import xarray as xr
 from ops_qc.readers import MangopareStandardReader
 from ops_qc.readers import MangopareMetadataReader
 
+test_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),'testdata')
+
 class TestMangopareStandardReader(unittest.TestCase):
 
     def setUp(self):
-        self.filename = 'tests/testdata/MOANA_0038_13_210624041106.csv'
+        self.filename = os.path.join(test_dir, 'MOANA_0038_13_210624041106.csv')
 
     def test_MangopareStandardReader(self):
         ds = MangopareStandardReader(self.filename).run()

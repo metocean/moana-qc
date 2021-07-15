@@ -18,10 +18,14 @@ class TestQcTests(unittest.TestCase):
 
     def test_spike(self):
         spike(self, fail_flag=3)
-        expected_peaks = [3,1,1,1,1,1,3,1,1,1,1,1,1,1,1,1,3,1,1,1,1,1,1]
-        assert expected_peaks == self.qcdf['flag_spike'].tolist()
+        expected_peaks_pres = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3,1,1,1,1,1,1]
+        expected_peaks_temp = [3,1,1,1,1,1,3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        self.assertEqual(expected_peaks_temp,self.qcdf['flag_spike_temp'].tolist())
+        self.assertEqual(expected_peaks_pres,self.qcdf['flag_spike_pres'].tolist())
 
     def test_stuck_value(self):
         stuck_value(self, qc_vars=None, rep_num=5, fail_flag=2)
-        expected_vals = [1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,1,1,1,1,1,1,1,1]
-        assert expected_vals == self.qcdf['flag_stuck_value'].tolist()
+        expected_vals_temp = [1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,1,1,1,1,1,1,1,1]
+        expected_vals_pres = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        self.assertEqual(expected_vals_temp,self.qcdf['flag_stuck_value_temp'].tolist())
+        self.assertEqual(expected_vals_pres,self.qcdf['flag_stuck_value_pres'].tolist())
