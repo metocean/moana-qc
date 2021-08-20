@@ -195,7 +195,9 @@ class MangopareMetadataReader(object):
         if gear_class is None:
             gear_class = {'Bottom trawl': 'mobile', 'Potting': 'stationary',
                           'Long lining': 'mobile', 'Trawling': 'mobile',
-                          'Midwater trawl': 'mobile'}
+                          'Midwater trawl': 'mobile', 'Purse seine netting':'mobile', 
+                          'Bottom trawling':'mobile', 'Research':'mobile', 
+                          'Education':'mobile', 'Bottom long line': 'mobile'}
         self.metafile = metafile
         self.dateformat = dateformat
         self.gear_class = gear_class
