@@ -33,10 +33,13 @@ Right now, tests in qc_tests_df need a pandas dataframe with LONGITUDE, LATITUDE
 ---
 Currently, all QC'd files are saved in netCDF format (see wrapper.py).  If needed, additional formats can be added.  The user can choose whether to save quality flags for all individual tests or only save the global quality flag.  
 ---
+## Status file
+Each time the wrapper is run on a list of files, a status file (csv) is created with information on any errors that may have occurred during processing.  This file is saved in the same directory as the output quality controlled nc files.  Note that all of this is in beta, so will be improved in the future.
+---
 
 ## Building and running the docker image
 
-Current latest version of docker image: ops-qc:v0.4.
+Current latest version of docker image: ops-qc:v0.1.5-dev.
 
 The metocean/ops-qc docker image requires some libraries in private git repositories.  They are accessed via a github token.  To run from a computer with the github token under variable GIT_TOKEN, build the docker image via
 
@@ -55,7 +58,7 @@ Currently github actions is disabled on this repository, until I'm done writing 
 
 ---
 
-And yeah...I'm behind on tests...and the tests in the tests directory aren't actually unittests yet.
+Gradually working on unittests/learning how to  write them.  Making slow progress...
 
 ---
 

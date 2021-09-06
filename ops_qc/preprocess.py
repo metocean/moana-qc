@@ -16,6 +16,7 @@ from ops_qc.utils import load_yaml
 #     'PHASE': ['fishing_deployment_phase', 'na']
 # }
 
+
 class PreProcessMangopare(object):
     """
     Mangopare position processing and fishing gear classification.
@@ -29,8 +30,8 @@ class PreProcessMangopare(object):
                  ds,
                  fisher_metadata,
                  filename,
-                 attr_file = 'attribute_list.yml',
-                 attr_dict_name = 'var_attr_info',
+                 attr_file='attribute_list.yml',
+                 attr_dict_name='var_attr_info',
                  surface_pressure=5,
                  logger=logging):
 
@@ -64,6 +65,8 @@ class PreProcessMangopare(object):
                     self.ds.attrs['Gear Class'] = row['Gear Class']
                     self.ds.attrs['Vessel Email'] = row['Contact email']
                     self.ds.attrs['Vessel Name'] = row['Vessel name']
+                    self.ds.attrs['Email Status'] = row['Email Status']
+                    self.ds.attrs['Email Frequency'] = row['Email Frequency']
                     try:
                         self.ds.attrs['Vessel ID'] = int(row['Vessel id'])
                     except:
@@ -71,15 +74,18 @@ class PreProcessMangopare(object):
                     self.ds.attrs['Expected Deck Unit Serial Number'] = row['Deck unit serial number']
                     time_check += 1
             if time_check < 1:
-                self.status_dict.update({'Failed':'yes','Failure Mode':'No valid time range in fisher metadata.'})
+                self.status_dict.update(
+                    {'Failed': 'yes', 'Failure Mode': 'No valid time range in fisher metadata.'})
                 self.logger.info(
                     f'No valid time range found in fisher metadata for {self.filename}.')
             if time_check > 1:
-                self.status_dict.update({'Failed':'yes','Failure Mode':'Multiple entries in fisher metadata for this SN and time range.'})
+                self.status_dict.update(
+                    {'Failed': 'yes', 'Failure Mode': 'Multiple entries in fisher metadata for this SN and time range.'})
                 self.logger.error(
                     'Multiple entries found for this SN and time range in fisher metadata, skipping {}.'.format(self.filename))
         except Exception as exc:
-            self.logger.info('Gear Class calculation failed, labeled as unknown: {}'.format(exc))
+            self.logger.info(
+                'Gear Class calculation failed, labeled as unknown: {}'.format(exc))
 
     def _calc_positions(self, surface_pressure=5):
         """
@@ -117,7 +123,8 @@ class PreProcessMangopare(object):
             lons = [l % 360 for l in lons]
             self.ds['LONGITUDE'] = xr.DataArray(lons, dims=['DATETIME'])
         except Exception as exc:
-            self.logger.error(f"Position could not be calculated for {self.filename}: {exc}")
+            self.logger.error(
+                f"Position could not be calculated for {self.filename}: {exc}")
             raise exc
 
     def _find_bottom(self, cutoff='4 minutes'):
@@ -144,7 +151,8 @@ class PreProcessMangopare(object):
                 'Bottom not found for {}, np.nan applied instead: {}'.format(self.filename, exc))
 
         self.ds['PHASE'] = xr.Variable(dims='DATETIME', data=cat)
-        self.ds['PHASE'].attrs.update({'flag_values':['P','D'],'flag_meanings':'P indicates the measurement was classified as a profile, D indicates deployed (i.e. bottom, fishing)'})
+        self.ds['PHASE'].attrs.update({'flag_values': [
+                                      'P', 'D'], 'flag_meanings': 'P indicates the measurement was classified as a profile, D indicates deployed (i.e. bottom, fishing)'})
 
     def _add_variable_attrs(self):
         """
@@ -154,15 +162,17 @@ class PreProcessMangopare(object):
         Example dictionary: var_attr_info = {'LATITUDE':['latitude','units']}
         """
         try:
-            var_attr_info = load_yaml(self.attr_file,self.attr_dict_name)
+            var_attr_info = load_yaml(self.attr_file, self.attr_dict_name)
             for var, [standard_name, units] in var_attr_info.items():
                 if var in self.ds.keys():
                     if standard_name:
-                        self.ds[var].attrs.update({'standard_name': standard_name})
+                        self.ds[var].attrs.update(
+                            {'standard_name': standard_name})
                     if units:
                         self.ds[var].attrs.update({'units': units})
         except Exception as exc:
-            self.logger.error('Could not assign variable attributes for {}: {}'.format(self.filename, exc))
+            self.logger.error(
+                'Could not assign variable attributes for {}: {}'.format(self.filename, exc))
 
     def run(self):
         try:
@@ -171,6 +181,7 @@ class PreProcessMangopare(object):
                 self._calc_positions()
                 self._find_bottom()
                 self._add_variable_attrs()
-            return(self.ds,self.status_dict)
+            return(self.ds, self.status_dict)
         except Exception as exc:
-            self.logger.error('Could not preprocess data from {}: {}'.format(self.filename, exc))
+            self.logger.error(
+                'Could not preprocess data from {}: {}'.format(self.filename, exc))
