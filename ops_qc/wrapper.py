@@ -305,4 +305,4 @@ class QcWrapper(object):
         # and saved.  Using this name so it's compatiable
         # with the next linked task (ops-api ingestion)
         self._success_files = self._saved_files
-        return({'_success_files': self._success_files})
+        return(self._success_files)
