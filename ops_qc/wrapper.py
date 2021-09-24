@@ -251,7 +251,6 @@ class QcWrapper(object):
             self.logger.error(f'Could not append status info for {filename}')
 
     def run(self):
-        #import ipdb; ipdb.set_trace()
         # set all readers/preprocessors
         self.set_cycle(cycle_dt)
         self._set_all_classes()

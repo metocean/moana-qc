@@ -1,2 +1,2 @@
-include requirements/*.txt
-include ops_core/tests/*.py
+recursive-include ops_qc/tests *.py
+include ops_qc/attribute_list.yml

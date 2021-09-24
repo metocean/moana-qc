@@ -86,6 +86,8 @@ class PreProcessMangopare(object):
         except Exception as exc:
             self.logger.info(
                 'Gear Class calculation failed, labeled as unknown: {}'.format(exc))
+            self.status_dict.update(
+                {'Failed': 'yes', 'Failure Mode': 'Could not assign attribute(s) from csv header.'})
 
     def _calc_positions(self, surface_pressure=5):
         """
