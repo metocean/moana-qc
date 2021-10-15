@@ -3,6 +3,11 @@
 This library contains data quality-control code initially intended for the quality-control of oceanographic observation data.  Only automatic quality control is included at this time, for use with near real-time data.
 
 The first versions are for the purpose of quality-controlling data from the Moana Project's Mangopare (Te Tiro Moana) temperature and pressure sensor, but will be made more generic when needed.
+
+---
+# Current Notes
+The current version of this Dockerfile is forcing reinstall of ops-transfer and ops-core over the versions tagged in ops-libs because of the linked task changes.  At some point soon, will update ops-libs and that forced reinstall should not be necessary.  Used for docker image ops-qc:v0.1.6.
+
 ---
 ## Code structure
 wrapper.py is the highest level class, which coordinates all the others.  Within it, the user specifies the data reader, the metadata reader, a preprocessor, and the qc_class.
