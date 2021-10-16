@@ -179,6 +179,7 @@ class MangopareStandardReader(object):
                     attr_val = str(row[1].strip()) + res
                 # remove 'illegal' characters
                 attr_name = re.sub("[\(\[].*?[\)\]]", "", attr_name).strip()
+                #attr_name = re.sub(" ", "_", attr_name).capitalize()
                 self.ds.attrs[attr_name] = attr_val
             for name, value in self.global_attrs.items():
                 self.ds.attrs[name] = value
