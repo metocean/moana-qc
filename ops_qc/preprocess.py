@@ -32,12 +32,9 @@ class PreProcessMangopare(object):
                  filename,
                  attr_file='attribute_list.yml',
                  attr_dict_name='var_attr_info',
-                 metadata_columns={'Gear Class': "Gear Class",
-                                   'Vessel Email': "Contact email",
-                                   'Vessel Name': "Vessel name",
-                                   'Email Status': "Email Status",
-                                   'Email Frequency': "Email Frequency",
-                                   'Expected Deck Unit Serial Number': "Deck unit serial number"},
+                 metadata_columns={'Gear Class': 'Gear Class', 'Vessel Email': 'Contact email',
+                                   'Vessel Name': 'Vessel name', 'Email Status': 'Email Status',
+                                   'Email Frequency': 'Email Frequency', 'Expected Deck Unit Serial Number': 'Deck unit serial number'},
                  surface_pressure=5,
                  logger=logging):
 

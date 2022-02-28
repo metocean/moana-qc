@@ -279,7 +279,7 @@ class QcWrapper(object):
             try:
                 self.ds = self.datareader(filename=filename).run()
                 self.ds, status_dict_preprocess = self.preprocessor(
-                    self.ds, self.fisher_metadata, filename, self.attr_file, self.metadata_columns).run()
+                    ds=self.ds, fisher_metadata=self.fisher_metadata, filename=filename, attr_file=self.attr_file, metadata_columns=self.metadata_columns).run()
                 self.status_dict.update(self.ds.attrs)
                 self.status_dict.update(status_dict_preprocess)
                 if not hasattr(self.ds, 'Expected Deck Unit Serial Number'):
