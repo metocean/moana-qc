@@ -69,18 +69,17 @@ class PreProcessMangopare(object):
             for _, row in sn_data.iterrows():
                 # round max date to the first minute of the next day in spreadsheet
                 if t_min >= row['Date supplied'] and t_max <= pd.to_datetime(row['Date returned'].date()+datetime.timedelta(days=1)):
-                    for attrname, rowname in self.metadata_columns:
+                    for attrname, rowname in self.metadata_columns.items():
                         self.ds.attrs[attrname] = row[rowname]
-                    #self.ds.attrs['Gear Class'] = row['Gear Class']
-                    #self.ds.attrs['Vessel Email'] = row['Contact email']
-                    #self.ds.attrs['Vessel Name'] = row['Vessel name']
-                    #self.ds.attrs['Email Status'] = row['Email Status']
-                    #self.ds.attrs['Email Frequency'] = row['Email Frequency']
-                    #self.ds.attrs['Expected Deck Unit Serial Number'] = row['Deck unit serial number']
                     try:
                         self.ds.attrs['Vessel ID'] = int(row['Vessel id'])
                     except:
                         self.ds.attrs['Vessel ID'] = 'NA'
+                    try:
+                        self.ds.attrs['Expected Deck Unit Serial Number'] = int(
+                            self.ds.attrs['Expected Deck Unit Serial Number'])
+                    except:
+                        pass
                     time_check += 1
             if time_check < 1:
                 self.status_dict.update(

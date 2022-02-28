@@ -31,7 +31,9 @@ import preprocess
 import apply_qc
 ds = readers.MangopareStandardReader(filename).run()
 metadata = readers.MangopareMetadataReader(metafile).run()
-ds1 = preprocess.PreProcessMangopare(ds,metadata,filename).run()
+# or if using github
+metadata = readers.MangopareMetadataReader(metafile,username,token).run()
+ds1,_ = preprocess.PreProcessMangopare(ds,metadata,filename).run()
 test_list = ['impossible_date', 'impossible_location', 'impossible_speed',
 'global_range', 'remove_ref_location', 'gear_type', 'spike']
 ds2 = apply_qc.QcApply(ds1,test_list,save_flags=True).run()

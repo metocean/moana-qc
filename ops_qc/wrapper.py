@@ -25,6 +25,8 @@ class QcWrapper(object):
                  out_dir=None,
                  test_list=None,
                  fishing_metafile='/data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv',
+                 metafile_username=[],
+                 metafile_token=[],
                  status_file_ext='_%y%m%d',
                  status_file_dir='',
                  datareader={},
@@ -54,6 +56,8 @@ class QcWrapper(object):
         self.out_dir = out_dir
         self.test_list = test_list
         self.metafile = fishing_metafile
+        self.metafile_username = metafile_username
+        self.metafile_token = metafile_token
         self.status_file_ext = status_file_ext
         self.status_file_dir = status_file_dir
         self.datareader_class = datareader
@@ -263,7 +267,7 @@ class QcWrapper(object):
         self._set_all_classes()
         # load metadata common for all files
         self.fisher_metadata = self.metareader(
-            metafile=self.metafile, gear_class=self.gear_class).run()
+            metafile=self.metafile, gear_class=self.gear_class, username=self.metafile_username, token=self.metafile_token).run()
         self._set_filelist()
         # initialize status files
         self._status_data = {}

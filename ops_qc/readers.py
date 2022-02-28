@@ -5,6 +5,7 @@ import logging
 import subprocess
 import io
 import re
+import requests
 
 import ops_qc
 from ops_qc.utils import catch
@@ -206,6 +207,8 @@ class MangopareMetadataReader(object):
 
     def __init__(self,
                  metafile='/data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv',
+                 username=[],
+                 token=[],
                  dateformat='%Y%m%dT%H%M%S',
                  gear_class=None,
                  logger=logging):
@@ -214,18 +217,29 @@ class MangopareMetadataReader(object):
                           'Long lining': 'mobile', 'Trawling': 'mobile',
                           'Midwater trawl': 'mobile', 'Purse seine netting': 'mobile',
                           'Bottom trawling': 'mobile', 'Research': 'mobile',
-                          'Education': 'mobile', 'Bottom long line': 'mobile'}
+                          'Education': 'mobile', 'Bottom long line': 'mobile',
+                          'Waka': 'mobile'}
         self.metafile = metafile
+        self.username = username
+        self.token = token
         self.dateformat = dateformat
         self.gear_class = gear_class
         self.logger = logger
 
     def _load_fisher_metadata(self):
         """
-        Read fisher metadata csv file provided by Zebra-Tech
+        Read fisher metadata csv file provided by Zebra-Tech either from
+        github or csv file path
         """
         try:
-            self.fisher_metadata = pd.read_csv(io.open(self.metafile, errors='replace'), error_bad_lines=False, parse_dates=[
+            if 'raw.githubusercontent.com' in self.metafile:
+                github_session = requests.Session()
+                github_session.auth = (self.username, self.token)
+                download = github_session.get(self.metafile).content
+                self.fisher_metadata = pd.read_csv(io.StringIO(download.decode('utf-8')), error_bad_lines=False, parse_dates=[
+                                                               "Date supplied", "Date returned"], date_parser=lambda x: pd.to_datetime(x, format="%d/%m/%Y"))
+            else:
+                self.fisher_metadata = pd.read_csv(io.open(self.metafile, errors='replace'), error_bad_lines=False, parse_dates=[
                                                "Date supplied", "Date returned"], date_parser=lambda x: pd.to_datetime(x, format="%d/%m/%Y"))
         except Exception as exc:
             self.logger.error(
