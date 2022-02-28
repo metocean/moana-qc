@@ -9,3 +9,4 @@ pyshp
 mandrill
 glob2
 shapely
+requests

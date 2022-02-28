@@ -44,7 +44,7 @@ Each time the wrapper is run on a list of files, a status file (csv) is created 
 
 ## Building and running the docker image
 
-Current latest version of docker image: ops-qc:v0.1.5-dev.
+Current latest version of docker image: ops-qc:v0.1.7-dev.
 
 The metocean/ops-qc docker image requires some libraries in private git repositories.  They are accessed via a github token.  To run from a computer with the github token under variable GIT_TOKEN, build the docker image via
 

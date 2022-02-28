@@ -40,6 +40,12 @@ class QcWrapper(object):
                  dateformat='%Y%m%dT%H%M%S',
                  gear_class={'Bottom trawl': 'mobile', 'Potting': 'stationary', 'Long lining': 'mobile', 'Trawling': 'mobile', 'Midwater trawl': 'mobile',
                              'Purse seine netting': 'mobile', 'Bottom trawling': 'mobile', 'Research': 'mobile', 'Education': 'mobile', 'Bottom long line': 'mobile'},
+                 metadata_columns={'Gear Class': "Gear Class",
+                                   'Vessel Email': "Contact email",
+                                   'Vessel Name': "Vessel name",
+                                   'Email Status': "Email Status",
+                                   'Email Frequency': "Email Frequency",
+                                   'Expected Deck Unit Serial Number': "Deck unit serial number"},
                  logger=logging,
                  **kwargs):
 
@@ -61,6 +67,7 @@ class QcWrapper(object):
         self.startstring = startstring
         self.dateformat = dateformat
         self.gear_class = gear_class
+        self.metadata_columns = metadata_columns
         self._default_datareader_class = 'ops_qc.readers.MangopareStandardReader'
         self._default_metareader_class = 'ops_qc.readers.MangopareMetadataReader'
         self._default_preprocessor_class = 'ops_qc.preprocess.PreProcessMangopare'
@@ -268,7 +275,7 @@ class QcWrapper(object):
             try:
                 self.ds = self.datareader(filename=filename).run()
                 self.ds, status_dict_preprocess = self.preprocessor(
-                    self.ds, self.fisher_metadata, filename, self.attr_file).run()
+                    self.ds, self.fisher_metadata, filename, self.attr_file, self.metadata_columns).run()
                 self.status_dict.update(self.ds.attrs)
                 self.status_dict.update(status_dict_preprocess)
                 if not hasattr(self.ds, 'Expected Deck Unit Serial Number'):

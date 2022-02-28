@@ -32,6 +32,12 @@ class PreProcessMangopare(object):
                  filename,
                  attr_file='attribute_list.yml',
                  attr_dict_name='var_attr_info',
+                 metadata_columns={'Gear Class': "Gear Class",
+                                   'Vessel Email': "Contact email",
+                                   'Vessel Name': "Vessel name",
+                                   'Email Status': "Email Status",
+                                   'Email Frequency': "Email Frequency",
+                                   'Expected Deck Unit Serial Number': "Deck unit serial number"},
                  surface_pressure=5,
                  logger=logging):
 
@@ -40,6 +46,7 @@ class PreProcessMangopare(object):
         self.filename = filename
         self.attr_file = attr_file
         self.attr_dict_name = attr_dict_name
+        self.metadata_columns = metadata_columns
         self.surface_pressure = surface_pressure
         self.logger = logging
         self.filename = self.ds.attrs['Raw data filename']
@@ -62,16 +69,18 @@ class PreProcessMangopare(object):
             for _, row in sn_data.iterrows():
                 # round max date to the first minute of the next day in spreadsheet
                 if t_min >= row['Date supplied'] and t_max <= pd.to_datetime(row['Date returned'].date()+datetime.timedelta(days=1)):
-                    self.ds.attrs['Gear Class'] = row['Gear Class']
-                    self.ds.attrs['Vessel Email'] = row['Contact email']
-                    self.ds.attrs['Vessel Name'] = row['Vessel name']
-                    self.ds.attrs['Email Status'] = row['Email Status']
-                    self.ds.attrs['Email Frequency'] = row['Email Frequency']
+                    for attrname, rowname in self.metadata_columns:
+                        self.ds.attrs[attrname] = row[rowname]
+                    #self.ds.attrs['Gear Class'] = row['Gear Class']
+                    #self.ds.attrs['Vessel Email'] = row['Contact email']
+                    #self.ds.attrs['Vessel Name'] = row['Vessel name']
+                    #self.ds.attrs['Email Status'] = row['Email Status']
+                    #self.ds.attrs['Email Frequency'] = row['Email Frequency']
+                    #self.ds.attrs['Expected Deck Unit Serial Number'] = row['Deck unit serial number']
                     try:
                         self.ds.attrs['Vessel ID'] = int(row['Vessel id'])
                     except:
                         self.ds.attrs['Vessel ID'] = 'NA'
-                    self.ds.attrs['Expected Deck Unit Serial Number'] = row['Deck unit serial number']
                     time_check += 1
             if time_check < 1:
                 self.status_dict.update(
