@@ -36,6 +36,7 @@ class PreProcessMangopare(object):
                                    'Vessel Name': 'Vessel name', 'Email Status': 'Email Status',
                                    'Email Frequency': 'Email Frequency', 'Expected Deck Unit Serial Number': 'Deck unit serial number'},
                  surface_pressure=5,
+                 add_sitename=True,
                  logger=logging):
 
         self.ds = ds
@@ -45,6 +46,7 @@ class PreProcessMangopare(object):
         self.attr_dict_name = attr_dict_name
         self.metadata_columns = metadata_columns
         self.surface_pressure = surface_pressure
+        self.add_sitename = add_sitename
         self.logger = logging
         self.filename = self.ds.attrs['Raw data filename']
         self.status_dict = {}
@@ -181,6 +183,21 @@ class PreProcessMangopare(object):
             self.logger.error(
                 'Could not assign variable attributes for {}: {}'.format(self.filename, exc))
 
+    def _set_sitename(self):
+        """
+        Add site_name to dataset attributes for use in ingestion into the
+        obs-api. If vessel_id is provided use that.  Otherwise, create
+        a sitename of form NA{mangopare sn}DU{deck unit sn} which should
+        be unique for each vessel (but not guaranteed).
+        """
+        if not self.add_sitename:
+            sitename='NA'
+        elif self.ds.attrs['Vessel Name']=='NA':
+            sitename=f'NA{self.ds.attrs['Moana serial number']}DU{self.ds.attrs['Deck unit serial number']}'
+        else:
+            sitename=self.ds.attrs['Vessel ID']
+        self.ds.attrs['Site Name']=sitename
+
     def run(self):
         try:
             self._classify_gear()
@@ -188,6 +205,7 @@ class PreProcessMangopare(object):
                 self._calc_positions()
                 self._find_bottom()
                 self._add_variable_attrs()
+                self._set_sitename()
             return(self.ds, self.status_dict)
         except Exception as exc:
             self.logger.error(
