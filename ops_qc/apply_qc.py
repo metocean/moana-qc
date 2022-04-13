@@ -78,8 +78,8 @@ class QcApply(object):
                         dims='DATETIME', data=self.qcdf[flag_name])
                     self._assign_qc_attributes(
                         self.flag_attrs, flag_name, self.qc_flag_info)
-                self.ds.attrs['QC Tests Applied'] = str(self._success_tests)
-                self.ds.attrs['QC Tests Failed'] = str(
+                self.ds.attrs['qc_tests_applied'] = str(self._success_tests)
+                self.ds.attrs['qc_tests_failed'] = str(
                     self._tests_not_applied)
         except Exception as exc:
             self.logger.error(

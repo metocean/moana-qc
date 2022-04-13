@@ -32,9 +32,9 @@ class PreProcessMangopare(object):
                  filename,
                  attr_file='attribute_list.yml',
                  attr_dict_name='var_attr_info',
-                 metadata_columns={'Gear Class': 'Gear Class', 'Vessel Email': 'Contact email',
-                                   'Vessel Name': 'Vessel name', 'Email Status': 'Email Status',
-                                   'Email Frequency': 'Email Frequency', 'Expected Deck Unit Serial Number': 'Deck unit serial number'},
+                 metadata_columns={'gear_class': 'Gear Class', 'vessel_email': 'Contact email',
+                                   'vessel_name': 'Vessel name', 'email_status': 'Email Status',
+                                   'email_frequency': 'Email Frequency', 'expected_deck_unit_serial_number': 'Deck unit serial number'},
                  surface_pressure=5,
                  add_sitename=True,
                  logger=logging):
@@ -48,7 +48,7 @@ class PreProcessMangopare(object):
         self.surface_pressure = surface_pressure
         self.add_sitename = add_sitename
         self.logger = logging
-        self.filename = self.ds.attrs['Raw data filename']
+        self.filename = self.ds.attrs['raw_data_filename']
         self.status_dict = {}
 
     def _classify_gear(self):
@@ -58,9 +58,9 @@ class PreProcessMangopare(object):
         Inputs include self.fisher_metadata from qc_readers.load_fisher_metadata and
         self.df from qc_readers.load_moana_standard/
         """
-        self.ds.attrs['Gear Class'] = 'unknown'
+        self.ds.attrs['gear_class'] = 'unknown'
         try:
-            ms = int(self.ds.attrs['Moana Serial Number'])
+            ms = int(self.ds.attrs['moana_serial_number'])
             sn_data = self.fisher_metadata.loc[self.fisher_metadata['Mangopare serial number'] == ms]
             t_min = pd.to_datetime(np.min(self.ds['DATETIME']).values)
             t_max = pd.to_datetime(np.max(self.ds['DATETIME']).values)
@@ -71,30 +71,30 @@ class PreProcessMangopare(object):
                     for attrname, rowname in self.metadata_columns.items():
                         self.ds.attrs[attrname] = row[rowname]
                     try:
-                        self.ds.attrs['Vessel ID'] = int(row['Vessel id'])
+                        self.ds.attrs['vessel_id'] = int(row['Vessel id'])
                     except:
-                        self.ds.attrs['Vessel ID'] = 'NA'
+                        self.ds.attrs['vessel_id'] = 'NA'
                     try:
-                        self.ds.attrs['Expected Deck Unit Serial Number'] = int(
-                            self.ds.attrs['Expected Deck Unit Serial Number'])
+                        self.ds.attrs['expected_deck_unit_serial_number'] = int(
+                            self.ds.attrs['expected_deck_unit_serial_number'])
                     except:
                         pass
                     time_check += 1
             if time_check < 1:
                 self.status_dict.update(
-                    {'Failed': 'yes', 'Failure Mode': 'No valid time range in fisher metadata.'})
+                    {'failed': 'yes', 'failure_mode': 'No valid time range in fisher metadata.'})
                 self.logger.info(
                     f'No valid time range found in fisher metadata for {self.filename}.')
             if time_check > 1:
                 self.status_dict.update(
-                    {'Failed': 'yes', 'Failure Mode': 'Multiple entries in fisher metadata for this SN and time range.'})
+                    {'failed': 'yes', 'failure_mode': 'Multiple entries in fisher metadata for this SN and time range.'})
                 self.logger.error(
                     'Multiple entries found for this SN and time range in fisher metadata, skipping {}.'.format(self.filename))
         except Exception as exc:
             self.logger.info(
                 'Gear Class calculation failed, labeled as unknown: {}'.format(exc))
             self.status_dict.update(
-                {'Failed': 'yes', 'Failure Mode': 'Could not assign attribute(s) from csv header.'})
+                {'failed': 'yes', 'failure_mode': 'Could not assign attribute(s) from csv header.'})
 
     def _calc_positions(self, surface_pressure=5):
         """
@@ -104,7 +104,7 @@ class PreProcessMangopare(object):
         the commented out regions...eventually will use those.
         """
         try:
-            if self.ds.attrs['Gear Class'] == 'stationary':
+            if self.ds.attrs['gear_class'] == 'stationary':
                 # Remove rows with nan lat/lon, which we kept in reader
                 self.ds = self.ds.dropna(how='any', dim='DATETIME')
                 # use self.surface_pressure if it exists
@@ -126,7 +126,7 @@ class PreProcessMangopare(object):
                 lons = np.ones_like(self.ds['LONGITUDE'])*lon
                 lats = np.ones_like(self.ds['LATITUDE'])*lat
                 self.ds['LATITUDE'] = xr.DataArray(lats, dims=['DATETIME'])
-            if self.ds.attrs['Gear Class'] == 'mobile':
+            if self.ds.attrs['gear_class'] == 'mobile':
                 lons = self.ds['LONGITUDE']
             # convert to 0-360 for both stationary and mobile gear:
             lons = [l % 360 for l in lons]
@@ -192,16 +192,16 @@ class PreProcessMangopare(object):
         """
         if not self.add_sitename:
             sitename='NA'
-        elif self.ds.attrs['Vessel Name']=='NA':
-            sitename=f'NA{self.ds.attrs['Moana serial number']}DU{self.ds.attrs['Deck unit serial number']}'
+        elif self.ds.attrs['vessel_id']=='NA':
+            sitename=f'msn{self.ds.attrs["moana_serial_number"]}du{self.ds.attrs["deck_unit_serial_number"]}'
         else:
-            sitename=self.ds.attrs['Vessel ID']
-        self.ds.attrs['Site Name']=sitename
+            sitename=f'vid{self.ds.attrs["vessel_id"]}'
+        self.ds.attrs['site_name']=sitename
 
     def run(self):
         try:
             self._classify_gear()
-            if self.ds.attrs['Gear Class'] != 'unknown':
+            if self.ds.attrs['gear_class'] != 'unknown':
                 self._calc_positions()
                 self._find_bottom()
                 self._add_variable_attrs()

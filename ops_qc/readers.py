@@ -51,11 +51,11 @@ class MangopareStandardReader(object):
         self.logger = logger
 
         self.global_attrs = {
-            'Date quality controlled': datetime.utcnow().astimezone().strftime("%Y-%m-%dT%H:%M:%S %z"),
-            'Quality control repository': 'https://github.com/metocean/ops-qc',
+            'date_quality_controlled': datetime.utcnow().astimezone().strftime("%Y-%m-%dT%H:%M:%S %z"),
+            'quality_control_repository': 'https://github.com/metocean/ops-qc',
             #'QC git revision': str(subprocess.check_output(['git', 'log', '-n', '1', '--pretty=tformat:%h-%ad', '--date=short']).strip()),
-            'QC package version': ops_qc.__version__,
-            'Raw data filename': self.filename,
+            'qc_package_version': ops_qc.__version__,
+            'raw_data_filename': self.filename,
         }
 
     def _read_mangopare_csv(self):
@@ -127,13 +127,13 @@ class MangopareStandardReader(object):
         attribute to the xarray dataset.  This is kind of a mess now.
         """
         try:
-            self.global_attrs['Reset Codes Data'] = 'None'
+            self.global_attrs['reset_codes_data'] = 'None'
             resetmask = np.isclose(
                 self.df['TEMPERATURE'].to_numpy(), self.default_reset_value, .001)
             if resetmask.any():
                 found_reset_codes = self.df.loc[resetmask, 'PRESSURE'].to_numpy(
                     dtype='int')
-                self.global_attrs['Reset Codes Data'] = ', '.join(
+                self.global_attrs['reset_codes_data'] = ', '.join(
                     str(x) for x in found_reset_codes)
         except Exception as exc:
             self.logger.error(
@@ -180,7 +180,7 @@ class MangopareStandardReader(object):
                     attr_val = str(row[1].strip()) + res
                 # remove 'illegal' characters
                 attr_name = re.sub("[\(\[].*?[\)\]]", "", attr_name).strip()
-                #attr_name = re.sub(" ", "_", attr_name).capitalize()
+                attr_name = re.sub(" ", "_", attr_name).lower()
                 self.ds.attrs[attr_name] = attr_val
             for name, value in self.global_attrs.items():
                 self.ds.attrs[name] = value

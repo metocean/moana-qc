@@ -42,12 +42,12 @@ class QcWrapper(object):
                  dateformat='%Y%m%dT%H%M%S',
                  gear_class={'Bottom trawl': 'mobile', 'Potting': 'stationary', 'Long lining': 'mobile', 'Trawling': 'mobile', 'Midwater trawl': 'mobile',
                              'Purse seine netting': 'mobile', 'Bottom trawling': 'mobile', 'Research': 'mobile', 'Education': 'mobile', 'Bottom long line': 'mobile'},
-                 metadata_columns={'Gear Class': "Gear Class",
-                                   'Vessel Email': "Contact email",
-                                   'Vessel Name': "Vessel name",
-                                   'Email Status': "Email Status",
-                                   'Email Frequency': "Email Frequency",
-                                   'Expected Deck Unit Serial Number': "Deck unit serial number"},
+                 metadata_columns={'gear_class': "Gear Class",
+                                   'vessel_email': "Contact email",
+                                   'vessel_name': "Vessel name",
+                                   'email_status': "Email Status",
+                                   'email_frequency': "Email Frequency",
+                                   'expected_deck_unit_serial_number': "Deck unit serial number"},
                  logger=logging,
                  **kwargs):
 
@@ -78,27 +78,27 @@ class QcWrapper(object):
         self._default_qc_class = 'ops_qc.apply_qc.QcApply'
 #        self.save_file_dict = {'status_file':self._status_data}
         self.logger = logging
-        self.status_dict_keys = ['Baseline',
-                                 'Celular signal strength',
-                                 'Date quality controlled',
-                                 'Deck unit battery percent',
-                                 'Deck unit battery voltage',
-                                 'Download Time',
-                                 'Gear Class',
-                                 'Max Lifetime Depth',
-                                 'Moana Battery',
-                                 'Moana Serial Number',
-                                 'Moana calibration date',
-                                 'QC=1',
-                                 'QC=2',
-                                 'QC=3',
-                                 'QC=4',
-                                 'Reset Codes',
-                                 'Reset Codes Data',
-                                 'Saved',
-                                 'Failed',
-                                 'Failure Mode',
-                                 'Total Obs']
+        self.status_dict_keys = ['baseline',
+                                 'cellular_signal_strength',
+                                 'date_quality_controlled',
+                                 'deck_unit_battery_percent',
+                                 'deck_unit_battery_voltage',
+                                 'download_time',
+                                 'gear_class',
+                                 'max_lifetime_depth',
+                                 'moana_battery',
+                                 'moana_serial_number',
+                                 'moana_calibration_date',
+                                 'qc=1',
+                                 'qc=2',
+                                 'qc=3',
+                                 'qc=4',
+                                 'reset_codes',
+                                 'reset_codes_data',
+                                 'saved',
+                                 'failed',
+                                 'failure_mode',
+                                 'total_obs']
 
     def set_cycle(self, cycle_dt):
         self.cycle_dt = cycle_dt
@@ -153,11 +153,11 @@ class QcWrapper(object):
                                          0], self.outfile_ext, '.nc')
             self.ds.to_netcdf(savefile, mode="w", format="NETCDF4")
             #self._saved_files.append(savefile)
-            self.status_dict.update({'Saved': 'yes'})
+            self.status_dict.update({'saved': 'yes'})
             self._saved_files.append(savefile)
         except Exception as exc:
             self.status_dict.update(
-                {'Failed': 'yes', 'Failure Mode': 'Save QC File Failed'})
+                {'failed': 'yes', 'failure_mode': 'Save QC File Failed'})
             self.logger.error(
                 'Could not save qc data from {}: {}'.format(filename, exc))
             #self._failed_files.append(f'{filename}: Save QC File Failed')
@@ -234,22 +234,22 @@ class QcWrapper(object):
                 self._save_qc_data(filename)
     #            if np.nanmax(self.ds['QC_FLAG']) in [3,4]:
     #                self._some_bad_data_files.append(filename)
-                self.status_dict['Total Obs'] = len(self.ds['DATETIME'])
+                self.status_dict['total_obs'] = len(self.ds['DATETIME'])
                 # this is annoying but it didn't want to unpack single tuples...
                 values, counts = np.unique(
                     self.ds['QC_FLAG'].values, return_counts=True)
                 if len(values) > 1:
                     for values, counts in zip(values, counts):
-                        self.status_dict[f'QC={values}'] = counts
+                        self.status_dict[f'qc={values}'] = counts
                 else:
-                    self.status_dict[f'QC={values[0]}'] = counts[0]
+                    self.status_dict[f'qc={values[0]}'] = counts[0]
             else:
                 self.status_dict.update(
-                    {'Failed': 'yes', 'Failure Mode': 'No Good Data (all QC Flags = 4)'})
+                    {'failed': 'yes', 'failure_mode': 'No Good Data (all QC Flags = 4)'})
                 #self._failed_files.append(f'{filename}: No Good Data (all QC Flags = 4)')
         except Exception as exc:
             self.status_dict.update(
-                {'Failed': 'yes', 'Failure Mode': 'QC Failed'})
+                {'failed': 'yes', 'failure_mode': 'QC Failed'})
             self.logger.error(
                 f'Could not apply qc for {filename} due to {exc}')
 
@@ -282,27 +282,27 @@ class QcWrapper(object):
                     ds=self.ds, fisher_metadata=self.fisher_metadata, filename=filename, attr_file=self.attr_file, metadata_columns=self.metadata_columns).run()
                 self.status_dict.update(self.ds.attrs)
                 self.status_dict.update(status_dict_preprocess)
-                if not hasattr(self.ds, 'Expected Deck Unit Serial Number'):
-                    if 'Failed' not in self.status_dict:
+                if not hasattr(self.ds, 'expected_deck_unit_serial_number'):
+                    if 'failed' not in self.status_dict:
                         self.status_dict.update(
-                            {'Failed': 'yes', 'Failure Mode': 'Expected deck unit unknown.'})
+                            {'failed': 'yes', 'failure_mode': 'Expected deck unit unknown.'})
                     self._update_status(filename)
                     continue
-                if int(self.ds.attrs['Deck unit serial number']) != int(self.ds.attrs['Expected Deck Unit Serial Number']):
+                if int(self.ds.attrs['deck_unit_serial_number']) != int(self.ds.attrs['expected_deck_unit_serial_number']):
                     self.status_dict.update(
-                        {'Failed': 'yes', 'Failure Mode': 'Deck units do not match!'})
+                        {'failed': 'yes', 'failure_mode': 'Deck units do not match!'})
                     self._update_status(filename)
                     continue
-                if self.ds.attrs['Gear Class'] == 'unknown':
+                if self.ds.attrs['gear_class'] == 'unknown':
                     self.status_dict.update(
-                        {'Failed': 'yes', 'Failure Mode': 'Gear Class Unknown'})
+                        {'failed': 'yes', 'failure_mode': 'Gear Class Unknown'})
                     #self._failed_files.append(f'{filename}: Gear Class Unknown')
                     self._update_status(filename)
                     continue
                 self._processed_classified_gear(filename)
                 self._update_status(filename)
             except Exception as exc:
-                self.status_dict.update({'Failed': 'yes'})
+                self.status_dict.update({'failed': 'yes'})
                 self._update_status(filename)
                 #self._failed_files.append(f'{filename}: QC Wrapper Error')
                 self.logger.error(

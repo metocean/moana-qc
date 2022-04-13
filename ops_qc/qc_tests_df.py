@@ -32,7 +32,7 @@ Note these are constantly changing/being updated/improved.
 def gear_type(self, fail_flag=3, gear=None, flag_name = 'flag_gear_type'):
     try:
         if not gear:
-            gear = self.ds.attrs['Gear Class']
+            gear = self.ds.attrs['gear_class']
     except Exception as exc:
         self.logger.error('Could not determine gear type for gear_type qc test. Traceback: {}'.format(exc))
 
