@@ -237,10 +237,10 @@ class MangopareMetadataReader(object):
                 github_session.auth = (self.username, self.token)
                 download = github_session.get(self.metafile).content
                 self.fisher_metadata = pd.read_csv(io.StringIO(download.decode('utf-8')), error_bad_lines=False, parse_dates=[
-                                                               "Date supplied", "Date returned"], date_parser=lambda x: pd.to_datetime(x, format="%d/%m/%Y"))
+                                                               "Date supplied", "Date returned"], date_parser=lambda x: pd.to_datetime(x, dayfirst=True))
             else:
                 self.fisher_metadata = pd.read_csv(io.open(self.metafile, errors='replace'), error_bad_lines=False, parse_dates=[
-                                               "Date supplied", "Date returned"], date_parser=lambda x: pd.to_datetime(x, format="%d/%m/%Y"))
+                                               "Date supplied", "Date returned"], date_parser=lambda x: pd.to_datetime(x, dayfirst=True))
         except Exception as exc:
             self.logger.error(
                 'Could not load fisher metadata from {}: {}'.format(self.metafile, exc))

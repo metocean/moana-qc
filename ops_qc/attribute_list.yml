@@ -35,3 +35,10 @@ qc_attr_info:
 qc_flag_info:
     flag_values: [0,1,2,3,4,5]
     flag_meanings: ['No QC Applied', 'Good', 'Probably Good', 'Probably Bad', 'Bad', 'Overwritten']
+
+global_attr_info:
+    contact: 'info@metocean.co.nz'
+    author: 'MetOcean Solutions (MetService New Zealand) data provider'
+    title: 'Mangōpare Temperature and Depth Sensor Observations'
+    references: 'https://www.moanaproject.org/temperature-sensors'
+    

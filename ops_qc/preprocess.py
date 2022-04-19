@@ -31,7 +31,8 @@ class PreProcessMangopare(object):
                  fisher_metadata,
                  filename,
                  attr_file='attribute_list.yml',
-                 attr_dict_name='var_attr_info',
+                 var_attr_dict_name='var_attr_info',
+                 global_attr_dict_name='global_attr_info',
                  metadata_columns={'gear_class': 'Gear Class', 'vessel_email': 'Contact email',
                                    'vessel_name': 'Vessel name', 'email_status': 'Email Status',
                                    'email_frequency': 'Email Frequency', 'expected_deck_unit_serial_number': 'Deck unit serial number'},
@@ -43,7 +44,8 @@ class PreProcessMangopare(object):
         self.fisher_metadata = fisher_metadata
         self.filename = filename
         self.attr_file = attr_file
-        self.attr_dict_name = attr_dict_name
+        self.var_attr_dict_name = var_attr_dict_name
+        self.global_attr_dict_name = global_attr_dict_name
         self.metadata_columns = metadata_columns
         self.surface_pressure = surface_pressure
         self.add_sitename = add_sitename
@@ -171,7 +173,7 @@ class PreProcessMangopare(object):
         Example dictionary: var_attr_info = {'LATITUDE':['latitude','units']}
         """
         try:
-            var_attr_info = load_yaml(self.attr_file, self.attr_dict_name)
+            var_attr_info = load_yaml(self.attr_file, self.var_attr_dict_name)
             for var, [standard_name, units] in var_attr_info.items():
                 if var in self.ds.keys():
                     if standard_name:
@@ -182,6 +184,18 @@ class PreProcessMangopare(object):
         except Exception as exc:
             self.logger.error(
                 'Could not assign variable attributes for {}: {}'.format(self.filename, exc))
+
+    def _add_global_attrs(self):
+        """
+        Loads global variable attributes from attribute file.
+        """
+        try:
+            global_attr_info = load_yaml(self.attr_file, self.global_attr_dict_name)
+            for var, varinfo in global_attr_info.items():
+                self.ds.attrs[var]=varinfo
+        except Exception as exc:
+            self.logger.error(
+                'Could not assign global attributes for {}: {}'.format(self.filename, exc))
 
     def _set_sitename(self):
         """
@@ -196,7 +210,7 @@ class PreProcessMangopare(object):
             sitename=f'msn{self.ds.attrs["moana_serial_number"]}du{self.ds.attrs["deck_unit_serial_number"]}'
         else:
             sitename=f'vid{self.ds.attrs["vessel_id"]}'
-        self.ds.attrs['site_name']=sitename
+        self.ds.attrs['platform_code']=sitename
 
     def run(self):
         try:
@@ -206,6 +220,7 @@ class PreProcessMangopare(object):
                 self._find_bottom()
                 self._add_variable_attrs()
                 self._set_sitename()
+                self._add_global_attrs()
             return(self.ds, self.status_dict)
         except Exception as exc:
             self.logger.error(
