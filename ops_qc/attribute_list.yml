@@ -23,6 +23,7 @@ qc_attr_info:
     flag_spike_pres: ['Spike Test Quality Flag','PRESSURE_QC']
     flag_stuck_value_temp: ['Stuck Value Quality Flag','TEMPERATURE_QC']
     flag_stuck_value_pres: ['Stuck Value Quality Flag','PRESSURE_QC']
+    flag_temp_drift: ['Temperature Drift Quality Flag','TEMPERATURE_QC']
     flag_roc: ['Rate of Change Quality Flag','PRESSURE_QC']
     flag_ref_loc: ['Within Radius of Bad Location Quality Flag','LOCATION_QC']
     PRESSURE_QC: ['Overall Pressure Quality Flag','None']
@@ -41,4 +42,3 @@ global_attr_info:
     author: 'MetOcean Solutions (MetService New Zealand) data provider'
     title: 'Mangōpare Temperature and Depth Sensor Observations'
     references: 'https://www.moanaproject.org/temperature-sensors'
-    

@@ -46,17 +46,31 @@ def gear_type(self, fail_flag=3, gear=None, flag_name = 'flag_gear_type'):
 
 # 4. Timing/gap test
 
-
-def timing_gap_test(self, fail_flag=3, flag_name='flag_timing_gap'):
+def timing_gap(self, max_min=20, num_obs = 5, fail_flag=3, flag_name='flag_timing_gap'):
     """
-    Take another look at this, do not include for now
+    If observations are more than max_min minutes apart and there are less than
+    num_obs observations on either side of the gap, flag the smaller
+    "cluster" of obs (usually due to sensor being splashed with water)
     """
     self.qcdf[flag_name] = np.ones_like(self.df['DATETIME'], dtype='uint8')
-    currdate = datetime.utcnow()
-    tim_inc = 24  # hours
-    time_gap = currdate - self.df['DATETIME'].iloc[-1]
-    if time_gap.total_seconds() / 3600 > tim_inc:
-        self.qcdf[flag_name] = fail_flag
+    delta_time = self.df.DATETIME.diff().dt.total_seconds()/60
+    gap_ind = [0]+[i for i in range(len(delta_time)) if delta_time[i] > max_min]
+    if len(gap_ind)>1:
+        for i1,i2 in zip(gap_ind[:-1],gap_ind[1:]):
+            if i2-i1<num_obs:
+                self.qcdf.loc[self.qcdf.index[i1:i2],flag_name] = fail_flag
+
+#def timing_gap_test(self, fail_flag=3, flag_name='flag_timing_gap'):
+#    """
+#    Take another look at this, do not include for now
+#    """
+#    self.qcdf[flag_name] = np.ones_like(self.df['DATETIME'], dtype='uint8')
+#    currdate = datetime.utcnow()
+#    tim_inc = 24  # hours
+#    time_gap = currdate - self.df['DATETIME'].iloc[-1]
+#    if time_gap.total_seconds() / 3600 > tim_inc:
+#        self.qcdf[flag_name] = fail_flag
+
 
 
 # 5. Impossible date test
@@ -141,7 +155,7 @@ def global_range(self, ranges=None, fail_flag=4):
     Applies as many ranges tests to as many variables as you'd like.
     """
     if ranges is None:
-        ranges = {'PRESSURE': [0, 2000, 'flag_global_range_pres'], 'TEMPERATURE': [-2, 35, 'flag_global_range_temp']}
+        ranges = {'PRESSURE': [0, 2000, 'flag_global_range_pres'], 'TEMPERATURE': [-2, 38, 'flag_global_range_temp']}
     for var, limit in ranges.items():
         flag_name = limit[2]
         limit = limit[0:2]
@@ -260,3 +274,28 @@ def remove_ref_location(self, bad_radius=5, ref_lat=-41.25707, ref_lon=173.28393
     lons = self.df['LONGITUDE']
     d = [float(sw.dist([ref_lat, lat], [ref_lon, lon])[0]) for lat, lon in zip(lats, lons)]
     self.qcdf.loc[np.array(d) < bad_radius,flag_name] = fail_flag
+
+def temp_drift(self, fail_flag=3, flag_name='flag_temp_drift'):
+    """
+    Compared all values from each cast in each depth bin, if the std
+    and difference between max and min are too high, flag.  This is
+    a way of detecting temperature drift, or a sensor that is damanged.
+    Based on an experience with a cracked sensor.  It is possible that
+    thresh_mm and thresh_std could be mostly the same above 1000 m or so.
+    Will continue to check as we receive data.  Seems ok in NZ waters
+    but might not work as well in other regions.
+    """
+    pres_bins = [0,10,20,50,100,200,400,600,1000,2000]
+    thresh_mm = [7,7,8,8,7,8,7,7,5]
+    thresh_std = [2,3.5,3,3,3,3,2.5,2.5,1.5]
+    self.qcdf[flag_name] = np.ones_like(self.df['LATITUDE'], dtype='uint8')
+    for p1,p2,tmm,tstd in zip(pres_bins[:-1],pres_bins[1:],thresh_mm,thresh_std):
+        t_in_bin = self.df.loc[((self.df['PRESSURE'] > p1) & (
+                self.df['PRESSURE'] < p2))]['TEMPERATURE']
+        if len(t_in_bin)<1:
+            continue
+        t_std = np.nanstd(t_in_bin)
+        t_diff = np.nanmax(t_in_bin)-np.nanmin(t_in_bin)
+        if (t_std > tstd) & (t_diff > tmm):
+            self.qcdf.loc[((self.df['PRESSURE'] > p1) & (
+                    self.df['PRESSURE'] < p2)), 'flag_temp_drift'] = fail_flag
