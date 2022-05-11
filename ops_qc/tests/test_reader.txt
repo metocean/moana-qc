@@ -34,8 +34,8 @@ metadata = readers.MangopareMetadataReader(metafile).run()
 # or if using github
 metadata = readers.MangopareMetadataReader(metafile,username,token).run()
 ds1,_ = preprocess.PreProcessMangopare(ds,metadata,filename).run()
-test_list = ['impossible_date', 'impossible_location', 'impossible_speed',
-'global_range', 'remove_ref_location', 'gear_type', 'spike']
+test_list = ['impossible_date', 'impossible_location', 'impossible_speed', 'timing_gap',
+'global_range', 'remove_ref_location', 'gear_type', 'spike', 'temp_drift']
 ds2 = apply_qc.QcApply(ds1,test_list,save_flags=True).run()
 
 
@@ -56,8 +56,8 @@ filelist = utils.list_new_files(numdays=3)
 out_dir = '/data/obs/mangopare/processed/'
 outfile_ext = '_qc'
 attr_file = '/data/obs/mangopare/attribute_list.yml'
-test_list = ['impossible_date', 'impossible_location', 'impossible_speed',
-'global_range', 'remove_ref_location', 'gear_type', 'spike']
+test_list = ['impossible_date', 'impossible_location', 'impossible_speed', 'timing_gap',
+'global_range', 'remove_ref_location', 'gear_type', 'spike', 'temp_drift']
 wrapper.QcWrapper(filelist,outfile_ext,out_dir,test_list,attr_file = attr_file).run()
 
 or

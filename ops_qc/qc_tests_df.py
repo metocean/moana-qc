@@ -275,6 +275,8 @@ def remove_ref_location(self, bad_radius=5, ref_lat=-41.25707, ref_lon=173.28393
     d = [float(sw.dist([ref_lat, lat], [ref_lon, lon])[0]) for lat, lon in zip(lats, lons)]
     self.qcdf.loc[np.array(d) < bad_radius,flag_name] = fail_flag
 
+# 15.  Compare temps at depth bins during deployment
+
 def temp_drift(self, fail_flag=3, flag_name='flag_temp_drift'):
     """
     Compared all values from each cast in each depth bin, if the std

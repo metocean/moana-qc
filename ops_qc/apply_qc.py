@@ -3,7 +3,7 @@ import pandas as pd
 import xarray as xr
 import numpy as np
 from ops_qc.utils import load_yaml
-import qc_tests_df as qc_tests
+import ops_qc.qc_tests_df as qc_tests
 
 
 class QcApply(object):
