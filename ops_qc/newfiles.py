@@ -36,11 +36,10 @@ class ListIncomingFiles(object):
         self.end_date = end_date
         self.logger = logger
         self.file_format = file_format
-        self.cycle_dt = dt.datetime.now()
 
     def set_cycle(self, cycle_dt):
         self.cycle_dt = cycle_dt
-        self.out_dir = cycle_dt.strftime(self.out_dir)
+        self.outfile = cycle_dt.strftime(self.outfile)
         self.outfile_ext = cycle_dt.strftime(self.outfile_ext)
 
     def _set_times(self):
