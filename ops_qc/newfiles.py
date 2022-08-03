@@ -37,10 +37,10 @@ class ListIncomingFiles(object):
         self.logger = logger
         self.file_format = file_format
 
-    def set_cycle(self, cycle_dt):
-        self.cycle_dt = cycle_dt
-        self.outfile = cycle_dt.strftime(self.outfile)
-        self.outfile_ext = cycle_dt.strftime(self.outfile_ext)
+#    def set_cycle(self, cycle_dt):
+#        self.cycle_dt = cycle_dt
+#        self.outfile = cycle_dt.strftime(self.outfile)
+#        self.outfile_ext = cycle_dt.strftime(self.outfile_ext)
 
     def _set_times(self):
         if not self.end_date:
