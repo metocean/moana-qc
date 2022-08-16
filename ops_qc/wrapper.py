@@ -102,8 +102,10 @@ class QcWrapper(object):
 
     def set_cycle(self, cycle_dt):
         self.cycle_dt = cycle_dt
-        self.out_dir = cycle_dt.strftime(self.out_dir)
-        self.outfile_ext = cycle_dt.strftime(self.outfile_ext)
+        if self.out_dir:
+            self.out_dir = cycle_dt.strftime(self.out_dir)
+        if self.outfile_ext:
+            self.outfile_ext = cycle_dt.strftime(self.outfile_ext)
     #     self._proxy.set_cycle(cycle_dt)
 
     def _set_class(self, in_class, default_class):
@@ -261,18 +263,11 @@ class QcWrapper(object):
         except Exception:
             self.logger.error(f'Could not append status info for {filename}')
 
-    def run(self):
-        # set all readers/preprocessors
-        self.set_cycle(cycle_dt)
-        self._set_all_classes()
-        # load metadata common for all files
-        self.fisher_metadata = self.metareader(
-            metafile=self.metafile, gear_class=self.gear_class, username=self.metafile_username, token=self.metafile_token).run()
-        self._set_filelist()
-        # initialize status files
+    def _process_files(self):
+        """Apply qc"""
         self._status_data = {}
-        self._saved_files = []
-
+        self._saved_files = []  
+        self._set_filelist()
         # apply qc
         for filename in self.files_to_qc:
             self.status_dict = {}
@@ -315,4 +310,18 @@ class QcWrapper(object):
         # and saved.  Using this name so it's compatiable
         # with the next linked task (ops-api ingestion)
         self._success_files = self._saved_files
+
+    def run(self):
+        # set all readers/preprocessors
+        self.set_cycle(cycle_dt)
+        self._set_all_classes()
+        # load metadata common for all files
+        self.fisher_metadata = self.metareader(
+            metafile=self.metafile, gear_class=self.gear_class, username=self.metafile_username, token=self.metafile_token).run()      
+        
+        if len(self.filelist)<1 or not self.filelist:
+            self.logger.info(f'No files in filelist, exiting without performing qc and returning "None".')
+            self._success_files = None
+        else:
+            self._process_files()
         return(self._success_files)
