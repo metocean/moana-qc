@@ -23,6 +23,8 @@ class ListIncomingFiles(object):
         file_format="*.csv",
         outfile=None,
         end_date=None,
+        maxfiles=500,
+        override_max_files=False,
         logger=logging,
         **kwargs,
     ):
@@ -36,11 +38,14 @@ class ListIncomingFiles(object):
         self.end_date = end_date
         self.logger = logger
         self.file_format = file_format
+        self.maxfiles = maxfiles
+        self.override_max_files = override_max_files
+#        self.cycle_dt = dt.datetime.now()
 
-#    def set_cycle(self, cycle_dt):
-#        self.cycle_dt = cycle_dt
-#        self.outfile = cycle_dt.strftime(self.outfile)
-#        self.outfile_ext = cycle_dt.strftime(self.outfile_ext)
+    def set_cycle(self, cycle_dt):
+        self.cycle_dt = cycle_dt
+        if self.outfile:
+            self.outfile = cycle_dt.strftime(self.outfile)
 
     def _set_times(self):
         if not self.end_date:
@@ -68,20 +73,23 @@ class ListIncomingFiles(object):
 
     def _list_incoming_files(self):
         incoming_files = []
-        files_in_dir = glob.glob(
-            os.path.join(self.newfile_dir, self.file_format), recursive=True
-        )
+        indir = os.path.join(self.newfile_dir, self.file_format)
+        self.logger.info(f'Looking for new files in {indir}...')
+        files_in_dir = glob.glob(indir, recursive=True)
         for filename in files_in_dir:
             filetime = dt.datetime.fromtimestamp(os.path.getmtime(filename))
             if (filetime > self.start_date) and (filetime <= self.end_date):
                 incoming_files.append(filename)
         base_files = [os.path.basename(fname) for fname in incoming_files]
+        self.logger.info(f'Found {len(files_in_dir)} files in incoming directory and {len(base_files)} recent files.')
         return (incoming_files, base_files)
 
     def _create_filelist(self, new_file_list):
         infiles, inbases = self._list_incoming_files()
         oldfiles = self._list_transferred_files()
-        new_file_list.extend(list(np.array(infiles)[~np.in1d(inbases, oldfiles)]))
+        #new_file_list.extend(list(np.array(infiles)[~np.in1d(inbases, oldfiles)]))  #this method faster but having type issues (numpy)
+        new_file_list.extend([filename for filebase,filename in zip(inbases,infiles) if filebase not in oldfiles])
+        self.logger.info(f'Found {len(infiles)} incoming files, {len(oldfiles)} transferred files, and {len(new_file_list)} new files.')
         if self.files_to_append:
             self.files_to_append = (
                 self.files_to_append
@@ -89,6 +97,7 @@ class ListIncomingFiles(object):
                 else [self.files_to_append]
             )
             new_file_list.extend(self.files_to_append)
+            new_file_list = [str(file) for file in new_file_list]
         return new_file_list
 
     def run(self):
@@ -97,12 +106,15 @@ class ListIncomingFiles(object):
             self._set_times()
             self._check_dirs()
             new_file_list = self._create_filelist(new_file_list)
+            self.logger.info(f'New files: {new_file_list}')
             if self.outfile:
                 with open(self.outfile, "w") as outfile:
                     outfile.write("\n".join(new_file_list))
-            self._success_files = new_file_list
-            return {"source": self._success_files}
+            if (len(new_file_list)>self.maxfiles) and (not self.override_max_files):
+                self.logger.error(f'Too many files: list is {len(new_file_list)} elements long')
+                raise Exception
+            else:
+                return {"source":new_file_list}
         except Exception as exc:
             self.logger.error(f"Could not calculate list of new files: {exc}")
-            self._success_files = None
-            return {"source": self._success_files}
+            return {"source": None}
