@@ -6,7 +6,7 @@ var_attr_info:
     LONGITUDE: ['longitude', 'degree_east']
     TEMPERATURE: ['sea_water_temperature', 'degree_C']
     PRESSURE: ['sea_water_pressure', 'dbar']
-    PHASE: ['fishing_deployment_phase', 'na']
+    CASTPHASE: ['status_flag', 'na']
 
 qc_attr_info:
     standard_name: 'quality_flag'
@@ -34,11 +34,14 @@ qc_attr_info:
     QC_FLAG: ['Overall Quality Flag','None']
 
 qc_flag_info:
-    flag_values: [0,1,2,3,4,5]
-    flag_meanings: ['No QC Applied', 'Good', 'Probably Good', 'Probably Bad', 'Bad', 'Overwritten']
+    flag_values: '0,1,2,3,4,5'
+    flag_meanings: 'No QC Applied, Good, Probably Good, Probably Bad, Bad, Overwritten'
 
 global_attr_info:
     contact: 'info@metocean.co.nz'
     author: 'MetOcean Solutions (MetService New Zealand) data provider'
     title: 'Mangōpare Temperature and Depth Sensor Observations'
     references: 'https://www.moanaproject.org/temperature-sensors'
+    conventions: 'CF-1.9'
+    history: 'Initial automatic quality control and processing applied.'
+    acknowledgement: 'This work is a contribution to the Moana Project (www.moanaproject.org) funded by the New Zealand Ministry of Business Innovation and Employment, contract number METO1801.'
