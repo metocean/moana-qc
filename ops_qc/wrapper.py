@@ -202,7 +202,7 @@ class QcWrapper(object):
             filename = cycle_dt.strftime(os.path.join(self.status_file_dir, basefile))
             #                append_to_textfile(filename,filelist)
             pd.DataFrame.from_dict(self._status_data).transpose().to_csv(
-                filename, mode="a", header=not os.path.isfile(filename), index=False
+                filename, mode="a", header=not os.path.isfile(filename), index=True
             )
         except Exception as exc:
             self.logger.error("Could not save status files: {}".format(exc))
