@@ -45,14 +45,24 @@ class QcWrapper(object):
         gear_class={
             "Bottom trawl": "mobile",
             "Potting": "stationary",
-            "Long lining": "mobile",
+            "Long lining": "stationary",
             "Trawling": "mobile",
             "Midwater trawl": "mobile",
-            "Purse seine netting": "mobile",
+            "Purse seine netting": "stationary",
             "Bottom trawling": "mobile",
             "Research": "mobile",
             "Education": "mobile",
+            "Bottom trawler": "mobile",
             "Bottom long line": "mobile",
+            "Waka": "mobile",
+            "Danish seining": "stationary",
+            "Netting": "stationary",
+            "Set netting": "stationary",
+            "Dredge": "mobile",
+            "Instrument deployment": "mobile",
+            "Potting, long lining": "stationary",
+            "Diving": "stationary",
+            "Trolling": "mobile"
         },
         metadata_columns={
             "gear_class": "Gear Class",
@@ -94,6 +104,7 @@ class QcWrapper(object):
         #        self.save_file_dict = {'status_file':self._status_data}
         self.logger = logging
         self.status_dict_keys = [
+            "filename",
             "baseline",
             "cellular_signal_strength",
             "date_quality_controlled",
@@ -201,8 +212,11 @@ class QcWrapper(object):
             basefile = f"status_file{self.status_file_ext}.csv"
             filename = cycle_dt.strftime(os.path.join(self.status_file_dir, basefile))
             #                append_to_textfile(filename,filelist)
-            pd.DataFrame.from_dict(self._status_data).transpose().to_csv(
-                filename, mode="a", header=not os.path.isfile(filename), index=True
+#            pd.DataFrame.from_dict(self._status_data).transpose().to_csv(
+#                filename, mode="a", header=not os.path.isfile(filename), index=True
+#            )
+            self._status_data.to_csv(
+                filename, mode="a", header=not os.path.isfile(filename), index=False
             )
         except Exception as exc:
             self.logger.error("Could not save status files: {}".format(exc))
@@ -294,19 +308,22 @@ class QcWrapper(object):
             self.logger.error(f"Could not apply qc for {filename} due to {exc}")
 
     def _update_status(self, filename):
+        #import ipdb; ipdb.set_trace()
         try:
             status_dict2 = {
                 k: self.status_dict[k]
                 for k in self.status_dict_keys
                 if k in self.status_dict
             }
-            self._status_data[filename] = status_dict2
+            status_dict2['filename'] = filename
+            #self._status_data[filename] = status_dict2
+            self._status_data = self._status_data.append(status_dict2,ignore_index=True)
         except Exception:
             self.logger.error(f"Could not append status info for {filename}")
 
     def _process_files(self):
         """Apply qc"""
-        self._status_data = {}
+        self._status_data = pd.DataFrame(columns=self.status_dict_keys)
         self._saved_files = []
         self._set_filelist()
         # apply qc
