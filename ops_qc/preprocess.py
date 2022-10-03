@@ -98,46 +98,6 @@ class PreProcessMangopare(object):
             self.status_dict.update(
                 {'failed': 'yes', 'failure_mode': 'Could not assign attribute(s) from csv header.'})
 
-    def _calc_positions(self, surface_pressure=5):
-        """
-        Calculate locations for either stationary or mobile gear.
-        Current state of this code assumes all stationary locations
-        in one CSV file are the SAME.  NOT NECESSARILY TRUE!  Hence
-        the commented out regions...eventually will use those.
-        """
-        try:
-            if self.ds.attrs['gear_class'] == 'stationary':
-                # Remove rows with nan lat/lon, which we kept in reader
-                self.ds = self.ds.dropna(how='any', dim='DATETIME')
-                # use self.surface_pressure if it exists
-                try:
-                    surface_pressure = self.surface_pressure
-                except:
-                    pass
-                # Find when gear comes to/near the surface
-                ds2 = self.ds.where(
-                    self.ds['PRESSURE'] < surface_pressure, drop=True)
-                # if len(ds2.lat.values)==[1,2]:
-                lat = np.nanmean(ds2.LATITUDE.values)
-                lon = np.nanmean(ds2.LONGITUDE.values)
-                # else:
-                # haven't worked out yet what to do if there's
-                # lots of "surface" lat/lon pairs...that will go here:
-                #lat = np.array(ds2.lat.values)
-                #lon = np.array(ds2.lon.values)
-                lons = np.ones_like(self.ds['LONGITUDE'])*lon
-                lats = np.ones_like(self.ds['LATITUDE'])*lat
-                self.ds['LATITUDE'] = xr.DataArray(lats, dims=['DATETIME'])
-            if self.ds.attrs['gear_class'] == 'mobile':
-                lons = self.ds['LONGITUDE']
-            # convert to 0-360 for both stationary and mobile gear:
-            lons = [l % 360 for l in lons]
-            self.ds['LONGITUDE'] = xr.DataArray(lons, dims=['DATETIME'])
-        except Exception as exc:
-            self.logger.error(
-                f"Position could not be calculated for {self.filename}: {exc}")
-            raise exc
-
     def _find_bottom(self, cutoff='4 minutes'):
         """
         Uses timedelta to assign profile (PROF) or deployed (DEPL) status
@@ -216,7 +176,8 @@ class PreProcessMangopare(object):
         try:
             self._classify_gear()
             if self.ds.attrs['gear_class'] != 'unknown':
-                self._calc_positions()
+                #self._calc_positions()
+                self.ds = self.ds.dropna(how='any', dim='DATETIME')
                 self._find_bottom()
                 self._add_variable_attrs()
                 self._set_sitename()
