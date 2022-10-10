@@ -4,7 +4,7 @@ authors:
 - family-names: "Jakoboski"
   given-names: "Julie"
   orcid: "https://orcid.org/0000-0002-6882-3527"
-title: "ops-qc"
+title: "Mangōpare Quaity Control Python Package (ops-qc)"
 version: 2.2.3
 #doi: 10.5281/zenodo.1234
 date-released: 2022-10-10
