@@ -283,7 +283,7 @@ class QcWrapper(object):
                 ds2.LATITUDE.values)
             self.ds.attrs['geospatial_lon_max'] = np.nanmax(
                 ds2.LONGITUDE.values)
-            self.ds.attrs['geospatial_lon_min'] = np.nanmax(
+            self.ds.attrs['geospatial_lon_min'] = np.nanmin(
                 ds2.LONGITUDE.values)
             ds2 = ds2.where(
                 ds2['DATETIME_QC'].isin([1, 2]), drop=True)
