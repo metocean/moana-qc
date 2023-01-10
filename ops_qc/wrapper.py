@@ -271,7 +271,7 @@ class QcWrapper(object):
             )
             pass
 
-    def _calc_positions(self):
+    def _calc_positions(self, surface_pressure=10):
         """
         Calculate locations for either stationary or mobile gear.
         Current state of this code assumes all stationary locations
@@ -279,7 +279,9 @@ class QcWrapper(object):
         the commented out regions...eventually will use those.
         """
         try:
-            ds2 = self.ds.where(self.ds['QC_FLAG'].isin([1, 2]), drop=True)
+            ds2 = self.ds.where(self.ds['LOCATION_QC'].isin([1, 2]), drop=True)
+            ds2 = self.ds2.where(
+                self.ds['DATETIME_QC'].isin([1, 2]), drop=True)
             self.ds.attrs['geospatial_lat_max'] = np.nanmax(
                 self.ds2.LATITUDE.values)
             self.ds.attrs['geospatial_lat_min'] = np.nanmin(
