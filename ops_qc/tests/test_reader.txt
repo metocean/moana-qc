@@ -57,7 +57,7 @@ out_dir = '/data/obs/mangopare/processed/'
 outfile_ext = '_qc'
 attr_file = '/data/obs/mangopare/attribute_list.yml'
 test_list = ['impossible_date', 'impossible_location', 'impossible_speed', 'timing_gap',
-'global_range', 'remove_ref_location', 'gear_type', 'spike', 'temp_drift']
+'global_range', 'remove_ref_location', 'gear_type', 'spike', 'temp_drift','stationary_position_check']
 wrapper.QcWrapper(filelist,outfile_ext,out_dir,test_list,attr_file = attr_file).run()
 
 or

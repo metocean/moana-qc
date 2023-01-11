@@ -5,10 +5,9 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import seawater as sw
-import netCDF4
 import datetime as dt
 from ops_core.utils import import_pycallable
-from ops_qc.utils import catch, append_to_textfile, haversine
+from ops_qc.utils import catch, haversine
 
 cycle_dt = dt.datetime.now()
 
@@ -216,10 +215,6 @@ class QcWrapper(object):
             basefile = f"status_file{self.status_file_ext}.csv"
             filename = cycle_dt.strftime(
                 os.path.join(self.status_file_dir, basefile))
-            #                append_to_textfile(filename,filelist)
-#            pd.DataFrame.from_dict(self._status_data).transpose().to_csv(
-#                filename, mode="a", header=not os.path.isfile(filename), index=True
-#            )
             self._status_data.to_csv(
                 filename, mode="a", header=not os.path.isfile(filename), index=False
             )
@@ -271,7 +266,7 @@ class QcWrapper(object):
             )
             pass
 
-    def _calc_positions(self, surface_pressure=10):
+    def _calc_positions(self, filename, surface_pressure=10):
         """
         Calculate locations for either stationary or mobile gear.
         Current state of this code assumes all stationary locations
@@ -280,20 +275,20 @@ class QcWrapper(object):
         """
         try:
             ds2 = self.ds.where(self.ds['LOCATION_QC'].isin([1, 2]), drop=True)
-            ds2 = self.ds2.where(
-                self.ds['DATETIME_QC'].isin([1, 2]), drop=True)
-            self.ds.attrs['geospatial_lat_max'] = np.nanmax(
-                self.ds2.LATITUDE.values)
-            self.ds.attrs['geospatial_lat_min'] = np.nanmin(
-                self.ds2.LATITUDE.values)
-            self.ds.attrs['geospatial_lon_max'] = np.nanmax(
-                self.ds2.LONGITUDE.values)
-            self.ds.attrs['geospatial_lon_min'] = np.nanmax(
-                self.ds2.LONGITUDE.values)
+            ds2 = ds2.where(
+                ds2['DATETIME_QC'].isin([1, 2]), drop=True)
+            self.ds.attrs['geospatial_lat_max'] = "%.6f" % np.nanmax(
+                ds2.LATITUDE.values)
+            self.ds.attrs['geospatial_lat_min'] = "%.6f" % np.nanmin(
+                ds2.LATITUDE.values)
+            self.ds.attrs['geospatial_lon_max'] = "%.6f" % np.nanmax(
+                ds2.LONGITUDE.values)
+            self.ds.attrs['geospatial_lon_min'] = "%.6f" % np.nanmin(
+                ds2.LONGITUDE.values)
             start_end_dist = haversine(
-                self.ds2.LATITUDE[0], self.ds2.LONGITUDE[0],
-                self.ds2.LATITUDE[-1], self.ds2.LONGITUDE[-1])*1000
-            self.ds.attrs['start_end_dist_m'] = start_end_dist
+                ds2.LATITUDE[0], ds2.LONGITUDE[0],
+                ds2.LATITUDE[-1], ds2.LONGITUDE[-1])*1000
+            self.ds.attrs['start_end_dist_m'] = ".2f" % start_end_dist
             if self.ds.attrs['gear_class'] == 'stationary':
                 # this needs work
                 lat = np.nanmean(
@@ -310,7 +305,7 @@ class QcWrapper(object):
             self.ds['LONGITUDE'] = xr.DataArray(lons, dims=['DATETIME'])
         except Exception as exc:
             self.logger.error(
-                f"Position could not be calculated for {self.filename}: {exc}")
+                f"Position could not be calculated for {filename}: {exc}")
             raise exc
 
     def _processed_classified_gear(self, filename):
@@ -329,7 +324,7 @@ class QcWrapper(object):
             ).run()
             # only save files with at least some good data
             # import ipdb; ipdb.set_trace()
-            self._calc_positions()
+            self._calc_positions(filename)
             if np.nanmin(self.ds["QC_FLAG"]) < 4:
                 if self.convert_p_to_z:
                     self.ds = self.convert_pressure_to_depth()
@@ -449,7 +444,7 @@ class QcWrapper(object):
 
         if len(self.filelist) < 1 or not self.filelist:
             self.logger.info(
-                f'No files in filelist, exiting without performing qc and returning "None".'
+                'No files in filelist, exiting without performing qc and returning "None".'
             )
             self._success_files = None
         else:
