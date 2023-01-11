@@ -278,21 +278,11 @@ class QcWrapper(object):
             ds2 = ds2.where(
                 ds2['DATETIME_QC'].isin([1, 2]), drop=True)
             self.ds.attrs['geospatial_lat_max'] = "%.6f" % np.nanmax(
-                ds2.LATITUDE.values)
+                self.ds.LATITUDE.values)
             self.ds.attrs['geospatial_lat_min'] = "%.6f" % np.nanmin(
-                ds2.LATITUDE.values)
+                self.ds.LATITUDE.values)
             self.ds.attrs['geospatial_lon_max'] = "%.6f" % np.nanmax(
-                ds2.LONGITUDE.values)
-            self.ds.attrs['geospatial_lon_min'] = "%.6f" % np.nanmin(
-                ds2.LONGITUDE.values)
-            ds2 = ds2.where(
-                ds2['DATETIME_QC'].isin([1, 2]), drop=True)
-            self.ds.attrs['geospatial_lat_max'] = "%.6f" % np.nanmax(
-                ds2.LATITUDE.values)
-            self.ds.attrs['geospatial_lat_min'] = "%.6f" % np.nanmin(
-                ds2.LATITUDE.values)
-            self.ds.attrs['geospatial_lon_max'] = "%.6f" % np.nanmax(
-                ds2.LONGITUDE.values)
+                self.ds.LONGITUDE.values)
             self.ds.attrs['geospatial_lon_min'] = "%.6f" % np.nanmin(
                 ds2.LONGITUDE.values)
             start_end_dist = haversine(
@@ -316,6 +306,10 @@ class QcWrapper(object):
         except Exception as exc:
             self.logger.error(
                 f"Position could not be calculated for {filename}: {exc}")
+            self.status_dict.update(
+                {"failed": "yes",
+                    "failure_mode": "Could not calculate stationary position."}
+            )
             raise exc
 
     def _processed_classified_gear(self, filename):
