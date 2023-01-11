@@ -298,7 +298,7 @@ class QcWrapper(object):
             start_end_dist = haversine(
                 ds2.LATITUDE[0], ds2.LONGITUDE[0],
                 ds2.LATITUDE[-1], ds2.LONGITUDE[-1])*1000
-            self.ds.attrs['start_end_dist_m'] = ".2f" % start_end_dist
+            self.ds.attrs['start_end_dist_m'] = "%.2f" % start_end_dist
             if self.ds.attrs['gear_class'] == 'stationary':
                 # this needs work
                 lat = np.nanmean(

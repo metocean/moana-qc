@@ -337,5 +337,8 @@ def stationary_position_check(self, surface_pres=10, fail_flag=2, flag_name='fla
                          if flagname in self.qcdf.keys()]
         combined_flag = self.qcdf[include_flags].max(axis=1).astype('int')
         df2 = self.df.loc[combined_flag <= 2]
+        if len(df2) < 1:
+            # can't apply test, not enough good location data
+            self.qcdf.loc[:, flag_name] = 0
         if (df2.PRESSURE.iloc[0] > surface_pres) or (df2.PRESSURE.iloc[-1] > surface_pres):
             self.qcdf.loc[:,flag_name] = fail_flag

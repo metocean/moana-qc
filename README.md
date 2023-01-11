@@ -36,15 +36,20 @@ The tests from qc_test_df.py that should be included in a quality-control run ar
 Right now, tests in qc_tests_df need a pandas dataframe with LONGITUDE, LATITUDE, DATETIME, TEMPERATURE, and PRESSURE fields.  At some point this will be generalised.
 
 ---
-Currently, all QC'd files are saved in netCDF format (see wrapper.py).  If needed, additional formats can be added.  The user can choose whether to save quality flags for all individual tests or only save the global quality flag.  
+
+## File Format
+Currently, all QC'd files are saved in netCDF format (see wrapper.py).  If needed, additional formats can be added.  The user can choose whether to save quality flags for all individual tests or only save the global quality flag.
+
 ---
+
 ## Status file
 Each time the wrapper is run on a list of files, a status file (csv) is created with information on any errors that may have occurred during processing.  This file is saved in the same directory as the output quality controlled nc files.  Note that all of this is in beta, so will be improved in the future.
+
 ---
 
 ## Building and running the docker image
 
-Current latest version of docker image: ops-qc:v0.1.7-dev.
+Current latest version of docker image: ops-qc:v0.1.12-dev.
 
 The metocean/ops-qc docker image requires some libraries in private git repositories.  They are accessed via a github token.  To run from a computer with the github token under variable GIT_TOKEN, build the docker image via
 
