@@ -322,7 +322,7 @@ def temp_drift(self, fail_flag=3, flag_name='flag_temp_drift'):
 # anything from here depends on previous qc tests
 
 
-def stationary_position_check(self, surface_pres=10, fail_flag=2, flag_name='flag_stat_loc'):
+def stationary_position_check(self, surface_pres=10, fail_flag=3, flag_name='flag_stat_loc'):
     """
     Stationary pressures are currently calculated using an average of the start
     and end positions.  If the first and/or last "good" positions are not near

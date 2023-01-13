@@ -131,5 +131,6 @@ dmypy.json
 # DS Store stuff
 .DS_Store
 
-.devcontainer/
 .vscode/
+.devcontainer/
+.idea/

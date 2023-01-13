@@ -284,11 +284,14 @@ class QcWrapper(object):
             self.ds.attrs['geospatial_lon_max'] = "%.6f" % np.nanmax(
                 self.ds.LONGITUDE.values)
             self.ds.attrs['geospatial_lon_min'] = "%.6f" % np.nanmin(
-                ds2.LONGITUDE.values)
-            start_end_dist = haversine(
-                ds2.LATITUDE[0], ds2.LONGITUDE[0],
-                ds2.LATITUDE[-1], ds2.LONGITUDE[-1])*1000
-            self.ds.attrs['start_end_dist_m'] = "%.2f" % start_end_dist
+                self.ds.LONGITUDE.values)
+            if len(ds2) > 1:
+                start_end_dist = haversine(
+                    ds2.LATITUDE[0], ds2.LONGITUDE[0],
+                    ds2.LATITUDE[-1], ds2.LONGITUDE[-1])*1000
+                self.ds.attrs['start_end_dist_m'] = "%.2f" % start_end_dist
+            else:
+                self.ds.attrs['start_end_dist_m'] = np.nan
             if self.ds.attrs['gear_class'] == 'stationary':
                 # this needs work
                 lat = np.nanmean(
@@ -312,7 +315,7 @@ class QcWrapper(object):
             )
             raise exc
 
-    def _processed_classified_gear(self, filename):
+    def _qc_and_position(self, filename):
         """
         If gear class is not unknown, apply QC, convert pressure to depth
         if desired, check if any bad data, save file.
@@ -327,7 +330,6 @@ class QcWrapper(object):
                 self.attr_file,
             ).run()
             # only save files with at least some good data
-            # import ipdb; ipdb.set_trace()
             self._calc_positions(filename)
             if np.nanmin(self.ds["QC_FLAG"]) < 4:
                 if self.convert_p_to_z:
@@ -400,33 +402,31 @@ class QcWrapper(object):
         return check_passed
 
     def _process_files(self):
-        """Apply qc"""
+        """Read, reprocess, and apply qc"""
         self._status_data = pd.DataFrame(columns=self.status_dict_keys)
         self._saved_files = []
         self._set_filelist()
         # apply qc
         for filename in self.files_to_qc:
-            self.status_dict = {}
+            #self.status_dict = {}
             try:
                 self.ds = self.datareader(filename=filename).run()
-                self.ds, status_dict_preprocess = self.preprocessor(
+                self.ds, self.status_dict = self.preprocessor(
                     ds=self.ds,
                     fisher_metadata=self.fisher_metadata,
-                    filename=filename,
                     attr_file=self.attr_file,
                     metadata_columns=self.metadata_columns,
                 ).run()
-                self.status_dict.update(self.ds.attrs)
-                self.status_dict.update(status_dict_preprocess)
+                #self.status_dict.update(self.ds.attrs)
+                #self.status_dict.update(status_dict_preprocess)
                 passed = self._status_checks(filename)
                 if not passed:
                     continue
-                self._processed_classified_gear(filename)
+                self._qc_and_position(filename)
                 self._update_status(filename)
             except Exception as exc:
                 self.status_dict.update({"failed": "yes"})
                 self._update_status(filename)
-                # self._failed_files.append(f'{filename}: QC Wrapper Error')
                 self.logger.error(
                     "Could not qc data from {}. Traceback: {}".format(
                         filename, exc)

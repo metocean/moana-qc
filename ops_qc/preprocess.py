@@ -24,12 +24,14 @@ class PreProcessMangopare(object):
         ds: xarray dataset including data to be QC'd
         metadata: pandas dataframe with Mangopare fisher metadata
         These are generated using qc_readers.py, see for defaults.
+        status_dict: dictionary with file processing status info,
+        if not already provided, will start with empty dict.  If
+        provided, will update dict with new processing info.
     """
 
     def __init__(self,
                  ds,
                  fisher_metadata,
-                 filename,
                  attr_file='attribute_list.yml',
                  var_attr_dict_name='var_attr_info',
                  global_attr_dict_name='global_attr_info',
@@ -38,20 +40,20 @@ class PreProcessMangopare(object):
                                    'email_frequency': 'Email Frequency', 'expected_deck_unit_serial_number': 'Deck unit serial number'},
                  surface_pressure=5,
                  add_sitename=True,
+                 status_dict={},
                  logger=logging):
 
         self.ds = ds
         self.fisher_metadata = fisher_metadata
-        self.filename = filename
         self.attr_file = attr_file
         self.var_attr_dict_name = var_attr_dict_name
         self.global_attr_dict_name = global_attr_dict_name
         self.metadata_columns = metadata_columns
         self.surface_pressure = surface_pressure
         self.add_sitename = add_sitename
+        self.status_dict = status_dict
         self.logger = logging
         self.filename = self.ds.attrs['raw_data_filename']
-        self.status_dict = {}
 
     def _classify_gear(self):
         """
@@ -150,9 +152,10 @@ class PreProcessMangopare(object):
         Loads global variable attributes from attribute file.
         """
         try:
-            global_attr_info = load_yaml(self.attr_file, self.global_attr_dict_name)
+            global_attr_info = load_yaml(
+                self.attr_file, self.global_attr_dict_name)
             for var, varinfo in global_attr_info.items():
-                self.ds.attrs[var]=varinfo
+                self.ds.attrs[var] = varinfo
         except Exception as exc:
             self.logger.error(
                 'Could not assign global attributes for {}: {}'.format(self.filename, exc))
@@ -165,12 +168,12 @@ class PreProcessMangopare(object):
         be unique for each vessel (but not guaranteed).
         """
         if not self.add_sitename:
-            sitename='NA'
-        elif self.ds.attrs['vessel_id']=='NA':
-            sitename=f'msn{self.ds.attrs["moana_serial_number"]}du{self.ds.attrs["deck_unit_serial_number"]}'
+            sitename = 'NA'
+        elif self.ds.attrs['vessel_id'] == 'NA':
+            sitename = f'msn{self.ds.attrs["moana_serial_number"]}du{self.ds.attrs["deck_unit_serial_number"]}'
         else:
-            sitename=f'vid{self.ds.attrs["vessel_id"]}'
-        self.ds.attrs['platform_code']=sitename
+            sitename = f'vid{self.ds.attrs["vessel_id"]}'
+        self.ds.attrs['platform_code'] = sitename
 
     def run(self):
         try:
@@ -182,6 +185,7 @@ class PreProcessMangopare(object):
                 self._add_variable_attrs()
                 self._set_sitename()
                 self._add_global_attrs()
+                self.status_dict.update(self.ds.attrs)
             return(self.ds, self.status_dict)
         except Exception as exc:
             self.logger.error(
