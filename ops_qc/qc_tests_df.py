@@ -1,13 +1,13 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime
-#from global_land_mask import globe
 import logging
-from ops_qc.utils import calc_speed, point_on_land
 import seawater as sw
 import shapefile
 from shapely.geometry import Point, shape
 from shapely.ops import nearest_points
+from ops_qc.utils import calc_speed, point_on_land
+from ops_qc.utils import haversine, start_end_dist
 
 
 """
@@ -31,6 +31,12 @@ Note these are constantly changing/being updated/improved.
 
 
 def gear_type(self, fail_flag=3, gear=None, flag_name='flag_gear_type'):
+    """
+    With current Mangōpare workflow, this will always fail for stationary,
+    because stationary position calc happens after qc.  This test would
+    need to run after stationary postition calc, while that calc depends
+    on all the other tests.  Currently not using this.
+    """
     try:
         if not gear:
             gear = self.ds.attrs['gear_class']
@@ -62,18 +68,6 @@ def timing_gap(self, max_min=20, num_obs=5, fail_flag=3, flag_name='flag_timing_
         for i1, i2 in zip(gap_ind[:-1], gap_ind[1:]):
             if i2-i1 < num_obs:
                 self.qcdf.loc[self.qcdf.index[i1:i2], flag_name] = fail_flag
-
-#def timing_gap_test(self, fail_flag=3, flag_name='flag_timing_gap'):
-#    """
-#    Take another look at this, do not include for now
-#    """
-#    self.qcdf[flag_name] = np.ones_like(self.df['DATETIME'], dtype='uint8')
-#    currdate = datetime.utcnow()
-#    tim_inc = 24  # hours
-#    time_gap = currdate - self.df['DATETIME'].iloc[-1]
-#    if time_gap.total_seconds() / 3600 > tim_inc:
-#        self.qcdf[flag_name] = fail_flag
-
 
 # 5. Impossible date test
 
@@ -109,16 +103,15 @@ def impossible_location(self, lonrange=None, latrange=None, fail_flag=4, flag_na
 
 # 7. Position on land test
 
-
-def position_on_land_old(self, fail_flag=3):
-    """
-    Spatial resolution of globe.is_land is 1km.  Not sufficient,
-    but need to think about how to efficientlly import higher res mask.
-    Leaving this test out for now.
-    """
-    self.qcdf['flag_land'] = np.ones_like(self.df['LATITUDE'], dtype='uint8')
-    self.qcdf.loc[(globe.is_land(self.df['LATITUDE'],
-                                 self.df['LONGITUDE'])), 'flag_land'] = fail_flag
+# def position_on_land_old(self, fail_flag=3):
+#     """
+#     Spatial resolution of globe.is_land is 1km.  Not sufficient,
+#     but need to think about how to efficientlly import higher res mask.
+#     Leaving this test out for now.
+#     """
+#     self.qcdf['flag_land'] = np.ones_like(self.df['LATITUDE'], dtype='uint8')
+#     self.qcdf.loc[(globe.is_land(self.df['LATITUDE'],
+#                                  self.df['LONGITUDE'])), 'flag_land'] = fail_flag
 
 
 def position_on_land(self, fail_flag=3, flag_name='flag_land'):
@@ -140,10 +133,11 @@ def position_on_land(self, fail_flag=3, flag_name='flag_land'):
 # 8. Impossible speed test
 
 
-def impossible_speed(self, max_speed=100, fail_flag=4, flag_name='flag_speed'):
+def impossible_speed(self, max_speed=100, fail_flag=3, flag_name='flag_speed'):
     """
     Don't really like calculating speed twice.  (Fixed)
-    max_speed in knots
+    max_speed in knots.  Not a useful test with our current
+    GPS accuracy.
     """
     self.qcdf[flag_name] = np.ones_like(self.df['DATETIME'], dtype='uint8')
     #    self.df.reset_index(drop=True)  #not sure why this is here?
@@ -220,7 +214,7 @@ def spike(self, qc_vars=None, fail_flag=4):
 # 12. Stuck value test
 
 
-def stuck_value(self, qc_vars=None, rep_num=5, fail_flag=2):
+def stuck_value(self, qc_vars=None, rep_num=20, fail_flag=3):
     """
     Adapted from QARTOD - sort of.  This whole thing is suspect as implemented
     here.  rep_num should be over a given amount of time, not number of obs.
@@ -322,9 +316,9 @@ def temp_drift(self, fail_flag=3, flag_name='flag_temp_drift'):
 # anything from here depends on previous qc tests
 
 
-def stationary_position_check(self, surface_pres=10, fail_flag=3, flag_name='flag_stat_loc'):
+def stationary_position_check(self, surface_pres=10, fail_flag=3, flag_name='flag_surf_loc', good_pos_qc = [1,2,3]):
     """
-    Stationary pressures are currently calculated using an average of the start
+    Stationary/passive pressures are currently calculated using an average of the start
     and end positions.  If the first and/or last "good" positions are not near
     the surface, something might be wrong with this calculation, as we could
     be using vessel positions when the vessel is far away from the gear.  This
@@ -333,12 +327,36 @@ def stationary_position_check(self, surface_pres=10, fail_flag=3, flag_name='fla
     self.qcdf[flag_name] = np.ones_like(self.df['LATITUDE'], dtype='uint8')
     if self.ds.attrs['gear_class'] == 'stationary':
         include_flags = [flagname for flagname in ['flag_gear_type', 'flag_timing_gap', 'flag_date',
-                                                   'flag_location', 'flag_land', 'flag_speed', 'flag_ref_location']
+                                                   'flag_location', 'flag_land', 'flag_ref_location']
                          if flagname in self.qcdf.keys()]
         combined_flag = self.qcdf[include_flags].max(axis=1).astype('int')
-        df2 = self.df.loc[combined_flag <= 2]
+        df2 = self.df.loc[combined_flag <= np.nanmax(good_pos_qc)]
         if len(df2) < 1:
             # can't apply test, not enough good location data
             self.qcdf.loc[:, flag_name] = 0
         if (df2.PRESSURE.iloc[0] > surface_pres) or (df2.PRESSURE.iloc[-1] > surface_pres):
             self.qcdf.loc[:,flag_name] = fail_flag
+
+def start_end_dist_check(self, fail_flag=[2,3], cutoffs=[5,50], flag_name='flag_dist'):
+    """
+    Stationary/passive gear positions can be calculated based on first and last
+    "good" locations in the file.  This can fail for a variety of rather
+    unpredictable reasons.  If start and end distance are too big, flag
+    for too high position uncertainty or likely bad positions, depending
+    on threshold (for now).
+    """
+    if 'start_end_dist_m' in self.ds.attrs.keys():
+        sed = self.ds.attrs['start_end_dist']
+    else:
+        sed = start_end_dist(self.ds)
+    if sed>cutoffs[0]:
+        ff = fail_flag[0]
+    elif sed>cutoffs[1]:
+        ff = fail_flag[1]
+    elif np.isnan(sed):
+        ff = 4
+    else:
+        ff = 1
+    self.qcdf[flag_name] = np.ones_like(self.df['LATITUDE'], dtype='uint8')*ff
+
+

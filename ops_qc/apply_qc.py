@@ -1,4 +1,5 @@
 import logging
+import ast
 import pandas as pd
 import xarray as xr
 import numpy as np
@@ -20,17 +21,15 @@ class QcApply(object):
                  ds,
                  test_list=None,
                  save_flags=False,
-                 convert_p_to_z=True,
-                 default_latitude=-40,
                  attr_file='attribute_list.yml',
+                 overwrite_flags=True,
                  logger=logging):
 
         self.ds = ds
         self.test_list = test_list
         self.save_flags = save_flags
-        self.convert_p_to_z = convert_p_to_z
-        self.default_latitude = default_latitude
         self.attr_file = attr_file
+        self.overwrite_flags = overwrite_flags
         self.logger = logging
         self.df = self.ds.to_dataframe().reset_index()
         self.flag_category = {}
@@ -60,6 +59,7 @@ class QcApply(object):
                 self.logger.error(
                     'Could not apply QC test {}.  Traceback: {}'.format(test_name, exc))
 
+
     def _merge_df_and_ds(self):
         """
         Converts pandas dataframe back to xarray, adds back in
@@ -74,10 +74,25 @@ class QcApply(object):
                 else:
                     flag_list = self.global_flag_list
                 for flag_name in flag_list:
-                    self.ds[flag_name] = xr.Variable(
-                        dims='DATETIME', data=self.qcdf[flag_name])
+                    varlist = self.ds.attrs.data_vars
+                    if (flag_name in varlist) and (flag_name not in self.global_flag_list) and (not self.overwrite_flags):
+                        continue
+                        self.logger.info(f'Not applying qc flag {flag_name} since it already exists.')
+                    if (flag_name in varlist) and (flag_name in self.global_flag_list):
+                        new = self.qcdf[flag_name]
+                        old = self.ds[flag_name]
+                        self.ds[flag_name] = xr.where(old>new,old,new)
+                    else:
+                        self.ds[flag_name] = xr.Variable(
+                            dims='DATETIME', data=self.qcdf[flag_name])
                     self._assign_qc_attributes(
                         self.flag_attrs, flag_name, self.qc_flag_info)
+                if 'qc_tests_applied' in self.ds.attrs:
+                    old = ast.literal_eval(self.ds.attrs['qc_tests_applied'])
+                    self._success_tests = str(old.extend(self._success_tests))
+                if 'qc_tests_failed' in self.ds.attrs:
+                    old = ast.literal_eval(self.ds.attrs['qc_tests_failed'])
+                    self._tests_not_applied = str(old.extend(self._tests_not_applied))
                 self.ds.attrs['qc_tests_applied'] = str(self._success_tests)
                 self.ds.attrs['qc_tests_failed'] = str(
                     self._tests_not_applied)

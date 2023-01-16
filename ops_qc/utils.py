@@ -121,3 +121,22 @@ def point_on_land(point,all_shapes,tol=0):
             return False
     else:
         return False
+
+def start_end_dist(ds, qcrange = [1,2,3]):
+    """
+    Takes an xarray dataset with LATITUDE, LONGITUDE, LOCATION_QC,
+    and DATETIME_QC variables and calculates the distance between the
+    first and last "good" data points.  The qcrange input is a list
+    of qcflags that should be considered "good" data.  Returned 
+    distance is in meters.
+    """
+    ds2 = ds.where(ds['LOCATION_QC'].isin(qcrange), drop=True)
+    ds2 = ds2.where(
+        ds2['DATETIME_QC'].isin(qcrange), drop=True)
+    if len(ds2) > 1:
+        sed = haversine(
+            ds2.LATITUDE[0], ds2.LONGITUDE[0],
+            ds2.LATITUDE[-1], ds2.LONGITUDE[-1])*1000
+    else:
+        sed = np.nan
+    return sed

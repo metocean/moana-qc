@@ -7,7 +7,7 @@ import xarray as xr
 import seawater as sw
 import datetime as dt
 from ops_core.utils import import_pycallable
-from ops_qc.utils import catch, haversine
+from ops_qc.utils import catch, haversine, start_end_dist
 
 cycle_dt = dt.datetime.now()
 
@@ -23,7 +23,8 @@ class QcWrapper(object):
         filelist=None,
         outfile_ext="_qc_%y%m%d",
         out_dir=None,
-        test_list=None,
+        test_list_1=None,
+        test_list_2=None,
         fishing_metafile="/data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv",
         metafile_username=[],
         metafile_token=[],
@@ -78,7 +79,8 @@ class QcWrapper(object):
         self.filelist = filelist
         self.outfile_ext = outfile_ext
         self.out_dir = out_dir
-        self.test_list = test_list
+        self.test_list_1 = test_list_1
+        self.test_list_2 = test_list_2
         self.metafile = fishing_metafile
         self.metafile_username = metafile_username
         self.metafile_token = metafile_token
@@ -153,6 +155,9 @@ class QcWrapper(object):
             self.preprocessor = self._set_class(
                 self.preprocessor_class, self._default_preprocessor_class
             )
+            self.qc_class = self._set_class(
+                self.qc_class, self._default_qc_class)
+
             self.qc_class = self._set_class(
                 self.qc_class, self._default_qc_class)
         except Exception as exc:
@@ -266,7 +271,7 @@ class QcWrapper(object):
             )
             pass
 
-    def _calc_positions(self, filename, surface_pressure=10):
+    def _calc_positions(self, filename, surface_pressure=10, qcrange=[1,2]):
         """
         Calculate locations for either stationary or mobile gear.
         Current state of this code assumes all stationary locations
@@ -274,9 +279,6 @@ class QcWrapper(object):
         the commented out regions...eventually will use those.
         """
         try:
-            ds2 = self.ds.where(self.ds['LOCATION_QC'].isin([1, 2]), drop=True)
-            ds2 = ds2.where(
-                ds2['DATETIME_QC'].isin([1, 2]), drop=True)
             self.ds.attrs['geospatial_lat_max'] = "%.6f" % np.nanmax(
                 self.ds.LATITUDE.values)
             self.ds.attrs['geospatial_lat_min'] = "%.6f" % np.nanmin(
@@ -285,15 +287,13 @@ class QcWrapper(object):
                 self.ds.LONGITUDE.values)
             self.ds.attrs['geospatial_lon_min'] = "%.6f" % np.nanmin(
                 self.ds.LONGITUDE.values)
-            if len(ds2) > 1:
-                start_end_dist = haversine(
-                    ds2.LATITUDE[0], ds2.LONGITUDE[0],
-                    ds2.LATITUDE[-1], ds2.LONGITUDE[-1])*1000
-                self.ds.attrs['start_end_dist_m'] = "%.2f" % start_end_dist
-            else:
-                self.ds.attrs['start_end_dist_m'] = np.nan
+            sed = start_end_dist(self.ds)
+            self.ds.attrs['start_end_dist_m'] = "%.2f" % sed
             if self.ds.attrs['gear_class'] == 'stationary':
                 # this needs work
+                ds2 = self.ds.where(self.ds['LOCATION_QC'].isin(qcrange), drop=True)
+                ds2 = ds2.where(
+                    ds2['DATETIME_QC'].isin(qcrange), drop=True)
                 lat = np.nanmean(
                     [ds2.LATITUDE.values[0], ds2.LATITUDE.values[-1]])
                 lon = np.nanmean(
@@ -315,28 +315,17 @@ class QcWrapper(object):
             )
             raise exc
 
-    def _qc_and_position(self, filename):
+    def _postprocess(self, filename):
         """
         If gear class is not unknown, apply QC, convert pressure to depth
         if desired, check if any bad data, save file.
         """
         try:
-            self.ds = self.qc_class(
-                self.ds,
-                self.test_list,
-                self.save_flags,
-                self.convert_p_to_z,
-                self.default_latitude,
-                self.attr_file,
-            ).run()
             # only save files with at least some good data
-            self._calc_positions(filename)
             if np.nanmin(self.ds["QC_FLAG"]) < 4:
                 if self.convert_p_to_z:
                     self.ds = self.convert_pressure_to_depth()
                 self._save_qc_data(filename)
-                #            if np.nanmax(self.ds['QC_FLAG']) in [3,4]:
-                #                self._some_bad_data_files.append(filename)
                 self.status_dict["total_obs"] = len(self.ds["DATETIME"])
                 # this is annoying but it didn't want to unpack single tuples...
                 values, counts = np.unique(
@@ -352,12 +341,27 @@ class QcWrapper(object):
                     {"failed": "yes",
                         "failure_mode": "No Good Data (all QC Flags = 4)"}
                 )
-                # self._failed_files.append(f'{filename}: No Good Data (all QC Flags = 4)')
         except Exception as exc:
             self.status_dict.update(
-                {"failed": "yes", "failure_mode": "QC Failed"})
+                {"failed": "yes", "failure_mode": "Post-Processing Failed"})
             self.logger.error(
-                f"Could not apply qc for {filename} due to {exc}")
+                f"Could not postprocess {filename} due to {exc}")
+
+    def _qc_files(self, test_list, filename):
+        try:
+            self.ds = self.qc_class(
+                self.ds,
+                test_list,
+                self.save_flags,
+                self.convert_p_to_z,
+                self.default_latitude,
+                self.attr_file,
+                ).run()
+        except Exception as exc:
+            self.status_dict.update(
+                {"failed": "yes", "failure_mode": "Apply QC Tests Failed"})
+            self.logger.error(
+                f"Could not qc {filename} due to {exc}")
 
     def _update_status(self, filename):
         try:
@@ -396,7 +400,6 @@ class QcWrapper(object):
             self.status_dict.update(
                 {"failed": "yes", "failure_mode": "Gear Class Unknown"}
             )
-            # self._failed_files.append(f'{filename}: Gear Class Unknown')
             self._update_status(filename)
             check_passed = False
         return check_passed
@@ -408,7 +411,6 @@ class QcWrapper(object):
         self._set_filelist()
         # apply qc
         for filename in self.files_to_qc:
-            #self.status_dict = {}
             try:
                 self.ds = self.datareader(filename=filename).run()
                 self.ds, self.status_dict = self.preprocessor(
@@ -417,12 +419,13 @@ class QcWrapper(object):
                     attr_file=self.attr_file,
                     metadata_columns=self.metadata_columns,
                 ).run()
-                #self.status_dict.update(self.ds.attrs)
-                #self.status_dict.update(status_dict_preprocess)
                 passed = self._status_checks(filename)
                 if not passed:
                     continue
-                self._qc_and_position(filename)
+                self._qc_files(self.test_list_1,filename)
+                self._calc_positions(filename)
+                self._qc_files(self.test_list_2,filename)
+                self._postprocess(filename)
                 self._update_status(filename)
             except Exception as exc:
                 self.status_dict.update({"failed": "yes"})
