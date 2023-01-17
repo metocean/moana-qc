@@ -3,8 +3,10 @@ import ast
 import pandas as pd
 import xarray as xr
 import numpy as np
-from ops_qc.utils import load_yaml
-import ops_qc.qc_tests_df as qc_tests
+#from ops_qc.utils import load_yaml
+#import ops_qc.qc_tests_df as qc_tests
+from utils import load_yaml
+import qc_tests_df as qc_tests
 
 
 class QcApply(object):
@@ -74,12 +76,12 @@ class QcApply(object):
                 else:
                     flag_list = self.global_flag_list
                 for flag_name in flag_list:
-                    varlist = self.ds.attrs.data_vars
+                    varlist = self.ds.data_vars
                     if (flag_name in varlist) and (flag_name not in self.global_flag_list) and (not self.overwrite_flags):
                         continue
                         self.logger.info(f'Not applying qc flag {flag_name} since it already exists.')
                     if (flag_name in varlist) and (flag_name in self.global_flag_list):
-                        new = self.qcdf[flag_name]
+                        new = np.array(self.qcdf[flag_name])
                         old = self.ds[flag_name]
                         self.ds[flag_name] = xr.where(old>new,old,new)
                     else:
@@ -89,10 +91,10 @@ class QcApply(object):
                         self.flag_attrs, flag_name, self.qc_flag_info)
                 if 'qc_tests_applied' in self.ds.attrs:
                     old = ast.literal_eval(self.ds.attrs['qc_tests_applied'])
-                    self._success_tests = str(old.extend(self._success_tests))
+                    self._success_tests = old+self._success_tests
                 if 'qc_tests_failed' in self.ds.attrs:
                     old = ast.literal_eval(self.ds.attrs['qc_tests_failed'])
-                    self._tests_not_applied = str(old.extend(self._tests_not_applied))
+                    self._tests_not_applied = old+self._tests_not_applied
                 self.ds.attrs['qc_tests_applied'] = str(self._success_tests)
                 self.ds.attrs['qc_tests_failed'] = str(
                     self._tests_not_applied)
@@ -142,7 +144,6 @@ class QcApply(object):
         for each measurement.
         """
         try:
-            #import ipdb; ipdb.set_trace()
             self.qcdf['QC_FLAG'] = np.zeros_like(self.df['LONGITUDE'])
             self.qcdf['QC_FLAG'] = self.qcdf.max(axis=1).astype('int')
             self.global_flag_list = ['QC_FLAG']

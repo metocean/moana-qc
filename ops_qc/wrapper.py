@@ -7,7 +7,7 @@ import xarray as xr
 import seawater as sw
 import datetime as dt
 from ops_core.utils import import_pycallable
-from ops_qc.utils import catch, haversine, start_end_dist
+from utils import catch, haversine, start_end_dist
 
 cycle_dt = dt.datetime.now()
 
@@ -100,8 +100,8 @@ class QcWrapper(object):
         self.metadata_columns = metadata_columns
         self._default_datareader_class = "ops_qc.readers.MangopareStandardReader"
         self._default_metareader_class = "ops_qc.readers.MangopareMetadataReader"
-        self._default_preprocessor_class = "ops_qc.preprocess.PreProcessMangopare"
-        self._default_qc_class = "ops_qc.apply_qc.QcApply"
+        self._default_preprocessor_class = "preprocess.PreProcessMangopare"
+        self._default_qc_class = "apply_qc.QcApply"
         #        self.save_file_dict = {'status_file':self._status_data}
         self.logger = logging
         self.status_dict_keys = [
@@ -156,10 +156,8 @@ class QcWrapper(object):
                 self.preprocessor_class, self._default_preprocessor_class
             )
             self.qc_class = self._set_class(
-                self.qc_class, self._default_qc_class)
-
-            self.qc_class = self._set_class(
-                self.qc_class, self._default_qc_class)
+                self.qc_class, self._default_qc_class
+            )
         except Exception as exc:
             self.logger.error(
                 "Unable to set required classes for qc: {}".format(exc))
@@ -291,9 +289,13 @@ class QcWrapper(object):
             self.ds.attrs['start_end_dist_m'] = "%.2f" % sed
             if self.ds.attrs['gear_class'] == 'stationary':
                 # this needs work
-                ds2 = self.ds.where(self.ds['LOCATION_QC'].isin(qcrange), drop=True)
-                ds2 = ds2.where(
-                    ds2['DATETIME_QC'].isin(qcrange), drop=True)
+                if 'LOCATION_QC' in self.ds.data_vars:
+                    ds2 = self.ds.where(self.ds['LOCATION_QC'].isin(qcrange), drop=True)
+                else:
+                    ds2 = self.ds
+                if 'DATETIME_QC' in ds2.data_vars:
+                    ds2 = ds2.where(
+                        ds2['DATETIME_QC'].isin(qcrange), drop=True)
                 lat = np.nanmean(
                     [ds2.LATITUDE.values[0], ds2.LATITUDE.values[-1]])
                 lon = np.nanmean(
@@ -353,8 +355,6 @@ class QcWrapper(object):
                 self.ds,
                 test_list,
                 self.save_flags,
-                self.convert_p_to_z,
-                self.default_latitude,
                 self.attr_file,
                 ).run()
         except Exception as exc:

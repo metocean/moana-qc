@@ -6,8 +6,8 @@ import seawater as sw
 import shapefile
 from shapely.geometry import Point, shape
 from shapely.ops import nearest_points
-from ops_qc.utils import calc_speed, point_on_land
-from ops_qc.utils import haversine, start_end_dist
+from utils import calc_speed, point_on_land
+from utils import haversine, start_end_dist
 
 
 """
@@ -54,7 +54,7 @@ def gear_type(self, fail_flag=3, gear=None, flag_name='flag_gear_type'):
 
 # 4. Timing/gap test
 
-def timing_gap(self, max_min=20, num_obs=5, fail_flag=3, flag_name='flag_timing_gap'):
+def timing_gap(self, max_min=60, num_obs=5, fail_flag=3, flag_name='flag_timing_gap'):
     """
     If observations are more than max_min minutes apart and there are less than
     num_obs observations on either side of the gap, flag the smaller
@@ -326,11 +326,11 @@ def stationary_position_check(self, surface_pres=10, fail_flag=3, flag_name='fla
     """
     self.qcdf[flag_name] = np.ones_like(self.df['LATITUDE'], dtype='uint8')
     if self.ds.attrs['gear_class'] == 'stationary':
-        include_flags = [flagname for flagname in ['flag_gear_type', 'flag_timing_gap', 'flag_date',
-                                                   'flag_location', 'flag_land', 'flag_ref_location']
-                         if flagname in self.qcdf.keys()]
-        combined_flag = self.qcdf[include_flags].max(axis=1).astype('int')
-        df2 = self.df.loc[combined_flag <= np.nanmax(good_pos_qc)]
+        #include_flags = [flagname for flagname in ['flag_gear_type', 'flag_timing_gap', 'flag_date',
+        #                                           'flag_location', 'flag_land', 'flag_ref_location']
+        #                 if flagname in self.qcdf.keys()]
+        #combined_flag = self.qcdf[include_flags].max(axis=1).astype('int')
+        df2 = self.df.loc[self.df['LOCATION_QC']<=np.nanmax(good_pos_qc)]
         if len(df2) < 1:
             # can't apply test, not enough good location data
             self.qcdf.loc[:, flag_name] = 0
@@ -346,7 +346,7 @@ def start_end_dist_check(self, fail_flag=[2,3], cutoffs=[5,50], flag_name='flag_
     on threshold (for now).
     """
     if 'start_end_dist_m' in self.ds.attrs.keys():
-        sed = self.ds.attrs['start_end_dist']
+        sed = float(self.ds.attrs['start_end_dist_m'])
     else:
         sed = start_end_dist(self.ds)
     if sed>cutoffs[0]:
