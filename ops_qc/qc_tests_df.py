@@ -6,8 +6,8 @@ import seawater as sw
 import shapefile
 from shapely.geometry import Point, shape
 from shapely.ops import nearest_points
-from utils import calc_speed, point_on_land
-from utils import haversine, start_end_dist
+from ops_qc.utils import calc_speed, point_on_land
+from ops_qc.utils import haversine, start_end_dist
 
 
 """

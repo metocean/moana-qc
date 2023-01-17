@@ -7,10 +7,9 @@ import xarray as xr
 import seawater as sw
 import datetime as dt
 from ops_core.utils import import_pycallable
-from utils import catch, haversine, start_end_dist
+from ops_qc.utils import catch, haversine, start_end_dist
 
 cycle_dt = dt.datetime.now()
-
 
 class QcWrapper(object):
     """Wrapper class for observational data quality control.  Incorporates transferring files from
@@ -100,9 +99,8 @@ class QcWrapper(object):
         self.metadata_columns = metadata_columns
         self._default_datareader_class = "ops_qc.readers.MangopareStandardReader"
         self._default_metareader_class = "ops_qc.readers.MangopareMetadataReader"
-        self._default_preprocessor_class = "preprocess.PreProcessMangopare"
-        self._default_qc_class = "apply_qc.QcApply"
-        #        self.save_file_dict = {'status_file':self._status_data}
+        self._default_preprocessor_class = "ops_qc.preprocess.PreProcessMangopare"
+        self._default_qc_class = "ops_qc.apply_qc.QcApply"
         self.logger = logging
         self.status_dict_keys = [
             "filename",
