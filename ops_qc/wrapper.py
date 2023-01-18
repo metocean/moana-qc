@@ -422,7 +422,8 @@ class QcWrapper(object):
                     continue
                 self._qc_files(self.test_list_1,filename)
                 self._calc_positions(filename)
-                self._qc_files(self.test_list_2,filename)
+                if self.ds.attrs['gear_class'] == 'stationary':
+                    self._qc_files(self.test_list_2,filename)
                 self._postprocess(filename)
                 self._update_status(filename)
             except Exception as exc:

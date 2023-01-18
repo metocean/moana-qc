@@ -316,7 +316,7 @@ def temp_drift(self, fail_flag=3, flag_name='flag_temp_drift'):
 # anything from here depends on previous qc tests
 
 
-def stationary_position_check(self, surface_pres=10, fail_flag=3, flag_name='flag_surf_loc', good_pos_qc = [1,2,3]):
+def stationary_position_check(self, surface_pres=10, fail_flag=[2,3], flag_name='flag_surf_loc', good_pos_qc = [1,2,3]):
     """
     Stationary/passive pressures are currently calculated using an average of the start
     and end positions.  If the first and/or last "good" positions are not near
@@ -326,16 +326,24 @@ def stationary_position_check(self, surface_pres=10, fail_flag=3, flag_name='fla
     """
     self.qcdf[flag_name] = np.ones_like(self.df['LATITUDE'], dtype='uint8')
     if self.ds.attrs['gear_class'] == 'stationary':
-        #include_flags = [flagname for flagname in ['flag_gear_type', 'flag_timing_gap', 'flag_date',
-        #                                           'flag_location', 'flag_land', 'flag_ref_location']
-        #                 if flagname in self.qcdf.keys()]
-        #combined_flag = self.qcdf[include_flags].max(axis=1).astype('int')
-        df2 = self.df.loc[self.df['LOCATION_QC']<=np.nanmax(good_pos_qc)]
-        if len(df2) < 1:
-            # can't apply test, not enough good location data
-            self.qcdf.loc[:, flag_name] = 0
-        if (df2.PRESSURE.iloc[0] > surface_pres) or (df2.PRESSURE.iloc[-1] > surface_pres):
-            self.qcdf.loc[:,flag_name] = fail_flag
+        fail_flag = fail_flag[1]
+    if self.ds.attrs['gear_class'] == 'mobile':
+        fail_flag = fail_flag[0]
+    # method 1 (if included in test_list_1)
+    include_flags = [flagname for flagname in ['flag_gear_type', 'flag_timing_gap', 'flag_date',
+                                               'flag_location', 'flag_land', 'flag_ref_location']
+                     if flagname in self.qcdf.keys()]
+    combined_flag = self.qcdf[include_flags].max(axis=1).astype('int')
+    df2 = self.df.loc[combined_flag<=np.nanmax(good_pos_qc)]
+    # method 1 (if included in test_list_2)
+    #df2 = self.df.loc[self.df['LOCATION_QC']<=np.nanmax(good_pos_qc)]
+    # the following check isn't really necessary, since apply_qc will catch failed tests
+    if len(df2) < 1:
+        # can't apply test, not enough good location data
+        self.qcdf.loc[:, flag_name] = 0
+        raise Exception
+    if (df2.PRESSURE.iloc[0] > surface_pres) or (df2.PRESSURE.iloc[-1] > surface_pres):
+        self.qcdf.loc[:,flag_name] = fail_flag
 
 def start_end_dist_check(self, fail_flag=[2,3], cutoffs=[5,50], flag_name='flag_dist'):
     """

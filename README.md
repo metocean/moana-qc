@@ -9,6 +9,14 @@ The first versions are for the purpose of quality-controlling data from the Moan
 The current version of this Dockerfile is forcing reinstall of ops-transfer and ops-core over the versions tagged in ops-libs because of the linked task changes.  At some point soon, will update ops-libs and that forced reinstall should not be necessary.  Used for docker image ops-qc:v0.1.6.
 
 ---
+## Some to-dos
+Add remaining qc tests (time checks from deck unit issue, grey list, qc reset check, calibration check, datetime after offload, datetime increasing)
+Improve netcdf format/attributes/etc.
+Change "mobile" to "towed" and "stationary" to "passive."  Not that important but more accurate names.
+Complete and fix code unittests.
+Improve documentation.
+
+---
 ## Code structure
 wrapper.py is the highest level class, which coordinates all the others.  Within it, the user specifies the data reader, the metadata reader, a preprocessor, and the qc_class.
 Data reader: reads the observations in each sensor offload file, formats variable names, and loads global attributes from the file header.
@@ -36,17 +44,22 @@ The tests from qc_test_df.py that should be included in a quality-control run ar
 Right now, tests in qc_tests_df need a pandas dataframe with LONGITUDE, LATITUDE, DATETIME, TEMPERATURE, and PRESSURE fields.  At some point this will be generalised.
 
 ---
+## Recommended Mangōpare QC tests
+Currently recommended qc tests in order:
+test_list_1: ['impossible_date', 'impossible_location', 'impossible_speed', 'timing_gap', 'global_range', 'remove_ref_location', 'spike', 'temp_drift', 'stationary_position_check']
+test_list_2: ['start_end_dist_check']
+Stationary_position_check could go in either list, depending on whether this test should be applied to both mobile and stationary gear, or only 
+stationary gear.
 
+---
 ## File Format
 Currently, all QC'd files are saved in netCDF format (see wrapper.py).  If needed, additional formats can be added.  The user can choose whether to save quality flags for all individual tests or only save the global quality flag.
 
 ---
-
 ## Status file
 Each time the wrapper is run on a list of files, a status file (csv) is created with information on any errors that may have occurred during processing.  This file is saved in the same directory as the output quality controlled nc files.  Note that all of this is in beta, so will be improved in the future.
 
 ---
-
 ## Building and running the docker image
 
 Current latest version of docker image: ops-qc:v0.1.12-dev.
