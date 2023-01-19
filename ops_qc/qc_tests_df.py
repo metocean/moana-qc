@@ -81,6 +81,9 @@ def impossible_date(self, min_date=datetime(2010, 1, 1), max_date=datetime.utcno
     # min date could be a spreadsheet error
     self.qcdf.loc[(self.df['DATETIME'] <= min_date), flag_name] = 3
 
+def datetime_increasing(self,fail_flag=4,flag_name='flag_datetime'):
+    self.df['DATETIME'].is_monotonic_increasing
+
 
 # 6. Impossible location test
 
@@ -157,7 +160,7 @@ def global_range(self, ranges=None, fail_flag=4):
     """
     if ranges is None:
         ranges = {'PRESSURE': [0, 2000, 'flag_global_range_pres'],
-                  'TEMPERATURE': [-2, 38, 'flag_global_range_temp']}
+                  'TEMPERATURE': [-2, 35, 'flag_global_range_temp']}
     for var, limit in ranges.items():
         flag_name = limit[2]
         limit = limit[0:2]
