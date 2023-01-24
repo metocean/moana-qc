@@ -4,7 +4,7 @@ import xarray as xr
 import logging
 import datetime
 from ops_qc.utils import load_yaml
-#from ops_core.utils import import_pycallable, catch_exception
+# from ops_core.utils import import_pycallable, catch_exception
 
 # Note DATETIME not included below because xaxrray
 # encodes datetime automatically
@@ -37,7 +37,8 @@ class PreProcessMangopare(object):
                  global_attr_dict_name='global_attr_info',
                  metadata_columns={'gear_class': 'Gear Class', 'vessel_email': 'Contact email',
                                    'vessel_name': 'Vessel name', 'email_status': 'Email Status',
-                                   'email_frequency': 'Email Frequency', 'expected_deck_unit_serial_number': 'Deck unit serial number'},
+                                   'email_frequency': 'Email Frequency', 'expected_deck_unit_serial_number': 'Deck unit serial number',
+                                   'deployment_method':'Fishing method'},
                  surface_pressure=5,
                  add_sitename=True,
                  status_dict={},
@@ -179,14 +180,14 @@ class PreProcessMangopare(object):
         try:
             self._classify_gear()
             if self.ds.attrs['gear_class'] != 'unknown':
-                #self._calc_positions()
+                # self._calc_positions()
                 self.ds = self.ds.dropna(how='any', dim='DATETIME')
                 self._find_bottom()
                 self._add_variable_attrs()
                 self._set_sitename()
                 self._add_global_attrs()
                 self.status_dict.update(self.ds.attrs)
-            return(self.ds, self.status_dict)
+            return (self.ds, self.status_dict)
         except Exception as exc:
             self.logger.error(
                 'Could not preprocess data from {}: {}'.format(self.filename, exc))
