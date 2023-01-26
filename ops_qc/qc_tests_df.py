@@ -73,19 +73,26 @@ def timing_gap(self, max_min=60, num_obs=5, fail_flag=3, flag_name='flag_timing_
 
 # 5. Impossible date test
 
-def impossible_date(self, min_date=datetime(2010, 1, 1), max_date=datetime.utcnow(), fail_flag=4, flag_name='flag_date'):
+def impossible_date(self, min_date=datetime(2010, 1, 1), max_date="offload", fail_flag=4, flag_name='flag_date'):
     """
     Makes sure observation data is within a specified valid range.
-    Min_date here should really come from fishing metadata
+    Min_date here should really come from fishing metadata.
+    max_date can either be a datetime object, i.e. datetime.utcnow(),
+    or the word "offload" to obtain offload time from file metadata
     """
+    if max_date == 'offload':
+            max_date = datetime.strptime(self.ds.download_time,'%d/%m/%Y %H:%M:%S')
     self.qcdf[flag_name] = np.ones_like(self.df['DATETIME'], dtype='uint8')
     self.qcdf.loc[(self.df['DATETIME'] >= max_date), flag_name] = fail_flag
     # min date could be a spreadsheet error
     self.qcdf.loc[(self.df['DATETIME'] <= min_date), flag_name] = 3
 
 def datetime_increasing(self,fail_flag=4,flag_name='flag_datetime'):
-    self.df['DATETIME'].is_monotonic_increasing
-
+    """
+    Check that datetime is monotonically increasing
+    """
+    if not self.df['DATETIME'].is_monotonic_increasing:
+        self.qcdf[flag_name] = np.ones_like(self.df['LATITUDE'], dtype='uint8')*fail_flag
 
 # 6. Impossible location test
 
