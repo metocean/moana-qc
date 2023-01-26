@@ -63,10 +63,12 @@ def timing_gap(self, max_min=60, num_obs=5, fail_flag=3, flag_name='flag_timing_
     self.qcdf[flag_name] = np.ones_like(self.df['DATETIME'], dtype='uint8')
     delta_time = self.df.DATETIME.diff().dt.total_seconds()/60
     gap_ind = [0] + \
-        [i for i in range(len(delta_time)) if delta_time[i] > max_min]
+        [i for i in range(len(delta_time)) if delta_time[i] > max_min] + [len(self.df.DATETIME)-1]
     if len(gap_ind) > 1:
         for i1, i2 in zip(gap_ind[:-1], gap_ind[1:]):
-            if i2-i1 < num_obs:
+            if i2-i1 == 0:  #single end point
+                self.qcdf.loc[self.qcdf.index[i1], flag_name] = fail_flag
+            elif i2-i1 < num_obs: #small group "clusters"
                 self.qcdf.loc[self.qcdf.index[i1:i2], flag_name] = fail_flag
 
 # 5. Impossible date test
@@ -319,7 +321,7 @@ def temp_drift(self, fail_flag=3, flag_name='flag_temp_drift'):
 # anything from here depends on previous qc tests
 
 
-def stationary_position_check(self, surface_pres=10, fail_flag=[2,3], flag_name='flag_surf_loc', good_pos_qc = [1,2,3]):
+def stationary_position_check(self, surface_pres=10, fail_flag=[2,3], flag_name='flag_surf_loc', good_pos_qc = [1,2]):
     """
     Stationary/passive pressures are currently calculated using an average of the start
     and end positions.  If the first and/or last "good" positions are not near
