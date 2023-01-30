@@ -173,3 +173,4 @@ class QcApply(object):
             return(self.ds)
         except Exception as exc:
             self.logger.error('QC testing failed.  Traceback: {}'.format(exc))
+            raise type(exc)(f'QC testing failed due to: {exc}')

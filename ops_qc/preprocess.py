@@ -191,3 +191,5 @@ class PreProcessMangopare(object):
         except Exception as exc:
             self.logger.error(
                 'Could not preprocess data from {}: {}'.format(self.filename, exc))
+            raise type(exc)(f'Could not preprocess data due to: {exc}')
+

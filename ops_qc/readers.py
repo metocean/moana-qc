@@ -101,8 +101,7 @@ class MangopareStandardReader(object):
         except Exception as exc:
             self.logger.error(
                 'Formatting of data failed for {}: {}'.format(self.filename, exc))
-            self.status_dict.update(
-                {'failed': 'yes', 'failure_mode': 'Could format data file.'})
+            raise type(exc)(f'Could not format dataframe due to: {exc}')
 
     def _convert_df_to_ds(self):
         """
@@ -119,8 +118,7 @@ class MangopareStandardReader(object):
         except Exception as exc:
             self.logger.error(
                 'Could not convert df to ds for {}: {}'.format(self.filename, exc))
-        self.status_dict.update(
-            {'failed': 'yes', 'failure_mode': 'Could not convert df to ds in file read.'})
+            raise type(exc)(f'Could not convert df to ds in file read due to: {exc}')
 
     def _identify_sensor_resets(self):
         """
@@ -189,8 +187,7 @@ class MangopareStandardReader(object):
         except Exception as exc:
             self.logger.error(
                 'Could not load global attributes for {} due to {}'.format(self.filename, exc))
-            self.status_dict.update(
-                {'failed': 'yes', 'failure_mode': 'Could not load global attributes during data file read.'})
+            raise type(exc)(f'Could not load global attributes during data file read due to: {exc}')
 
     def run(self):
         # read file based on self.filetype
@@ -275,4 +272,4 @@ class MangopareMetadataReader(object):
         except Exception as exc:
             self.logger.error(
                 'Could not load data from {}: {}'.format(self.metafile, exc))
-            raise exc
+            raise type(exc)(f'Could not load data for {self.metafile} due to: {exc}')

@@ -127,6 +127,7 @@ class QcWrapper(object):
             "failed",
             "failure_mode",
             "total_obs",
+            "detailed_error"
         ]
 
     def set_cycle(self, cycle_dt):
@@ -161,7 +162,8 @@ class QcWrapper(object):
         except Exception as exc:
             self.logger.error(
                 "Unable to set required classes for qc: {}".format(exc))
-            raise exc
+            raise type(exc)(f'Unable to set requred classes for qc due to: {exc}')
+
 
     def _set_filelist(self):
         try:
@@ -172,7 +174,8 @@ class QcWrapper(object):
         except Exception as exc:
             self.logger.error(
                 "No file list found, please specify.  No QC performed.")
-            raise exc
+            raise type(exc)(f'No file list found, no QC performed due to: {exc}')
+
 
     def _save_qc_data(self, filename):
         """
@@ -237,7 +240,8 @@ class QcWrapper(object):
                     exc
                 )
             )
-            raise exc
+            raise type(exc)(f'Could not create specified directory to save qc files in due to: {exc}')
+
 
     def convert_pressure_to_depth(self):
         """
@@ -277,16 +281,6 @@ class QcWrapper(object):
         the commented out regions...eventually will use those.
         """
         try:
-            self.ds.attrs['geospatial_lat_max'] = "%.6f" % np.nanmax(
-                self.ds.LATITUDE.values)
-            self.ds.attrs['geospatial_lat_min'] = "%.6f" % np.nanmin(
-                self.ds.LATITUDE.values)
-            self.ds.attrs['geospatial_lon_max'] = "%.6f" % np.nanmax(
-                self.ds.LONGITUDE.values)
-            self.ds.attrs['geospatial_lon_min'] = "%.6f" % np.nanmin(
-                self.ds.LONGITUDE.values)
-            sed = start_end_dist(self.ds)
-            self.ds.attrs['start_end_dist_m'] = "%.2f" % sed
             if self.ds.attrs['gear_class'] == 'stationary':
                 # this needs work
                 if 'LOCATION_QC' in self.ds.data_vars:
@@ -311,11 +305,20 @@ class QcWrapper(object):
         except Exception as exc:
             self.logger.error(
                 f"Position could not be calculated for {filename}: {exc}")
-            self.status_dict.update(
-                {"failed": "yes",
-                    "failure_mode": "Could not calculate stationary position."}
-            )
-            raise exc
+            raise type(exc)(f'Could not calculate stationary positions due to: {exc}')
+
+    def _calc_location_attrs(self,filename):
+            self.ds.attrs['geospatial_lat_max'] = "%.6f" % np.nanmax(
+                self.ds.LATITUDE.values)
+            self.ds.attrs['geospatial_lat_min'] = "%.6f" % np.nanmin(
+                self.ds.LATITUDE.values)
+            self.ds.attrs['geospatial_lon_max'] = "%.6f" % np.nanmax(
+                self.ds.LONGITUDE.values)
+            self.ds.attrs['geospatial_lon_min'] = "%.6f" % np.nanmin(
+                self.ds.LONGITUDE.values)
+            sed = start_end_dist(self.ds)
+            self.ds.attrs['start_end_dist_m'] = "%.2f" % sed
+
 
     def _postprocess(self, filename):
         """
@@ -409,14 +412,12 @@ class QcWrapper(object):
         self._status_data = pd.DataFrame(columns=self.status_dict_keys)
         self._saved_files = []
         self._set_filelist()
+
         # apply qc
-        self.status_dict = {}
-
         for filename in self.files_to_qc:
+            self.status_dict = {}
             try:
-                import ipdb; ipdb.set_trace()
-
-                self.ds, self.status_dict = self.datareader(filename=filename).run()
+                self.ds = self.datareader(filename=filename).run()
                 self.ds, self.status_dict = self.preprocessor(
                     ds=self.ds,
                     fisher_metadata=self.fisher_metadata,
@@ -428,14 +429,18 @@ class QcWrapper(object):
                 if not passed:
                     continue
                 self._qc_files(self.test_list_1,filename)
+                self._calc_location_attrs(filename)
                 self._calc_positions(filename)
                 if self.ds.attrs['gear_class'] == 'stationary':
                     self._qc_files(self.test_list_2,filename)
                 self._postprocess(filename)
                 self._update_status(filename)
             except Exception as exc:
-                estr = str(exc).split(self.splitstring)
-                self.status_dict.update({"failed": "yes","failure_mode":estr[0],"detailed_error":estr[1]})
+                if self.splitspring in str(exc):
+                    estr = str(exc).split(self.splitstring)
+                    self.status_dict.update({"failed": "yes","failure_mode":estr[0],"detailed_error":estr[1]})
+                else:
+                    self.status_dict.update({"failed": "yes","failure_mode":str(exc)})
                 self._update_status(filename)
                 self.logger.error(
                     "Could not qc data from {}. Traceback: {}".format(
