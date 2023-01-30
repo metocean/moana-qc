@@ -66,11 +66,11 @@ class MangopareStandardReader(object):
             self.start_line = self._calc_header_rows(
                 default_skiprows=self.skip_rows)
             self.df = pd.read_csv(
-                self.filename, skiprows=self.start_line, error_bad_lines=False)
+                self.filename, skiprows=self.start_line, error_bad_lines=True)
         except Exception as exc:
             self.logger.error(
-                'Could not read file {} due to {}'.format(self.filename, exc))
-            raise exc
+                'Could not read csv file {} due to {}'.format(self.filename, exc))
+            raise type(exc)(f'Could not read csv file due to: {exc}')
 
     def _format_df_data(self):
         """
@@ -101,7 +101,8 @@ class MangopareStandardReader(object):
         except Exception as exc:
             self.logger.error(
                 'Formatting of data failed for {}: {}'.format(self.filename, exc))
-            raise exc
+            self.status_dict.update(
+                {'failed': 'yes', 'failure_mode': 'Could format data file.'})
 
     def _convert_df_to_ds(self):
         """
@@ -118,7 +119,8 @@ class MangopareStandardReader(object):
         except Exception as exc:
             self.logger.error(
                 'Could not convert df to ds for {}: {}'.format(self.filename, exc))
-            raise exc
+        self.status_dict.update(
+            {'failed': 'yes', 'failure_mode': 'Could not convert df to ds in file read.'})
 
     def _identify_sensor_resets(self):
         """
@@ -187,7 +189,8 @@ class MangopareStandardReader(object):
         except Exception as exc:
             self.logger.error(
                 'Could not load global attributes for {} due to {}'.format(self.filename, exc))
-            raise exc
+            self.status_dict.update(
+                {'failed': 'yes', 'failure_mode': 'Could not load global attributes during data file read.'})
 
     def run(self):
         # read file based on self.filetype
@@ -196,7 +199,7 @@ class MangopareStandardReader(object):
         self._identify_sensor_resets()
         self._convert_df_to_ds()
         self._load_global_attributes()
-        return(self.ds)
+        return(self.ds,self.status_dict)
 
 
 class MangopareMetadataReader(object):

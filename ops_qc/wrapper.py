@@ -40,6 +40,7 @@ class QcWrapper(object):
             os.path.dirname(os.path.realpath(__file__)), "attribute_list.yml"
         ),
         startstring="DateTime (UTC)",
+        splitstring="due to:",
         dateformat="%Y%m%dT%H%M%S",
         gear_class={
             "Bottom trawl": "mobile",
@@ -94,13 +95,14 @@ class QcWrapper(object):
         self.default_latitude = default_latitude
         self.attr_file = attr_file
         self.startstring = startstring
+        self.splitstring = splitstring
         self.dateformat = dateformat
         self.gear_class = gear_class
         self.metadata_columns = metadata_columns
-        self._default_datareader_class = "ops_qc.readers.MangopareStandardReader"
-        self._default_metareader_class = "ops_qc.readers.MangopareMetadataReader"
-        self._default_preprocessor_class = "ops_qc.preprocess.PreProcessMangopare"
-        self._default_qc_class = "ops_qc.apply_qc.QcApply"
+        self._default_datareader_class = "readers.MangopareStandardReader"
+        self._default_metareader_class = "readers.MangopareMetadataReader"
+        self._default_preprocessor_class = "preprocess.PreProcessMangopare"
+        self._default_qc_class = "apply_qc.QcApply"
         self.logger = logging
         self.status_dict_keys = [
             "filename",
@@ -408,14 +410,19 @@ class QcWrapper(object):
         self._saved_files = []
         self._set_filelist()
         # apply qc
+        self.status_dict = {}
+
         for filename in self.files_to_qc:
             try:
-                self.ds = self.datareader(filename=filename).run()
+                import ipdb; ipdb.set_trace()
+
+                self.ds, self.status_dict = self.datareader(filename=filename).run()
                 self.ds, self.status_dict = self.preprocessor(
                     ds=self.ds,
                     fisher_metadata=self.fisher_metadata,
                     attr_file=self.attr_file,
                     metadata_columns=self.metadata_columns,
+                    status_dict=self.status_dict
                 ).run()
                 passed = self._status_checks(filename)
                 if not passed:
@@ -427,7 +434,8 @@ class QcWrapper(object):
                 self._postprocess(filename)
                 self._update_status(filename)
             except Exception as exc:
-                self.status_dict.update({"failed": "yes"})
+                estr = str(exc).split(self.splitstring)
+                self.status_dict.update({"failed": "yes","failure_mode":estr[0],"detailed_error":estr[1]})
                 self._update_status(filename)
                 self.logger.error(
                     "Could not qc data from {}. Traceback: {}".format(
