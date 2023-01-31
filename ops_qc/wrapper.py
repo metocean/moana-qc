@@ -9,7 +9,7 @@ import datetime as dt
 from ops_core.utils import import_pycallable
 from ops_qc.utils import catch, haversine, start_end_dist
 
-#cycle_dt = dt.datetime.now()
+cycle_dt = dt.datetime.now()
 
 class QcWrapper(object):
     """Wrapper class for observational data quality control.  Incorporates transferring files from
@@ -305,7 +305,7 @@ class QcWrapper(object):
         except Exception as exc:
             self.logger.error(
                 f"Position could not be calculated for {filename}: {exc}")
-            raise type(exc)(f'Could not calculate stationary positions due to: {exc}')
+            raise type(exc)(f'Could not calculate stationary positions (len={len(self.ds.TEMPERATURE)}) due to: {exc}')
 
     def _calc_location_attrs(self,filename):
         """
