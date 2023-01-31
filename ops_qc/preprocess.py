@@ -99,7 +99,7 @@ class PreProcessMangopare(object):
             self.logger.info(
                 'Gear Class calculation failed, labeled as unknown: {}'.format(exc))
             self.status_dict.update(
-                {'failed': 'yes', 'failure_mode': 'Could not assign attribute(s) from csv header.'})
+                {'failed': 'yes', 'failure_mode': 'Could not assign attribute(s) from csv header.', 'detailed_error':str(exc)})
 
     def _find_bottom(self, cutoff='4 minutes'):
         """

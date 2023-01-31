@@ -308,6 +308,11 @@ class QcWrapper(object):
             raise type(exc)(f'Could not calculate stationary positions due to: {exc}')
 
     def _calc_location_attrs(self,filename):
+        """
+        Assigns derived position attributes to netdf and
+        calculates the start_end_dist
+        """
+        try:
             self.ds.attrs['geospatial_lat_max'] = "%.6f" % np.nanmax(
                 self.ds.LATITUDE.values)
             self.ds.attrs['geospatial_lat_min'] = "%.6f" % np.nanmin(
@@ -318,6 +323,10 @@ class QcWrapper(object):
                 self.ds.LONGITUDE.values)
             sed = start_end_dist(self.ds)
             self.ds.attrs['start_end_dist_m'] = "%.2f" % sed
+        except Exception as exc:
+            self.logger.error(
+                f"Position attrs not assigned for {filename}: {exc}")
+            raise type(exc)(f'Position attrs or start_end_dist not assigned due to: {exc}')
 
 
     def _postprocess(self, filename):
@@ -441,7 +450,7 @@ class QcWrapper(object):
                     estr = str(exc).split(self.splitstring)
                     self.status_dict.update({"failed": "yes","failure_mode":estr[0],"detailed_error":estr[1]})
                 else:
-                    self.status_dict.update({"failed": "yes","failure_mode":str(exc)})
+                    self.status_dict.update({"failed": "yes","failure_mode":str(exc),"detailed_error":"NA"})
                 self._update_status(filename)
                 self.logger.error(
                     "Could not qc data from {}. Traceback: {}".format(
