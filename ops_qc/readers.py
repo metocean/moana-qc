@@ -196,7 +196,7 @@ class MangopareStandardReader(object):
         self._identify_sensor_resets()
         self._convert_df_to_ds()
         self._load_global_attributes()
-        return(self.ds,self.status_dict)
+        return(self.ds)
 
 
 class MangopareMetadataReader(object):

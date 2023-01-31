@@ -9,7 +9,7 @@ import datetime as dt
 from ops_core.utils import import_pycallable
 from ops_qc.utils import catch, haversine, start_end_dist
 
-cycle_dt = dt.datetime.now()
+#cycle_dt = dt.datetime.now()
 
 class QcWrapper(object):
     """Wrapper class for observational data quality control.  Incorporates transferring files from
@@ -99,10 +99,10 @@ class QcWrapper(object):
         self.dateformat = dateformat
         self.gear_class = gear_class
         self.metadata_columns = metadata_columns
-        self._default_datareader_class = "readers.MangopareStandardReader"
-        self._default_metareader_class = "readers.MangopareMetadataReader"
-        self._default_preprocessor_class = "preprocess.PreProcessMangopare"
-        self._default_qc_class = "apply_qc.QcApply"
+        self._default_datareader_class = "ops_qc.readers.MangopareStandardReader"
+        self._default_metareader_class = "ops_qc.readers.MangopareMetadataReader"
+        self._default_preprocessor_class = "ops_qc.preprocess.PreProcessMangopare"
+        self._default_qc_class = "ops_qc.apply_qc.QcApply"
         self.logger = logging
         self.status_dict_keys = [
             "filename",
@@ -436,7 +436,8 @@ class QcWrapper(object):
                 self._postprocess(filename)
                 self._update_status(filename)
             except Exception as exc:
-                if self.splitspring in str(exc):
+                #import ipdb; ipdb.set_trace()
+                if self.splitstring in str(exc):
                     estr = str(exc).split(self.splitstring)
                     self.status_dict.update({"failed": "yes","failure_mode":estr[0],"detailed_error":estr[1]})
                 else:
