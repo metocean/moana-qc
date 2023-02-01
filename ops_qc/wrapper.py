@@ -64,14 +64,6 @@ class QcWrapper(object):
             "Diving": "stationary",
             "Trolling": "mobile"
         },
-        metadata_columns={
-            "gear_class": "Gear Class",
-            "vessel_email": "Contact email",
-            "vessel_name": "Vessel name",
-            "email_status": "Email Status",
-            "email_frequency": "Email Frequency",
-            "expected_deck_unit_serial_number": "Deck unit serial number",
-        },
         logger=logging,
         **kwargs,
     ):
@@ -98,7 +90,6 @@ class QcWrapper(object):
         self.splitstring = splitstring
         self.dateformat = dateformat
         self.gear_class = gear_class
-        self.metadata_columns = metadata_columns
         self._default_datareader_class = "ops_qc.readers.MangopareStandardReader"
         self._default_metareader_class = "ops_qc.readers.MangopareMetadataReader"
         self._default_preprocessor_class = "ops_qc.preprocess.PreProcessMangopare"
@@ -431,7 +422,6 @@ class QcWrapper(object):
                     ds=self.ds,
                     fisher_metadata=self.fisher_metadata,
                     attr_file=self.attr_file,
-                    metadata_columns=self.metadata_columns,
                     status_dict=self.status_dict
                 ).run()
                 passed = self._status_checks(filename)
