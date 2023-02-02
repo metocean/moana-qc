@@ -54,7 +54,7 @@ def gear_type(self, fail_flag=3, gear=None, flag_name='flag_gear_type'):
 
 # 4. Timing/gap test
 
-def timing_gap(self, max_min=60, num_obs=5, fail_flag=3, flag_name='flag_timing_gap'):
+def timing_gap(self, max_min=60, num_obs=5, fail_flag=4, flag_name='flag_timing_gap'):
     """
     If observations are more than max_min minutes apart and there are less than
     num_obs observations on either side of the gap, flag the smaller
@@ -203,7 +203,7 @@ def climatology_test(self):
 
 # 11. Spike test
 
-def spike(self, qc_vars=None, fail_flag=4):
+def spike(self, qc_vars=None, fail_flag=3):
     """
     So far this has only removed good data...need really high
     thresholds. Because I think all of the spike section could
