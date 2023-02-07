@@ -343,7 +343,7 @@ def stationary_position_check(self, surface_pres=10, fail_flag=[2,3], flag_name=
         fail_flag = fail_flag[0]
     # method 1 (if included in test_list_1)
     include_flags = [flagname for flagname in ['flag_gear_type', 'flag_timing_gap', 'flag_date',
-                                               'flag_location', 'flag_land', 'flag_ref_location']
+                                               'flag_location', 'flag_land', 'flag_ref_loc']
                      if flagname in self.qcdf.keys()]
     combined_flag = self.qcdf[include_flags].max(axis=1).astype('int')
     df2 = self.df.loc[combined_flag<=np.nanmax(good_pos_qc)]
