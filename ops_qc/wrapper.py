@@ -9,7 +9,9 @@ import datetime as dt
 from ops_core.utils import import_pycallable
 from ops_qc.utils import catch, haversine, start_end_dist
 
-cycle_dt = dt.datetime.now()
+xr.set_options(keep_attrs=True)
+
+cycle_dt = dt.datetime.utcnow()
 
 class QcWrapper(object):
     """Wrapper class for observational data quality control.  Incorporates transferring files from
@@ -284,15 +286,19 @@ class QcWrapper(object):
                 lat = np.nanmean(
                     [ds2.LATITUDE.values[0], ds2.LATITUDE.values[-1]])
                 lon = np.nanmean(
-                    [ds2.LONGITUDE.values[0], ds2.LONGITUDE.values[-1]])
-                lons = np.ones_like(self.ds['LONGITUDE'])*lon
-                lats = np.ones_like(self.ds['LATITUDE'])*lat
-                self.ds['LATITUDE'] = xr.DataArray(lats, dims=['DATETIME'])
+                    [ds2.LONGITUDE.values[0], ds2.LONGITUDE.values[-1]]) % 360
+                #lons = np.ones_like(self.ds['LONGITUDE'])*lon
+                #lats = np.ones_like(self.ds['LATITUDE'])*lat
+                #self.ds['LATITUDE'] = xr.DataArray(lats)
+                #self.ds = s.update({'LATITTUDE':lats})
+                self.ds['LATITUDE'] = self.ds.LATITUDE.where(self.ds.LATITUDE == lat, other=lat)
+                self.ds['LONGITUDE'] = self.ds.LONGITUDE.where(self.ds.LONGITUDE == lon, other=lon)
             if self.ds.attrs['gear_class'] == 'mobile':
-                lons = self.ds['LONGITUDE']
+                self.ds = self.ds.assign({"LONGITUDE": lambda ds: ds['LONGITUDE'] % 360})
+            #    lons = self.ds['LONGITUDE']
             # convert to 0-360 for both stationary and mobile gear:
-            lons = [l % 360 for l in lons]
-            self.ds['LONGITUDE'] = xr.DataArray(lons, dims=['DATETIME'])
+            #lons = [l % 360 for l in lons]
+            #self.ds = self.ds.update({'LONGITUDE':lons})
         except Exception as exc:
             self.logger.error(
                 f"Position could not be calculated for {filename}: {exc}")
@@ -435,7 +441,6 @@ class QcWrapper(object):
                 self._postprocess(filename)
                 self._update_status(filename)
             except Exception as exc:
-                #import ipdb; ipdb.set_trace()
                 if self.splitstring in str(exc):
                     estr = str(exc).split(self.splitstring)
                     self.status_dict.update({"failed": "yes","failure_mode":estr[0],"detailed_error":estr[1]})

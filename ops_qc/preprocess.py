@@ -4,18 +4,6 @@ import xarray as xr
 import logging
 import datetime
 from ops_qc.utils import load_yaml
-# from ops_core.utils import import_pycallable, catch_exception
-
-# Note DATETIME not included below because xaxrray
-# encodes datetime automatically
-# var_attr_info = {
-#     'LATITUDE': ['latitude', 'degree_north'],
-#     'LONGITUDE': ['longitude', 'degree_east'],
-#     'TEMPERATURE': ['sea_water_temperature', 'degree_C'],
-#     'PRESSURE': ['sea_water_pressure', 'dbar'],
-#     'PHASE': ['fishing_deployment_phase', 'na']
-# }
-
 
 class PreProcessMangopare(object):
     """
@@ -73,6 +61,12 @@ class PreProcessMangopare(object):
             sn_data = self.fisher_metadata.loc[self.fisher_metadata['Mangopare serial number'] == ms]
             t_min = pd.to_datetime(np.min(self.ds['DATETIME']).values)
             t_max = pd.to_datetime(np.max(self.ds['DATETIME']).values)
+        except Exception as exc:
+            self.logger.error(
+                'Could not calculate time range or sn data: {}'.format(exc))
+            self.status_dict.update(
+                {'failed': 'yes', 'failure_mode': f'Could not calculate time range or sn data, len(DATETIME)={len(self.ds.DATETIME)}', 'detailed_error':str(exc)})
+        try:
             time_check = 0
             for _, row in sn_data.iterrows():
                 # round max date to the first minute of the next day in spreadsheet
