@@ -378,5 +378,3 @@ def start_end_dist_check(self, fail_flag=[2,3], cutoffs=[5,50], flag_name='flag_
     else:
         ff = 1
     self.qcdf[flag_name] = np.ones_like(self.df['LATITUDE'], dtype='uint8')*ff
-
-

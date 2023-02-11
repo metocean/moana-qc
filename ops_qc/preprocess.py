@@ -59,13 +59,15 @@ class PreProcessMangopare(object):
         try:
             ms = int(self.ds.attrs['moana_serial_number'])
             sn_data = self.fisher_metadata.loc[self.fisher_metadata['Mangopare serial number'] == ms]
+            self.status_dict.update(self.ds.attrs)
             t_min = pd.to_datetime(np.min(self.ds['DATETIME']).values)
             t_max = pd.to_datetime(np.max(self.ds['DATETIME']).values)
         except Exception as exc:
             self.logger.error(
                 'Could not calculate time range or sn data: {}'.format(exc))
-            self.status_dict.update(
-                {'failed': 'yes', 'failure_mode': f'Could not calculate time range or sn data, len(DATETIME)={len(self.ds.DATETIME)}', 'detailed_error':str(exc)})
+            raise type(exc)(f'Could not calculate time range or sn data, len(DATETIME)={len(self.ds.DATETIME)} due to: {exc}')
+            #self.status_dict.update(
+            #    {'failed': 'yes', 'failure_mode': f'Could not calculate time range or sn data, len(DATETIME)={len(self.ds.DATETIME)}', 'detailed_error':str(exc)})
         try:
             time_check = 0
             for _, row in sn_data.iterrows():
@@ -83,6 +85,7 @@ class PreProcessMangopare(object):
                     except:
                         pass
                     time_check += 1
+                    self.status_dict.update(self.ds.attrs)
             if time_check < 1:
                 self.status_dict.update(
                     {'failed': 'yes', 'failure_mode': 'No valid time range in fisher metadata.'})
@@ -94,10 +97,11 @@ class PreProcessMangopare(object):
                 self.logger.error(
                     'Multiple entries found for this SN and time range in fisher metadata, skipping {}.'.format(self.filename))
         except Exception as exc:
-            self.logger.info(
+            self.logger.error(
                 'Gear Class calculation failed, labeled as unknown: {}'.format(exc))
-            self.status_dict.update(
-                {'failed': 'yes', 'failure_mode': 'Could not assign attribute(s) from csv header.', 'detailed_error':str(exc)})
+            raise type(exc)(f'Could not assign attribute(s) from csv header due to: {exc}')
+            #self.status_dict.update(
+            #    {'failed': 'yes', 'failure_mode': 'Could not assign attribute(s) from csv header.', 'detailed_error':str(exc)})
 
     def _find_bottom(self, cutoff='4 minutes'):
         """
@@ -166,28 +170,31 @@ class PreProcessMangopare(object):
         a sitename of form NA{mangopare sn}DU{deck unit sn} which should
         be unique for each vessel (but not guaranteed).
         """
-        if not self.add_sitename:
-            sitename = 'NA'
-        elif self.ds.attrs['vessel_id'] == 'NA':
-            sitename = f'msn{self.ds.attrs["moana_serial_number"]}du{self.ds.attrs["deck_unit_serial_number"]}'
-        else:
-            sitename = f'vid{self.ds.attrs["vessel_id"]}'
-        self.ds.attrs['platform_code'] = sitename
+        try:
+            if not self.add_sitename:
+                sitename = 'NA'
+            elif self.ds.attrs['vessel_id'] == 'NA':
+                sitename = f'msn{self.ds.attrs["moana_serial_number"]}du{self.ds.attrs["deck_unit_serial_number"]}'
+            else:
+                sitename = f'vid{self.ds.attrs["vessel_id"]}'
+            self.ds.attrs['platform_code'] = sitename
+        except Exception as exc:
+            self.logger.error('Could not assign sitename/platform code.')
 
     def run(self):
-        try:
-            self._classify_gear()
-            if self.ds.attrs['gear_class'] != 'unknown':
-                # self._calc_positions()
-                self.ds = self.ds.dropna(how='any', dim='DATETIME')
-                self._find_bottom()
-                self._add_variable_attrs()
-                self._set_sitename()
-                self._add_global_attrs()
-                self.status_dict.update(self.ds.attrs)
-            return (self.ds, self.status_dict)
-        except Exception as exc:
-            self.logger.error(
-                'Could not preprocess data from {}: {}'.format(self.filename, exc))
-            raise type(exc)(f'Could not preprocess data due to: {exc}')
+        # try:
+        self._classify_gear()
+        if self.ds.attrs['gear_class'] != 'unknown':
+            # self._calc_positions()
+            self.ds = self.ds.dropna(how='any', dim='DATETIME')
+            self._find_bottom()
+            self._add_variable_attrs()
+            self._set_sitename()
+            self._add_global_attrs()
+            self.status_dict.update(self.ds.attrs)
+        return (self.ds, self.status_dict)
+        # except Exception as exc:
+        #     self.logger.error(
+        #         'Could not preprocess data from {}: {}'.format(self.filename, exc))
+        #     raise type(exc)(f'Could not preprocess data due to: {exc}')
 
