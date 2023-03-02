@@ -1,12 +1,12 @@
 # ops-qc
 
-This library contains data quality-control code initially intended for the quality-control of oceanographic observation data.  Only automatic quality control is included at this time, for use with near real-time data.
+This library contains code initially intended for the operational, near real-time quality-control of Mangōpare/Moana oceanographic observation data.  Only automatic quality control is included at this time, for use with measurements transmitted in near real-time.
 
-The first versions are for the purpose of quality-controlling data from the Moana Project's Mangopare (Te Tiro Moana) temperature and pressure sensor, but will be made more generic when needed.
+The first versions are for the purpose of quality-controlling data from the Moana Project's Mangopare (Te Tiro Moana) Mangōpare/Moana temperature and pressure sensor, but will be made more generic when needed.
 
 ---
 # Current Notes
-The current version of this Dockerfile is forcing reinstall of ops-transfer and ops-core over the versions tagged in ops-libs because of the linked task changes.  At some point soon, will update ops-libs and that forced reinstall should not be necessary.  Used for docker image ops-qc:v0.1.6.
+Master branch is currently intended for MetOcean operational use.  The external-aus branch is intended for development use by the IMOS Fish-SOOP programme.
 
 ---
 ## Some to-dos
