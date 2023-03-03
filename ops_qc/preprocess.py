@@ -9,12 +9,30 @@ class PreProcessMangopare(object):
     """
     Mangopare position processing and fishing gear classification.
     Inputs:
-        ds: xarray dataset including data to be QC'd
-        metadata: pandas dataframe with Mangopare fisher metadata
-        These are generated using qc_readers.py, see for defaults.
-        status_dict: dictionary with file processing status info,
-        if not already provided, will start with empty dict.  If
-        provided, will update dict with new processing info.
+        ds -- xarray dataset including data to be QC'd
+            Generated using qc_readers.py, see for defaults.
+        fisher_metadata -- pandas dataframe with Mangopare fisher metadata
+            Generated using qc_readers.py, see for defaults.
+        attr_file -- attribute yaml file, see attribute_list.yml in
+            python package directory ops_qc/
+        status_dict -- dictionary with file processing status info,
+            if not already provided, will start with empty dict.  If
+            provided, will update dict with new processing info.
+        var_attr_dict_name -- string, name of dictionary in attr_file 
+            that contains variable attribute information
+        global_attr_dict_name -- string, name of dictionary in attr_file 
+            that contains global attribute information
+        metadata_columns -- dictionary that contains netcdf global attribute
+            names paired with corresponding column name in fisher metadata
+            spreadsheet
+        add_sitename -- boolean, set "platform_code" global attribute to 
+            vessel_id from fisher metadata spreadsheet (true) or NA (false)
+        status_dict -- dictionary that keeps track of qc failures and 
+            is updated throughout the process
+
+    Returns:
+        self.ds -- xarray dataset updated with preprocessing information
+        self.status_dict -- updated status_dict with any new error information
     """
 
     def __init__(self,
@@ -31,7 +49,6 @@ class PreProcessMangopare(object):
                     'email_frequency': 'Email Frequency', 
                     'expected_deck_unit_serial_number': 'Deck unit serial number',
                     'deployment_method':'Fishing method'},
-                 surface_pressure=5,
                  add_sitename=True,
                  status_dict={},
                  logger=logging):
@@ -42,7 +59,6 @@ class PreProcessMangopare(object):
         self.var_attr_dict_name = var_attr_dict_name
         self.global_attr_dict_name = global_attr_dict_name
         self.metadata_columns = metadata_columns
-        self.surface_pressure = surface_pressure
         self.add_sitename = add_sitename
         self.status_dict = status_dict
         self.logger = logging
@@ -182,7 +198,6 @@ class PreProcessMangopare(object):
             self.logger.error('Could not assign sitename/platform code.')
 
     def run(self):
-        # try:
         self._classify_gear()
         if self.ds.attrs['gear_class'] != 'unknown':
             # self._calc_positions()
@@ -193,8 +208,4 @@ class PreProcessMangopare(object):
             self._add_global_attrs()
             self.status_dict.update(self.ds.attrs)
         return (self.ds, self.status_dict)
-        # except Exception as exc:
-        #     self.logger.error(
-        #         'Could not preprocess data from {}: {}'.format(self.filename, exc))
-        #     raise type(exc)(f'Could not preprocess data due to: {exc}')
 

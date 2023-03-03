@@ -8,12 +8,20 @@ import ops_qc.qc_tests_df as qc_tests
 
 class QcApply(object):
     """
-    Base class for observational data quality control.
-    Input dataframe with LONGITUDE, LATITUDE, DATETIME, PRESSURE, TEMPERATURE
-    of same shape and applies QC, designed for instruments mounted on fishing gear.
+    Base class for observational data quality control.  Takes xarray dataset containing
+    measurements from Mangōpare/Moana sensor and applies automatic quality control tests.
     Converts dataset to dataframe for consistency with BDC QC code.
-    At some point might change all QC to ds so we don't have to switch
-    back and forth.  Or change all qc flags to a list/dict which would make way more sense.
+    Inputs:
+        ds -- dataframe with LONGITUDE, LATITUDE, DATETIME, PRESSURE, TEMPERATURE
+        test_list -- list of qc tests in qc_test_df.py to apply to xarray dataset
+        save_flags -- boolean, save all qc test flags (true) or only global qc flags (false)
+        attr_file -- yaml file that contains global and variable attribute information
+        overwrite_flags -- boolean, overwrite flags if a qc test has already
+            been performed and is in self.qcdf (true) or skip test if already exists (false)
+
+    To-do:
+        At some point might change all QC to ds so we don't have to switch
+        back and forth.  Or change all qc flags to a list/dict which would make way more sense.
     """
 
     def __init__(self,

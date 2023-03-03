@@ -6,17 +6,57 @@ import pandas as pd
 import xarray as xr
 import seawater as sw
 import datetime as dt
-from ops_core.utils import import_pycallable
-from ops_qc.utils import catch, haversine, start_end_dist
+from ops_qc.utils import catch, haversine, start_end_dist, import_pycallable
 
 xr.set_options(keep_attrs=True)
 
 cycle_dt = dt.datetime.utcnow()
 
 class QcWrapper(object):
-    """Wrapper class for observational data quality control.  Incorporates transferring files from
-    an incoming directory to a new directory.
+    """
+    Wrapper class for observational data quality control.  Takes a list of csv files containing
+    moana/mangōpare data and outputs qc'd data in netcdf files, one file per csv.  Also creates 
+    a status file that indicates if the qc was successful, and if not, why it wasn't.
 
+    Arguments:
+        filelist -- list of csv files to apply quality control to
+        outfile_ext -- extension to add to filenames when saving as netcdf files
+        out_dir - directory to save qc'd netcdf files in
+        test_list_1 -- list of qc tests to run in the first "batch," these tests should not
+            depend on a previous test
+        test_list_2 -- list of qc tests to run in the second "batch," which may depend on 
+            qc tests in test_list_1
+        fishing_metafile -- path and filename for the csv file that contains fisher metadata,
+            can be a local directory or a csv file in a github repository
+        metafile_username -- used if you need a username to access metafile on github
+        metafile_token -- github token if you need a username to access metafile on github
+        status_file_ext -- extension added to status_file_XXXXXX.csv, usually a datetime
+        status_file_dir -- directory to save status file in, if empty, will use out_dir
+        datareader -- python class to read csv file, returns an xarray dataset
+        preprocessor -- python class to preprocess data from datareader, returns updated
+            xarray dataset and updated status_file
+        qc_class -- python class wrapper for running qc tests, returns updated xarray dataset
+            that includes qc flags and updated status_file
+        save_flags -- boolean, save all qc flags (true) or only global qc flags (false)
+        convert_p_to_z -- boolean, convert pressure to depth (true) or only keep pressure
+            (false)
+        default_latitude -- latitude to use in convert_p_to_z
+        attr_file -- location of attribute_list.yml, default uses the one in the python 
+            package, should be a yaml file (see sample one in ops_qc directory)
+        startstring -- string, used by datareader class to recognize the end of the header
+            or start of the data
+        splitstring -- string, string to look for in error messages, anything before 
+            splitstring will be recorded in status_file_XXXX as "failure_mode", anything
+            after as "detailed_error"
+        gear_class -- dictionary of fishing_method:gear_class pairs, matching every 
+            fishing method in the fishing_metafile to either "mobile" or "stationary"
+
+    Returns:
+        self._success_files -- list of files successfully qc'd and saved as netcdf files
+
+    Outputs:
+        Saves qc'd files as netcdf in out_dir
+        Saves status_file_XXXX as csv in status_file_dir (or if none, out_dir)
     """
 
     def __init__(
@@ -43,7 +83,6 @@ class QcWrapper(object):
         ),
         startstring="DateTime (UTC)",
         splitstring="due to:",
-        dateformat="%Y%m%dT%H%M%S",
         gear_class={
             "Bottom trawl": "mobile",
             "Potting": "stationary",
@@ -90,7 +129,6 @@ class QcWrapper(object):
         self.attr_file = attr_file
         self.startstring = startstring
         self.splitstring = splitstring
-        self.dateformat = dateformat
         self.gear_class = gear_class
         self._default_datareader_class = "ops_qc.readers.MangopareStandardReader"
         self._default_metareader_class = "ops_qc.readers.MangopareMetadataReader"
@@ -287,18 +325,10 @@ class QcWrapper(object):
                     [ds2.LATITUDE.values[0], ds2.LATITUDE.values[-1]])
                 lon = np.nanmean(
                     [ds2.LONGITUDE.values[0], ds2.LONGITUDE.values[-1]]) % 360
-                #lons = np.ones_like(self.ds['LONGITUDE'])*lon
-                #lats = np.ones_like(self.ds['LATITUDE'])*lat
-                #self.ds['LATITUDE'] = xr.DataArray(lats)
-                #self.ds = s.update({'LATITTUDE':lats})
                 self.ds['LATITUDE'] = self.ds.LATITUDE.where(self.ds.LATITUDE == lat, other=lat)
                 self.ds['LONGITUDE'] = self.ds.LONGITUDE.where(self.ds.LONGITUDE == lon, other=lon)
             if self.ds.attrs['gear_class'] == 'mobile':
                 self.ds = self.ds.assign({"LONGITUDE": lambda ds: ds['LONGITUDE'] % 360})
-            #    lons = self.ds['LONGITUDE']
-            # convert to 0-360 for both stationary and mobile gear:
-            #lons = [l % 360 for l in lons]
-            #self.ds = self.ds.update({'LONGITUDE':lons})
         except Exception as exc:
             self.logger.error(
                 f"Position could not be calculated for {filename}: {exc}")

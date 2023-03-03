@@ -12,21 +12,74 @@ from ops_qc.utils import haversine, start_end_dist
 
 """
 QC Tests for ocean observations.  The test options are:
-gear_type, timing_gap_test, impossible_date, impossible_location,
+gear_type, timing_gap, impossible_date, impossible_location,
+gear_type, timing_gap, impossible_date, impossible_location,
 position_on_land, impossible_speed, global_range, climatology_test,
-spike, stuck_value, rate_of_change_test, remove_ref_location.
+spike, stuck_value, rate_of_change_test, remove_ref_location,
+stationary_position_check, temp_drift, start_end_dist_check
+spike, stuck_value, rate_of_change_test, remove_ref_location,
+stationary_position_check, temp_drift, start_end_dist_check
 
 Currently, some tests are not recommended or not complete:
-timing_gap_test, position_on_land, climatology_test.
+position_on_land, climatology_test.
+position_on_land, climatology_test.
 
-Tests that are particularly useful/necessary:
+Tests that are particularly useful/necessary: (based on deployments so far)
+Tests that are particularly useful/necessary: (based on deployments so far)
 impossible_date, impossible_location, impossible_speed, timing_gap,
-global_range, remove_ref_location, spike, temp_drift, stationary_position_check
+global_range, remove_ref_location, spike, temp_drift, stationary_position_check,
+start_end_dist_check
+global_range, remove_ref_location, spike, temp_drift, stationary_position_check,
+start_end_dist_check
 
 Possibly useful:
 gear_type, stuck_value, rate_of_change_test
 
 Note these are constantly changing/being updated/improved.
+
+Inputs:
+    ds - xarray dataset with sensor data and global attributes from
+        preprocess.py
+    df - pandas dataframe version of ds containing data with columns 
+        DATETIME, LATITUDE, LONGITUDE, PRESSURE, TEMPERATURE
+    qcdf - pandas dataframe either empty or containing previous qc
+        flag values for qc tests already performed
+
+Outputs:
+    Updated self.qcdf with qc flags, one flag name for each test and one
+        qc flag value for each measurement. 
+
+To-do:
+    This does not need to have both ds and df versions of the same data.
+    It got this way from inheriting code that used the pandas approach,
+    but we needed the attributes from the xarray dataset.  It works this
+    way but could be cleaner.
+    Finish sensor-specific qc tests (mostly timing stuff).
+    Add greylist check.
+    Improve test "tuning."
+
+
+Inputs:
+    ds - xarray dataset with sensor data and global attributes from
+        preprocess.py
+    df - pandas dataframe version of ds containing data with columns 
+        DATETIME, LATITUDE, LONGITUDE, PRESSURE, TEMPERATURE
+    qcdf - pandas dataframe either empty or containing previous qc
+        flag values for qc tests already performed
+
+Outputs:
+    Updated self.qcdf with qc flags, one flag name for each test and one
+        qc flag value for each measurement. 
+
+To-do:
+    This does not need to have both ds and df versions of the same data.
+    It got this way from inheriting code that used the pandas approach,
+    but we needed the attributes from the xarray dataset.  It works this
+    way but could be cleaner.
+    Finish sensor-specific qc tests (mostly timing stuff).
+    Add greylist check.
+    Improve test "tuning."
+
 """
 
 
@@ -378,3 +431,11 @@ def start_end_dist_check(self, fail_flag=[2,3], cutoffs=[5,50], flag_name='flag_
     else:
         ff = 1
     self.qcdf[flag_name] = np.ones_like(self.df['LATITUDE'], dtype='uint8')*ff
+
+# Sensor known "
+
+# def reset_code_check(self,firmware=2.00,fail_flag=4):
+#     """
+#     For older firmware versions, mark any timestamps after
+#     reset as "bad."  Newer firmware is ok after reset.
+#     """
