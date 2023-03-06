@@ -1,12 +1,12 @@
 # ops-qc
 
-This library contains code initially intended for the operational, near real-time quality-control of Mangōpare/Moana oceanographic observation data.  Only automatic quality control is included at this time, for use with measurements transmitted in near real-time.
+This library contains code initially intended for the operational, near real-time quality-control of Mangōpare/Moana oceanographic observation data.  Only automatic quality control is included at this time, for use with measurements transmitted in near real-time.  See Jakoboski et. al, 2023, in preparation for more information on the sensor programme (or contact info@moanaproject.org).
 
 The first versions are for the purpose of quality-controlling data from the Moana Project's Mangopare (Te Tiro Moana) Mangōpare/Moana temperature and pressure sensor, but will be made more generic when needed.
 
 ---
 # Current Notes
-Master branch is currently intended for MetOcean operational use.  The external-aus branch is intended for development use by the IMOS Fish-SOOP programme.
+Master branch is currently intended for MetOcean operational use.  The external-aus branch is intended for development by the IMOS Fish-SOOP programme.
 
 ---
 ## Some to-dos
@@ -29,6 +29,10 @@ Defaults for the above are included in wrapper.py in case none are specified.
 Currently, the data and metadata readers are both classes in readers.py.
 
 ---
+## Stationary vs mobile gear
+Fishing methods (or any other deployment method) are dividing into two categories for processing: "stationary" or "mobile."  (Should be "passive" or "towed" in the future).  Towed is simply gear towed behind a moving vessel.  In this case, the sensor is always assumed to be in the same location as the vessel.  Stationary gear is gear that is detached form the vessel (i.e. potting).  All measurements in a stationary deployment are currently given the same position, which is the average between the first and last "good" location as recorded by the deck unit.  If the first or last position is not near the surface, the stationary position cannot be calculated and processing will fail (see qc test "stationary_position_check" in qc_tests_df.py).
+
+---
 ## Quality control summary
 "Standard" oceanographic QC tests for temperature and pressure data are included in qc_tests_df.py.  Most of these are based on QARTOD or Argo tests.  If any new tests are needed, that is most likely the best place to put them.  The tests in qc_test_df.py were originally provided by the Berring Data Collective, then modified at MetOcean.  For each test, a quality flag is assigned:  
 Quality flag values = [0,1,2,3,4]
@@ -45,6 +49,7 @@ Right now, tests in qc_tests_df need a pandas dataframe with LONGITUDE, LATITUDE
 
 ---
 ## Recommended Mangōpare QC tests
+These are loose recommendations, depending on application, region, and any recent developments.
 Currently recommended qc tests in order:
 test_list_1: ['impossible_date', 'impossible_location', 'impossible_speed', 'timing_gap', 'global_range', 'remove_ref_location', 'spike', 'temp_drift', 'stationary_position_check']
 test_list_2: ['start_end_dist_check']
@@ -62,9 +67,11 @@ Each time the wrapper is run on a list of files, a status file (csv) is created 
 ---
 ## Building and running the docker image
 
-Current latest version of docker image: ops-qc:v0.1.12-dev.
+The metocean/ops-qc repository contains two dockerfiles.  MetOcean users want to use Dockerfile, external users want to use the one called Dockerfile_external (which is independent of MetOcean's internal libraries).
 
-The metocean/ops-qc docker image requires some libraries in private git repositories.  They are accessed via a github token.  To run from a computer with the github token under variable GIT_TOKEN, build the docker image via
+To build the Dockerfile_external version, use something like: `docker build . -t moana-qc -f Dockefile_external -v /data:/data` from the moana-qc directory.  `/data` is a directory where the sensor data can be found and also where the output directory will be.  If you need another directory, add it with the -v tag.
+
+The metocean/ops-qc/Dockerfile docker image requires some libraries in private git repositories, but are needed for the current operational version at MetOcean.  They are accessed via a github token.  To run from a computer with the github token under variable GIT_TOKEN, build the docker image via
 
 `docker build --no-cache --build-arg GIT_TOKEN=${GIT_TOKEN} -t metocean/ops-qc:latest .`
 
@@ -76,10 +83,6 @@ In the future, github actions will do this also.
 
 ---
 ## Other notes
-
-Currently github actions is disabled on this repository, until I'm done writing them.  To turn back on in github, go to Settings, Actions (left menu), Actions permissions, choose 'Allow all actions'.
-
----
 
 Gradually working on unittests/learning how to  write them.  Making slow progress...
 
