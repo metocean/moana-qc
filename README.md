@@ -1,19 +1,19 @@
 # ops-qc
 
-This library contains code initially intended for the operational, near real-time quality-control of Mangōpare/Moana oceanographic observation data.  Only automatic quality control is included at this time, for use with measurements transmitted in near real-time.  See Jakoboski et. al, 2023, in preparation for more information on the sensor programme (or contact info@moanaproject.org).
+This library contains code initially intended for the operational, near real-time quality-control of Mangōpare/Moana oceanographic observation data (https://www.moanaproject.org/temperature-sensors, https://www.zebra-tech.co.nz/moana/).  Only automatic quality control is included at this time, for use with measurements transmitted in near real-time.  For more information on the sensor programme, see Jakoboski et. al, 2023, in preparation, contact info@moanaproject.org, or visit the websites above.
 
-The first versions are for the purpose of quality-controlling data from the Moana Project's Mangopare (Te Tiro Moana) Mangōpare/Moana temperature and pressure sensor, but will be made more generic when needed.
+The current versions are for the purpose of quality-controlling data from the Moana Project's Mangopare (Te Tiro Moana) Mangōpare/Moana temperature and pressure sensor, but will be made more generic if needed.
 
 ---
 # Current Notes
-Master branch is currently intended for MetOcean operational use.  The external-aus branch is intended for development by the IMOS Fish-SOOP programme.
+The master branch is currently intended for MetOcean operational use.  The external-aus branch is intended for development by the IMOS Fish-SOOP programme.  Please contact info@moanaproject.org if you'd like to create a new branch for development by your organisation.
 
 ---
 ## Some to-dos
 Add remaining qc tests (time checks from deck unit issue, grey list, qc reset check, calibration check, datetime after offload, datetime increasing)
 Improve netcdf format/attributes/etc.
 Change "mobile" to "towed" and "stationary" to "passive."  Not that important but more accurate names.
-Complete and fix code unittests.
+Complete and fix unittests.
 Improve documentation.
 
 ---
@@ -69,7 +69,7 @@ Each time the wrapper is run on a list of files, a status file (csv) is created 
 
 The metocean/ops-qc repository contains two dockerfiles.  MetOcean users want to use Dockerfile, external users want to use the one called Dockerfile_external (which is independent of MetOcean's internal libraries).
 
-To build the Dockerfile_external version, use something like: `docker build . -t moana-qc -f Dockefile_external -v /data:/data` from the moana-qc directory.  `/data` is a directory where the sensor data can be found and also where the output directory will be.  If you need another directory, add it with the -v tag.
+To build the Dockerfile_external version, use something like: `docker build -f Dockefile_external -t moana-qc .` from the moana-qc directory.
 
 The metocean/ops-qc/Dockerfile docker image requires some libraries in private git repositories, but are needed for the current operational version at MetOcean.  They are accessed via a github token.  To run from a computer with the github token under variable GIT_TOKEN, build the docker image via
 
@@ -79,13 +79,29 @@ Then run the docker image via something like
 
 `docker run -ti -v /source:/source -v /data:/data metocean/ops-qc:latest`
 
-In the future, github actions will do this also.
+`/data` is a directory where the sensor data can be found and also where the output directory will be.  If you need the docker container to access another directory, add it with the -v tag.
 
 ---
-## Other notes
+## Other repository notes
 
-Gradually working on unittests/learning how to  write them.  Making slow progress...
+Need to work on unittests...feel free to contribute in this space!
+
+---
+## Licensing
+Please see LICENSE.md for the license under which this code can be shared.  Please consider contributing to the code under this repository whenever possible rather then forking or cloning into a new repository so all can benefit from collaborative work.  If you need to fork/clone into a new repository, please let us know so we can include any new developments as a community.
+
+---
+## Attribution Statement
+Original code base by MetOcean Solutions, a Division of Meteorological Service of New Zealand Ltd, developed as part of the Moana Project. The Moana Project is funded by the New Zealand Ministry of Business, Innovation, and Employment (MBIE) Endeavour Fund.
+
+Contributors to the current version in include: MetOcean Solutions, Berring Data Collective
+
+The Mangōpare sensor and deck unit hardware were developed by Zebra-Tech, Ltd, Nelson, New Zealand as part of the Moana Project.  Sensors are available through https://www.zebra-tech.co.nz/
+
+---
+## Community
+A fishing vessel, in-situ ocean observing quality control working group is in development through FVON (https://fvon.org/).  Please contact either the Moana Project (info@moanaproject.org) or FVON (through their website) for more information.
 
 ---
 
-More information will be included here as the library progresses.
+
