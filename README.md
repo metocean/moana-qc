@@ -1,4 +1,4 @@
-# ops-qc
+# Moana TD Sensor Quality Control and Processing
 
 This library contains code initially intended for the operational, near real-time quality-control of Mangōpare/Moana oceanographic observation data (https://www.moanaproject.org/temperature-sensors, https://www.zebra-tech.co.nz/moana/).  Only automatic quality control is included at this time, for use with measurements transmitted in near real-time.  For more information on the sensor programme, see Jakoboski et. al, 2023, in preparation, contact info@moanaproject.org, or visit the websites above.
 
