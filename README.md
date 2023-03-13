@@ -34,7 +34,7 @@ Fishing methods (or any other deployment method) are dividing into two categorie
 
 ---
 ## Quality control summary
-"Standard" oceanographic QC tests for temperature and pressure data are included in qc_tests_df.py.  Most of these are based on QARTOD or Argo tests.  If any new tests are needed, that is most likely the best place to put them.  The tests in qc_test_df.py were originally provided by the Berring Data Collective, then modified at MetOcean.  For each test, a quality flag is assigned:  
+"Standard" oceanographic QC tests for temperature and pressure data are included in qc_tests_df.py.  Most of these are based on QARTOD or Argo tests.  If any new tests are needed, that is most likely the best place to put them.  For each test, a quality flag is assigned:  
 
 Quality flag values = [0,1,2,3,4]
 
@@ -81,7 +81,7 @@ The metocean/ops-qc/Dockerfile docker image requires some libraries in private g
 
 Then run the docker image via something like
 
-`docker run -ti -v /source:/source -v /data:/data metocean/ops-qc:latest`
+`docker run -ti -v /source:/source -v /data:/data metocean/moana-qc:latest` (MetOcean internal) or `docker run -ti -v /source:/source -v /data:/data moana-qc:latest`
 
 `/data` is a directory where the sensor data can be found and also where the output directory will be.  If you need the docker container to access another directory, add it with the -v tag.
 
