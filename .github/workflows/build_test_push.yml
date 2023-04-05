@@ -27,7 +27,7 @@ jobs:
       - name: Install System dependencies
         run: sudo apt update && sudo apt install -y $(echo $(cat requirements/ubuntu.txt))
       - name: Docker login
-        run: docker login -u mslops -p ${{ secrets.DOCKERHUB_MSLOPS_PASS  }}
+        run: docker login -u ${{ secrets.DOCKERHUB_USER  }} -p ${{ secrets.DOCKERHUB_PASS  }}
       - name: Build Docker Image
         env:
           GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
