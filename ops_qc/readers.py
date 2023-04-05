@@ -66,7 +66,10 @@ class MangopareStandardReader(object):
             self.start_line = self._calc_header_rows(
                 default_skiprows=self.skip_rows)
             self.df = pd.read_csv(
-                self.filename, skiprows=self.start_line, error_bad_lines=True)
+                self.filename, 
+                skiprows=self.start_line, 
+                error_bad_lines=True,
+                float_precision='round_trip')
         except Exception as exc:
             self.logger.error(
                 'Could not read csv file {} due to {}'.format(self.filename, exc))
