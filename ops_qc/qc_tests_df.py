@@ -434,8 +434,13 @@ def start_end_dist_check(self, fail_flag=[2,3], cutoffs=[5,50], flag_name='flag_
 
 # Sensor known "
 
-# def reset_code_check(self,firmware=2.00,fail_flag=4):
+# def reset_code_check(self,moana_firmware=2.00,fail_flag=4):
 #     """
 #     For older firmware versions, mark any timestamps after
 #     reset as "bad."  Newer firmware is ok after reset.
+#     """
+
+# def check_timestamp_overflow(self,moana_firmware=2.00,fail_flag=4):
+#     """
+#     For older firmware versions, check for timestamp overflow.
 #     """
