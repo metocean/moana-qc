@@ -77,7 +77,7 @@ To build the Dockerfile_external version, use something like: `docker build -f D
 
 The metocean/ops-qc/Dockerfile docker image requires some libraries in private git repositories, but are needed for the current operational version at MetOcean.  They are accessed via a github token.  To run from a computer with the github token under variable GIT_TOKEN, build the docker image via
 
-`docker build --no-cache --build-arg GIT_TOKEN=${GIT_TOKEN} -t metocean/ops-qc:latest .`
+`docker build --no-cache --build-arg GIT_TOKEN=${GIT_TOKEN} -t metocean/moana-qc:latest .`
 
 Then run the docker image via something like
 
