@@ -165,19 +165,7 @@ def impossible_location(self, lonrange=None, latrange=None, fail_flag=4, flag_na
             self.df['LONGITUDE'] <= lonrange[0]) | (
                              self.df['LONGITUDE'] >= lonrange[1])), flag_name] = fail_flag
 
-
-# 7. Position on land test
-
-# def position_on_land_old(self, fail_flag=3):
-#     """
-#     Spatial resolution of globe.is_land is 1km.  Not sufficient,
-#     but need to think about how to efficientlly import higher res mask.
-#     Leaving this test out for now.
-#     """
-#     self.qcdf['flag_land'] = np.ones_like(self.df['LATITUDE'], dtype='uint8')
-#     self.qcdf.loc[(globe.is_land(self.df['LATITUDE'],
-#                                  self.df['LONGITUDE'])), 'flag_land'] = fail_flag
-
+# Position on land
 
 def position_on_land(self, fail_flag=3, flag_name='flag_land'):
     """
@@ -215,7 +203,7 @@ def impossible_speed(self, max_speed=100, fail_flag=3, flag_name='flag_speed'):
 # 9. Global range test
 
 
-def global_range(self, ranges=None, fail_flag=4):
+def global_range(self, ranges=None, fail_flag=[2,3,4]):
     """
     Simplified version based on our experience so far.
     Applies as many ranges tests to as many variables as you'd like.
@@ -439,7 +427,9 @@ def start_end_dist_check(self, fail_flag=[2,3], cutoffs=[5,50], flag_name='flag_
 #     For older firmware versions, mark any timestamps after
 #     reset as "bad."  Newer firmware is ok after reset.
 #     """
-
+      if self.ds.attrs['moana_firmware']<moana_firmware:
+        #do all the things
+        
 # def check_timestamp_overflow(self,moana_firmware=2.00,fail_flag=4):
 #     """
 #     For older firmware versions, check for timestamp overflow.
