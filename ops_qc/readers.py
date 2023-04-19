@@ -160,6 +160,7 @@ class MangopareStandardReader(object):
                     dtype="datetime64[ns]"
                 )
                 found_reset_codes_index = np.where(resetmask)[0]
+
                 self.global_attrs["reset_codes_data"] = ", ".join(
                     str(x) for x in found_reset_codes
                 )
