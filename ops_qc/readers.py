@@ -34,14 +34,16 @@ class MangopareStandardReader(object):
         variable (dictionary) is needed
     """
 
-    def __init__(self,
-                 filename,
-                 filetype='sensor',
-                 dateformat='%Y%m%dT%H%M%S',
-                 startstring="DateTime (UTC)",
-                 skip_rows=11,
-                 default_reset_value=44.444,
-                 logger=logging):
+    def __init__(
+        self,
+        filename,
+        filetype="sensor",
+        dateformat="%Y%m%dT%H%M%S",
+        startstring="DateTime (UTC)",
+        skip_rows=11,
+        default_reset_value=44.444,
+        logger=logging,
+    ):
         self.filename = filename
         self.filetype = filetype
         self.dateformat = dateformat
@@ -51,11 +53,13 @@ class MangopareStandardReader(object):
         self.logger = logger
 
         self.global_attrs = {
-            'date_quality_controlled': datetime.utcnow().astimezone().strftime("%Y-%m-%dT%H:%M:%S %z"),
-            'quality_control_repository': 'https://github.com/metocean/ops-qc',
+            "date_quality_controlled": datetime.utcnow()
+            .astimezone()
+            .strftime("%Y-%m-%dT%H:%M:%S %z"),
+            "quality_control_repository": "https://github.com/metocean/ops-qc",
             #'QC git revision': str(subprocess.check_output(['git', 'log', '-n', '1', '--pretty=tformat:%h-%ad', '--date=short']).strip()),
-            'qc_package_version': ops_qc.__version__,
-            'raw_data_filename': self.filename,
+            "qc_package_version": ops_qc.__version__,
+            "raw_data_filename": self.filename,
         }
 
     def _read_mangopare_csv(self):
@@ -63,17 +67,18 @@ class MangopareStandardReader(object):
         Opens a mangopare csv file in pandas, formats the data, converts to xarray
         """
         try:
-            self.start_line = self._calc_header_rows(
-                default_skiprows=self.skip_rows)
+            self.start_line = self._calc_header_rows(default_skiprows=self.skip_rows)
             self.df = pd.read_csv(
-                self.filename, 
-                skiprows=self.start_line, 
+                self.filename,
+                skiprows=self.start_line,
                 error_bad_lines=True,
-                float_precision='round_trip')
+                float_precision="round_trip",
+            )
         except Exception as exc:
             self.logger.error(
-                'Could not read csv file {} due to {}'.format(self.filename, exc))
-            raise type(exc)(f'Could not read csv file due to: {exc}')
+                "Could not read csv file {} due to {}".format(self.filename, exc)
+            )
+            raise type(exc)(f"Could not read csv file due to: {exc}")
 
     def _format_df_data(self):
         """
@@ -82,29 +87,41 @@ class MangopareStandardReader(object):
         only keeps first one.
         """
         try:
-            depth_col = [col for col in self.df.columns if (
-                'Depth' or 'Pressure') in col]
+            depth_col = [
+                col for col in self.df.columns if ("Depth" or "Pressure") in col
+            ]
             if len(depth_col) == 1:
-                self.df.rename(columns={str(depth_col[0]): 'PRESSURE', 'DateTime (UTC)': 'DATETIME',
-                                        'Lat': 'LATITUDE', 'Lon': 'LONGITUDE', 'Temperature C': 'TEMPERATURE'}, inplace=True)
+                self.df.rename(
+                    columns={
+                        str(depth_col[0]): "PRESSURE",
+                        "DateTime (UTC)": "DATETIME",
+                        "Lat": "LATITUDE",
+                        "Lon": "LONGITUDE",
+                        "Temperature C": "TEMPERATURE",
+                    },
+                    inplace=True,
+                )
             else:
                 self.logger.error(
-                    'Column name not recognized in {}'.format(self.filename))
-            self.df['DATETIME'] = pd.to_datetime(
-                self.df['DATETIME'], format=self.dateformat, errors='coerce')
+                    "Column name not recognized in {}".format(self.filename)
+                )
+            self.df["DATETIME"] = pd.to_datetime(
+                self.df["DATETIME"], format=self.dateformat, errors="coerce"
+            )
             # if duplicate datetimes, only keep first
-            self.df = self.df.drop_duplicates(
-                subset=['DATETIME'], keep='first')
-            self.df['TEMPERATURE'] = [catch(lambda:float(t))
-                                      for t in self.df['TEMPERATURE']]
+            self.df = self.df.drop_duplicates(subset=["DATETIME"], keep="first")
+            self.df["TEMPERATURE"] = [
+                catch(lambda: float(t)) for t in self.df["TEMPERATURE"]
+            ]
             # Convert 0 lat/lon to nan, since 0 is bad value, but don't drop
-            self.df['LONGITUDE'] = self.df['LONGITUDE'].replace(0, np.nan)
-            self.df['LATITUDE'] = self.df['LATITUDE'].replace(0, np.nan)
+            self.df["LONGITUDE"] = self.df["LONGITUDE"].replace(0, np.nan)
+            self.df["LATITUDE"] = self.df["LATITUDE"].replace(0, np.nan)
 
         except Exception as exc:
             self.logger.error(
-                'Formatting of data failed for {}: {}'.format(self.filename, exc))
-            raise type(exc)(f'Could not format dataframe due to: {exc}')
+                "Formatting of data failed for {}: {}".format(self.filename, exc)
+            )
+            raise type(exc)(f"Could not format dataframe due to: {exc}")
 
     def _convert_df_to_ds(self):
         """
@@ -112,16 +129,17 @@ class MangopareStandardReader(object):
         """
         # Drop rows with bad temp or depth data (not sure why I did this, commented out
         # and replaced with dropped if any variable is nan)
-        #self.df = self.df.dropna(how='any', subset=['DATETIME', 'TEMPERATURE', 'PRESSURE'])
+        # self.df = self.df.dropna(how='any', subset=['DATETIME', 'TEMPERATURE', 'PRESSURE'])
         # Drop rows with any nan
-        self.df = self.df.dropna(axis=0, how='any')
+        self.df = self.df.dropna(axis=0, how="any")
         try:
-            self.df = self.df.set_index(['DATETIME'])
-            self.ds = self.df.to_xarray().set_coords(['LATITUDE', 'LONGITUDE'])
+            self.df = self.df.set_index(["DATETIME"])
+            self.ds = self.df.to_xarray().set_coords(["LATITUDE", "LONGITUDE"])
         except Exception as exc:
             self.logger.error(
-                'Could not convert df to ds for {}: {}'.format(self.filename, exc))
-            raise type(exc)(f'Could not convert df to ds in file read due to: {exc}')
+                "Could not convert df to ds for {}: {}".format(self.filename, exc)
+            )
+            raise type(exc)(f"Could not convert df to ds in file read due to: {exc}")
 
     def _identify_sensor_resets(self):
         """
@@ -130,17 +148,33 @@ class MangopareStandardReader(object):
         attribute to the xarray dataset.  This is kind of a mess now.
         """
         try:
-            self.global_attrs['reset_codes_data'] = 'None'
+            self.global_attrs["reset_codes_data"] = "None"
             resetmask = np.isclose(
-                self.df['TEMPERATURE'].to_numpy(), self.default_reset_value, .001)
+                self.df["TEMPERATURE"].to_numpy(), self.default_reset_value, 0.001
+            )
             if resetmask.any():
-                found_reset_codes = self.df.loc[resetmask, 'PRESSURE'].to_numpy(
-                    dtype='int')
-                self.global_attrs['reset_codes_data'] = ', '.join(
-                    str(x) for x in found_reset_codes)
+                found_reset_codes = self.df.loc[resetmask, "PRESSURE"].to_numpy(
+                    dtype="int"
+                )
+                found_reset_codes_timestamps = self.df.loc[resetmask].index.to_numpy(
+                    dtype="datetime64[ns]"
+                )
+                found_reset_codes_index = np.where(resetmask)[0]
+                self.global_attrs["reset_codes_data"] = ", ".join(
+                    str(x) for x in found_reset_codes
+                )
+                self.global_attrs["reset_codes_timestamp"] = ", ".join(
+                    str(x) for x in found_reset_codes_timestamps
+                )
+                self.global_attrs["reset_codes_index"] = ", ".join(
+                    str(x) for x in found_reset_codes_index
+                )
         except Exception as exc:
             self.logger.error(
-                'Unable to calculate sensor resets for {}: {}'.format(self.filename, exc))
+                "Unable to calculate sensor resets for {}: {}".format(
+                    self.filename, exc
+                )
+            )
 
     def _calc_header_rows(self, default_skiprows=13):
         """
@@ -160,24 +194,27 @@ class MangopareStandardReader(object):
             if not start_line:
                 start_line = default_skiprows
             self.logger.error(
-                'Could not calculate number of header rows, attempting to use default of {}: {}'.format(start_line, exc))
-        return(start_line)
+                "Could not calculate number of header rows, attempting to use default of {}: {}".format(
+                    start_line, exc
+                )
+            )
+        return start_line
 
     def _load_global_attributes(self):
         # Add attributes from csv file header
         try:
             f = open(self.filename)
             for _ in range(self.start_line):
-                row = f.readline().split(',')
+                row = f.readline().split(",")
                 attr_name = row[0]
                 # extract units from attr_name and
                 # append to attr_val
-                res = re.findall(r'\(.*?\)', attr_name)
+                res = re.findall(r"\(.*?\)", attr_name)
                 if not res:
                     res = ""
                 else:
-                    res = " "+res[0]
-                if attr_name == 'Cellular upload position':
+                    res = " " + res[0]
+                if attr_name == "Cellular upload position":
                     attr_val = str(row[1].strip()) + ", " + str(row[2].strip())
                 else:
                     attr_val = str(row[1].strip()) + res
@@ -189,8 +226,13 @@ class MangopareStandardReader(object):
                 self.ds.attrs[name] = value
         except Exception as exc:
             self.logger.error(
-                'Could not load global attributes for {} due to {}'.format(self.filename, exc))
-            raise type(exc)(f'Could not load global attributes during data file read due to: {exc}')
+                "Could not load global attributes for {} due to {}".format(
+                    self.filename, exc
+                )
+            )
+            raise type(exc)(
+                f"Could not load global attributes during data file read due to: {exc}"
+            )
 
     def run(self):
         # read file based on self.filetype
@@ -199,7 +241,7 @@ class MangopareStandardReader(object):
         self._identify_sensor_resets()
         self._convert_df_to_ds()
         self._load_global_attributes()
-        return(self.ds)
+        return self.ds
 
 
 class MangopareMetadataReader(object):
@@ -208,20 +250,29 @@ class MangopareMetadataReader(object):
     to assign email addresses to Mangopare serial number.
     """
 
-    def __init__(self,
-                 metafile='/data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv',
-                 username=[],
-                 token=[],
-                 dateformat='%Y%m%dT%H%M%S',
-                 gear_class=None,
-                 logger=logging):
+    def __init__(
+        self,
+        metafile="/data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv",
+        username=[],
+        token=[],
+        dateformat="%Y%m%dT%H%M%S",
+        gear_class=None,
+        logger=logging,
+    ):
         if gear_class is None:
-            gear_class = {'Bottom trawl': 'mobile', 'Potting': 'stationary',
-                          'Long lining': 'mobile', 'Trawling': 'mobile',
-                          'Midwater trawl': 'mobile', 'Purse seine netting': 'mobile',
-                          'Bottom trawling': 'mobile', 'Research': 'mobile',
-                          'Education': 'mobile', 'Bottom long line': 'mobile',
-                          'Waka': 'mobile'}
+            gear_class = {
+                "Bottom trawl": "mobile",
+                "Potting": "stationary",
+                "Long lining": "mobile",
+                "Trawling": "mobile",
+                "Midwater trawl": "mobile",
+                "Purse seine netting": "mobile",
+                "Bottom trawling": "mobile",
+                "Research": "mobile",
+                "Education": "mobile",
+                "Bottom long line": "mobile",
+                "Waka": "mobile",
+            }
         self.metafile = metafile
         self.username = username
         self.token = token
@@ -235,18 +286,27 @@ class MangopareMetadataReader(object):
         github or csv file path
         """
         try:
-            if 'raw.githubusercontent.com' in self.metafile:
+            if "raw.githubusercontent.com" in self.metafile:
                 github_session = requests.Session()
                 github_session.auth = (self.username, self.token)
                 download = github_session.get(self.metafile).content
-                self.fisher_metadata = pd.read_csv(io.StringIO(download.decode('utf-8')), error_bad_lines=False, parse_dates=[
-                                                               "Date supplied", "Date returned"], date_parser=lambda x: pd.to_datetime(x, dayfirst=True))
+                self.fisher_metadata = pd.read_csv(
+                    io.StringIO(download.decode("utf-8")),
+                    error_bad_lines=False,
+                    parse_dates=["Date supplied", "Date returned"],
+                    date_parser=lambda x: pd.to_datetime(x, dayfirst=True),
+                )
             else:
-                self.fisher_metadata = pd.read_csv(io.open(self.metafile, errors='replace'), error_bad_lines=False, parse_dates=[
-                                               "Date supplied", "Date returned"], date_parser=lambda x: pd.to_datetime(x, dayfirst=True))
+                self.fisher_metadata = pd.read_csv(
+                    io.open(self.metafile, errors="replace"),
+                    error_bad_lines=False,
+                    parse_dates=["Date supplied", "Date returned"],
+                    date_parser=lambda x: pd.to_datetime(x, dayfirst=True),
+                )
         except Exception as exc:
             self.logger.error(
-                'Could not load fisher metadata from {}: {}'.format(self.metafile, exc))
+                "Could not load fisher metadata from {}: {}".format(self.metafile, exc)
+            )
 
     def _format_fisher_metadata(self):
         """
@@ -254,25 +314,30 @@ class MangopareMetadataReader(object):
         If no end date is specified, replace with today's date.
         """
         try:
-            self.fisher_metadata['Gear Class'] = 'unknown'
-            self.fisher_metadata['Fishing method'] = self.fisher_metadata['Fishing method'].str.strip(
-            )
+            self.fisher_metadata["Gear Class"] = "unknown"
+            self.fisher_metadata["Fishing method"] = self.fisher_metadata[
+                "Fishing method"
+            ].str.strip()
             for gvessel, gclass in self.gear_class.items():
-                self.fisher_metadata.loc[self.fisher_metadata['Fishing method']
-                                         == gvessel, 'Gear Class'] = gclass
-            self.fisher_metadata['Date returned'].replace(
-                {pd.NaT: datetime.utcnow()}, inplace=True)
+                self.fisher_metadata.loc[
+                    self.fisher_metadata["Fishing method"] == gvessel, "Gear Class"
+                ] = gclass
+            self.fisher_metadata["Date returned"].replace(
+                {pd.NaT: datetime.utcnow()}, inplace=True
+            )
         except Exception as exc:
             self.logger.error(
-                'Could not load fisher metadata from {}: {}'.format(self.metafile, exc))
+                "Could not load fisher metadata from {}: {}".format(self.metafile, exc)
+            )
 
     def run(self):
         # read file based on self.filetype
         try:
             self._load_fisher_metadata()
             self._format_fisher_metadata()
-            return(self.fisher_metadata)
+            return self.fisher_metadata
         except Exception as exc:
             self.logger.error(
-                'Could not load data from {}: {}'.format(self.metafile, exc))
-            raise type(exc)(f'Could not load data for {self.metafile} due to: {exc}')
+                "Could not load data from {}: {}".format(self.metafile, exc)
+            )
+            raise type(exc)(f"Could not load data for {self.metafile} due to: {exc}")
