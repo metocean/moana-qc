@@ -88,7 +88,10 @@ def gear_type(self, fail_flag=3, gear=None, flag_name="flag_gear_type"):
     With current Mangōpare workflow, this will always fail for stationary,
     because stationary position calc happens after qc.  This test would
     need to run after stationary postition calc, while that calc depends
-    on all the other tests.  Currently not using this.
+    on all the other tests.  Reads gear classification
+    (mobile/towed or stationary/passive) and checks that stationary/pssive position 
+    does not change over time.  We do not currently include this test, since we are 
+    manually writing stationary/passive positions anyway.  Will likely remove eventually. 
     """
     try:
         if not gear:
@@ -157,8 +160,7 @@ def impossible_date(
     # min date could be a spreadsheet error
     self.qcdf.loc[(self.df["DATETIME"] <= min_date), flag_name] = 3
 
-
-def datetime_increasing(self, fail_flag=4, flag_name="flag_datetime"):
+def datetime_increasing(self, fail_flag=4, flag_name='flag_datetime_inc'):
     """
     Check that datetime is monotonically increasing
     """
@@ -172,7 +174,7 @@ def datetime_increasing(self, fail_flag=4, flag_name="flag_datetime"):
 
 
 def impossible_location(
-    self, lonrange=None, latrange=None, fail_flag=4, flag_name="flag_location"
+    self, lonrange=None, latrange=None, fail_flag=4, flag_name="flag_impossible_loc"
 ):
     """
     Check if lat,lon within  specified lat and lon ranges.
@@ -187,10 +189,10 @@ def impossible_location(
     self.qcdf[flag_name] = np.ones_like(self.df["LATITUDE"], dtype="uint8")
     self.qcdf.loc[
         (
-            (self.df["LATITUDE"] <= latrange[0])
-            | (self.df["LATITUDE"] >= latrange[1])
-            | (self.df["LONGITUDE"] <= lonrange[0])
-            | (self.df["LONGITUDE"] >= lonrange[1])
+            (self.df["LATITUDE"] < latrange[0])
+            | (self.df["LATITUDE"] > latrange[1])
+            | (self.df["LONGITUDE"] < lonrange[0])
+            | (self.df["LONGITUDE"] > lonrange[1])
         ),
         flag_name,
     ] = fail_flag
@@ -237,24 +239,35 @@ def impossible_speed(self, max_speed=100, fail_flag=3, flag_name="flag_speed"):
 # 9. Global range test
 
 
-def global_range(self, ranges=None, fail_flag=[2, 3, 4]):
+def global_range(self, ranges=None, fail_flag=[3, 4]):
     """
     Simplified version based on our experience so far.
     Applies as many ranges tests to as many variables as you'd like.
+    Ranges is a dictionary of the form:
+    VARIABLE: [lower limit, expected upper limit, absolute upper limit, flag name]
+    Values that reach or exceed "expected upper limit" will be flagged as
+    fail_flag[0], along with anything after it.  Similarly for "absolute
+    upper limit," only with fail_flag[1].  Values that are less than the
+    lower limit are flagged as fail_flag[1].
     """
     if ranges is None:
-        ranges = {
-            "PRESSURE": [0, 2000, "flag_global_range_pres"],
-            "TEMPERATURE": [-2, 35, "flag_global_range_temp"],
-        }
+        ranges = {'PRESSURE': [0, 1600, 2000, 'flag_global_range_pres'],
+                  'TEMPERATURE': [-2, 30, 34, 'flag_global_range_temp']}
     for var, limit in ranges.items():
-        flag_name = limit[2]
-        limit = limit[0:2]
-        self.qcdf[flag_name] = np.ones_like(self.df[var], dtype="uint8")
-        self.qcdf.loc[
-            (self.df[var] < limit[0]) | (self.df[var] > limit[1]), flag_name
-        ] = fail_flag
-
+        flag_name = limit[3]
+        limit = limit[0:3]
+        self.qcdf[flag_name] = np.ones_like(self.df[var], dtype='uint8')
+        # Flag anything less than accepted value
+        self.qcdf.loc[self.df[var] < limit[0], flag_name] = fail_flag[1]
+        # Flag anything greater than limits, and everything afterwards
+        # first for expected range maximum:
+        too_high_times = self.df.loc[self.df[var] >= limit[1],'DATETIME']
+        first_exceed = too_high_times.min()
+        self.qcdf.loc[self.df['DATETIME'] >= first_exceed, flag_name] = fail_flag[0]
+        # then for absolute range maximum:
+        too_high_times = self.df.loc[self.df[var] >= limit[2],'DATETIME']
+        first_exceed = too_high_times.min()
+        self.qcdf.loc[self.df['DATETIME'] >= first_exceed, flag_name] = fail_flag[1]
 
 # 10. Climatology test
 
@@ -492,11 +505,16 @@ def start_end_dist_check(
     self, fail_flag=[2, 3], cutoffs=[5, 50], flag_name="flag_dist"
 ):
     """
-    Stationary/passive gear positions can be calculated based on first and last
-    "good" locations in the file.  This can fail for a variety of rather
+    Assigns quality flags based on the distance between the first and last 
+    positions of a stationary/passive deployment.  This test is designed to flag 
+    positions that might have low accuracy, since stationary/passive positions 
+    are derived from the first and last "good" deployment positions.  This allows data
+    users to filter data with large position uncertainties.  It uses the netcdf
+    file attribute `start_end_dist_m` and assigns quality flags based on 
+    specified distance thresholds.  This can fail for a variety of rather
     unpredictable reasons.  If start and end distance are too big, flag
-    for too high position uncertainty or likely bad positions, depending
-    on threshold (for now).
+    for high position uncertainty or likely bad positions, depending
+    on threshold (for now).  
     """
     if "start_end_dist_m" in self.ds.attrs.keys():
         sed = float(self.ds.attrs["start_end_dist_m"])

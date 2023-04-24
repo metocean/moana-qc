@@ -1,5 +1,44 @@
 Moana Sensor Quality Control Documentation
 
+Detailed test descriptions are included in the docstrings of individual tests, as tests may change as improvements are implemented.
+
+# Summary of Quality Control Tests
+
+## Test Values
+Each quality control test has a unique flag name and a value for each measurement in a deployment.  Tests are associated with a variable: DATETIME, LATITUDE and/or LONGITUDE, PRESSURE, and TEMPERATURE.  
+For each measurement, test qc flags are aggregated into a single variable qc flag that is appropriate for the test.  These "global" qc flags are: DATETIME_QC, LOCATION_QC, PRESSURE_QC, and TEMPERATURE_QC.  The global qc flags are assigned the lowest qc value of all of the tests that relate to that variable and applied to a given measurement.  The atrribute_list.yml file maps individual test qc flags to their associated global qc flag.
+Global qc flags are further aggregated into the overall qc flag called QC_FLAG (need to update this name to something more descriptive).  The simplest level of quality control filtering of a given measurement would use the QC_FLAG variable, as this represents the "worst" value of all tests performed on that measurement.
+
+Flag values are: 0 (unassigned), 1 (good), 2 (probably good), 3 (probably bad), 4 (bad), 5 (overwritten)
+
+
+## General Quality Control Tests
+| Test Name                 | Method Name               | Flag Name              | Variable QC Flag | Recommended | Flag Values |
+|---------------------------|---------------------------|------------------------|------------------|-------------|-------------|
+| Impossible Date           | impossible_date           | flag_impossible_date   | DATETIME_QC      | yes         | 1, 4         |
+| Impossible Location       | impossible_location       | flag_impossible_loc    | LOCATION_QC      | yes         | 1, 4 |
+| Remove Reference Location | remove_ref_location       | flag_ref_loc           | LOCATION_QC      | yes         | 1, 4 |
+| Timing Gap                | timing_gap                | flag_timing_gap        | DATETIME_QC      | yes         | 1, 4 |
+| Datetime Increasing       | datetime_increasing       | flag_datetime_inc      | DATETIME_QC      | yes         | 1, 4 |
+| Position on Land          | position_on_land          | flag_land              | LOCATION_QC      | no          | 1, 3 |
+| Temperature Global Range  | global_range              | flag_global_range_temp | TEMPERATURE_QC   | yes         | 1, 3 |
+| Pressure Global Range     | global_range              | flag_global_range_pres | PRESSURE_QC      | yes         | 1, 3, 4 |
+| Temperature Spike         | spike                     | flag_spike_temp        | TEMPERATURE_QC   | yes         | 1, 3 |
+| Pressure Spike            | spike                     | flag_spike_pres        | PRESSURE_QC      | yes         | 1, 3 |
+| Temperature Stuck Value   | stuck_value               | flag_stuck_value_temp  | TEMPERATURE_QC   | yes         | 1, 3 |
+| Pressure Stuck Value      | stuck_value               | flag_stuck_value_pres  | PRESSURE_QC      | yes         | 1, 3 |
+| Rate of Change            | rate_of_change_test       | flag_roc               | PRESSURE_QC      | yes         | 1, 3 |
+| Temperature Drift         | temp_drift                | flag_temp_drift        | TEMPERATURE_QC   | yes         | 1, 3 |
+| Climatology               | climatology_test          | flag_clima             | TEMPERATURE_QC   | no          | 1, 3 |
+
+## Fishing Specific and/or Moana Specific Tests
+| Test Name                 | Method Name               | Flag Name              | Variable QC Flag | Recommended |  Flag Values |
+|---------------------------|---------------------------|------------------------|------------------|-------------|--------------|
+| Stationary Position Check | stationary_position_check | flag_surf_loc          | LOCATION_QC      | yes         | 1, 2, 3 |
+| Start End Distance Check  | start_end_dist_check      | flag_dist              | LOCATION_QC      | yes         | 1, 2, 3 |
+| Sensor Reset              |                           | flag_dist              | LOCATION_QC      | yes         | 1, 4 |
+
+
 # Historical Hardware Corrections
 ## Background Information
  The timestamp arises when a Moana comes out of a dive, and then sits in the dry state without being offloaded for more than 18.2 hours, and then goes back into a dive event. This results in the times of the second and subsequent dives being inaccurate.
@@ -48,8 +87,3 @@ Samples after a reset will now have valid timestamps.
 Any previously recorded samples are erased if the Moana is reset and loses track of elapsed time.
 Samples from a subsequent dive will now have valid timestamps.
 ‘Placeholder’ samples will be logged every 12hrs between dives to maintain a contiguous series of delta times and avoid an integer overflow.
-
-## Timestamp overlow
-Applies to Moana sensor firmware <2.00
-## Reset
-Applies to Moana sensor firmware <2.00
