@@ -12,8 +12,9 @@ qc_attr_info:
     standard_name: 'quality_flag'
     flag_gear_type: ['Fishing Gear Type Quality Flag','LOCATION_QC']
     flag_timing_gap: ['Timing Gap Quality Flag','DATETIME_QC']
-    flag_date: ['Impossible Date Quality Flag','DATETIME_QC']
-    flag_location: ['Impossible Location Quality Flag','LOCATION_QC']
+    flag_impossible_date: ['Impossible Date Quality Flag','DATETIME_QC']
+    flag_datetime_inc: ['Datetime Increasing Quality Flag','DATETIME_QC']
+    flag_impossible_loc: ['Impossible Location Quality Flag','LOCATION_QC']
     flag_land: ['Position on Land Quality Flag','LOCATION_QC']
     flag_speed: ['Impossible Speed Quality Flag','LOCATION_QC']
     flag_global_range_temp: ['Global Variable Range Quality Flag','TEMPERATURE_QC']
