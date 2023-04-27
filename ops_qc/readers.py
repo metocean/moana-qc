@@ -149,6 +149,8 @@ class MangopareStandardReader(object):
         """
         try:
             self.global_attrs["reset_codes_data"] = "None"
+            self.global_attrs["reset_codes_timestamps"] = "None"
+            self.global_attrs["reset_codes_index"] = "None"
             resetmask = np.isclose(
                 self.df["TEMPERATURE"].to_numpy(), self.default_reset_value, 0.001
             )
@@ -160,11 +162,10 @@ class MangopareStandardReader(object):
                     dtype="datetime64[ns]"
                 )
                 found_reset_codes_index = np.where(resetmask)[0]
-
                 self.global_attrs["reset_codes_data"] = ", ".join(
                     str(x) for x in found_reset_codes
                 )
-                self.global_attrs["reset_codes_timestamp"] = ", ".join(
+                self.global_attrs["reset_codes_timestamps"] = ", ".join(
                     str(x) for x in found_reset_codes_timestamps
                 )
                 self.global_attrs["reset_codes_index"] = ", ".join(

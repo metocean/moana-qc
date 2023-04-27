@@ -8,7 +8,8 @@ from shapely.geometry import Point, shape
 from shapely.ops import nearest_points
 from ops_qc.utils import calc_speed, point_on_land
 from ops_qc.utils import haversine, start_end_dist
-
+import re
+import pdb
 
 """
 QC Tests for ocean observations.  The test options are:
@@ -59,9 +60,9 @@ def gear_type(self, fail_flag=3, gear=None, flag_name="flag_gear_type"):
     because stationary position calc happens after qc.  This test would
     need to run after stationary postition calc, while that calc depends
     on all the other tests.  Reads gear classification
-    (mobile/towed or stationary/passive) and checks that stationary/pssive position 
-    does not change over time.  We do not currently include this test, since we are 
-    manually writing stationary/passive positions anyway.  Will likely remove eventually. 
+    (mobile/towed or stationary/passive) and checks that stationary/pssive position
+    does not change over time.  We do not currently include this test, since we are
+    manually writing stationary/passive positions anyway.  Will likely remove eventually.
     """
     try:
         if not gear:
@@ -130,7 +131,8 @@ def impossible_date(
     # min date could be a spreadsheet error
     self.qcdf.loc[(self.df["DATETIME"] <= min_date), flag_name] = 3
 
-def datetime_increasing(self, fail_flag=4, flag_name='flag_datetime_inc'):
+
+def datetime_increasing(self, fail_flag=4, flag_name="flag_datetime_inc"):
     """
     Check that datetime is monotonically increasing
     """
@@ -221,23 +223,26 @@ def global_range(self, ranges=None, fail_flag=[3, 4]):
     lower limit are flagged as fail_flag[1].
     """
     if ranges is None:
-        ranges = {'PRESSURE': [0, 1600, 2000, 'flag_global_range_pres'],
-                  'TEMPERATURE': [-2, 30, 34, 'flag_global_range_temp']}
+        ranges = {
+            "PRESSURE": [0, 1600, 2000, "flag_global_range_pres"],
+            "TEMPERATURE": [-2, 30, 34, "flag_global_range_temp"],
+        }
     for var, limit in ranges.items():
         flag_name = limit[3]
         limit = limit[0:3]
-        self.qcdf[flag_name] = np.ones_like(self.df[var], dtype='uint8')
+        self.qcdf[flag_name] = np.ones_like(self.df[var], dtype="uint8")
         # Flag anything less than accepted value
         self.qcdf.loc[self.df[var] < limit[0], flag_name] = fail_flag[1]
         # Flag anything greater than limits, and everything afterwards
         # first for expected range maximum:
-        too_high_times = self.df.loc[self.df[var] >= limit[1],'DATETIME']
+        too_high_times = self.df.loc[self.df[var] >= limit[1], "DATETIME"]
         first_exceed = too_high_times.min()
-        self.qcdf.loc[self.df['DATETIME'] >= first_exceed, flag_name] = fail_flag[0]
+        self.qcdf.loc[self.df["DATETIME"] >= first_exceed, flag_name] = fail_flag[0]
         # then for absolute range maximum:
-        too_high_times = self.df.loc[self.df[var] >= limit[2],'DATETIME']
+        too_high_times = self.df.loc[self.df[var] >= limit[2], "DATETIME"]
         first_exceed = too_high_times.min()
-        self.qcdf.loc[self.df['DATETIME'] >= first_exceed, flag_name] = fail_flag[1]
+        self.qcdf.loc[self.df["DATETIME"] >= first_exceed, flag_name] = fail_flag[1]
+
 
 # 10. Climatology test
 
@@ -475,16 +480,16 @@ def start_end_dist_check(
     self, fail_flag=[2, 3], cutoffs=[5, 50], flag_name="flag_dist"
 ):
     """
-    Assigns quality flags based on the distance between the first and last 
-    positions of a stationary/passive deployment.  This test is designed to flag 
-    positions that might have low accuracy, since stationary/passive positions 
+    Assigns quality flags based on the distance between the first and last
+    positions of a stationary/passive deployment.  This test is designed to flag
+    positions that might have low accuracy, since stationary/passive positions
     are derived from the first and last "good" deployment positions.  This allows data
     users to filter data with large position uncertainties.  It uses the netcdf
-    file attribute `start_end_dist_m` and assigns quality flags based on 
+    file attribute `start_end_dist_m` and assigns quality flags based on
     specified distance thresholds.  This can fail for a variety of rather
     unpredictable reasons.  If start and end distance are too big, flag
     for high position uncertainty or likely bad positions, depending
-    on threshold (for now).  
+    on threshold (for now).
     """
     if "start_end_dist_m" in self.ds.attrs.keys():
         sed = float(self.ds.attrs["start_end_dist_m"])
@@ -512,40 +517,108 @@ def reset_code_check(
     For older firmware versions, mark any timestamps after
     reset as "bad."  Newer firmware is ok after reset.
     """
-    self.qcdf[flag_name] = np.ones_like(self.df["LATITUDE"], dtype="uint8")
-    if self.ds.attrs["moana_firmware"] < moana_firmware:
+    self.qcdf[flag_name] = np.ones_like(self.df["DATETIME"], dtype="uint8")
+    sensor_moana_firmware = self.ds.attrs["moana_firmware"]
+    if "WAVE" not in sensor_moana_firmware:
+        sensor_moana_firmware = [
+            float(s) for s in re.findall(r"[\d]*[.][\d]+", sensor_moana_firmware)
+        ][0]
+    elif "WAVE" in sensor_moana_firmware:
+        sensor_moana_firmware = 0
+    if (
+        sensor_moana_firmware < moana_firmware
+        and self.ds.attrs["reset_codes_data"] != "None"
+    ):
         first_reset_location = int(self.ds.attrs["reset_codes_index"].split(", ")[0])
-        self.qcdf[flag_name][first_reset_location::] = fail_flag
+        self.qcdf.iloc[first_reset_location::, -1] = fail_flag
 
 
 def check_timestamp_overflow(
     self,
     moana_firmware=2.00,
-    fail_flag=4,
-    flag_name="flag_reset_time_offset",
+    surface=2,
+    flag_name="flag_timestamp_overflow",
     log_interval=5,
+    first_surface_ts=None,
+    fail_flag=[3, 4],
 ):
-    """
-    For older firmware versions, check for timestamp overflow.
-    """
-    self.qcdf[flag_name] = np.ones_like(self.df["LATITUDE"], dtype="uint8")
-    if self.ds.attrs["moana_firmware"] < moana_firmware:
-        download_ts = self.ds.attrs["download_time"].to_numpy(dtype="datetime64[ns]")
-        #        delta_time = self.ds.DATETIME.diff().dt.total_seconds()
-        index = [for index, dt in enumerate(delta_time) if dt > log_interval]
-        if index:
-            self.qcdf[flag_name][index] = fail_flag
-        if prev_surfaced is True and surfaced is False:
-            analysis_file.write(
-                f"Possible subsequent dive with possible timestamp overflow,"
-                f"{row_num}"
+    self.qcdf[flag_name] = np.ones_like(self.df["DATETIME"], dtype="uint8")
+    sensor_moana_firmware = self.ds.attrs["moana_firmware"]
+    if "WAVE" not in sensor_moana_firmware:
+        sensor_moana_firmware = [
+            float(s) for s in re.findall(r"[\d]*[.][\d]+", sensor_moana_firmware)
+        ][0]
+    elif "WAVE" in sensor_moana_firmware:
+        sensor_moana_firmware = 0
+    if sensor_moana_firmware < moana_firmware:
+        try:
+            for row, depth in enumerate(self.ds.PRESSURE.values[1::], start=1):
+                if depth < 2.0:
+                    if first_surface_ts is None:
+                        surfaced = True
+                        break
+        except:
+            pass
+        first_surface = row
+        pdb.set_trace()
+        download_ts = pd.to_datetime(
+            self.ds.download_time, format="%d/%m/%Y %H:%M:%S"
+        ).to_numpy(dtype="datetime64[s]")
+        download_overflow = (
+            (download_ts - self.ds.DATETIME).values.astype("timedelta64[s]").astype(int)
+        )
+        download_possible_overflow_index = [
+            count
+            for count, interval in enumerate(download_overflow)
+            if interval > 65535
+        ]
+        if first_surface in download_possible_overflow_index:
+            self.logger.error(
+                "Probable Time Overflow sampling interval is higher than average and there are multiple resurface values"
             )
-            return
-        if prev_reset is True and reset is False:
-            analysis_file.write(
-                f"Dive after reset with possible timestamp overflow," f"{row_num}"
-            )
+            self.qcdf.iloc[first_surface::, -1] = fail_flag[0]
 
-        # timestamp overflow can only occur if the download time was more than 65535 seconds
-        # after the sensor surfaced from the first dive
-        # reset_timestamps = self.ds.attrs["reset_codes_timestamp"]
+    # def check_timestamp_overflow_surfaced(
+    #    self,
+    #    moana_firmware=2.00,
+    #    fail_flag=[3, 4],
+    #    flag_name="flag_timestamp_overflow_surfaced",
+    #    log_interval=5,
+    #    download_overflow=65535,
+    # ):
+    # """
+    # For older firmware versions, check for timestamp overflow.
+    # """
+    # self.qcdf[flag_name] = np.ones_like(self.df["DATETIME"], dtype="uint8")
+    # sensor_moana_firmware = self.ds.attrs["moana_firmware"]
+    # if "WAVE" not in sensor_moana_firmware:
+    #     sensor_moana_firmware = [
+    #         float(s) for s in re.findall(r"[\d]*[.][\d]+", sensor_moana_firmware)
+    #     ][0]
+    # elif "WAVE" in sensor_moana_firmware:
+    #     sensor_moana_firmware = 0
+    # if sensor_moana_firmware < moana_firmware:
+    #     delta_time = np.diff(self.ds.DATETIME).astype("timedelta64[s]").astype(int)
+    #     sampling_interval_index = []
+    #     for count, interval in enumerate(delta_time, start=1):
+    #         if interval > (delta_time.mean() + (delta_time.std())):
+    #             sampling_interval_index.append(count)
+    #     download_ts = pd.to_datetime(
+    #         self.ds.download_time, format="%d/%m/%Y %H:%M:%S"
+    #     ).to_numpy(dtype="datetime64[s]")
+    #     depths = self.ds["PRESSURE"].isel({"DATETIME": sampling_interval_index})
+    #     surface_depths = np.where(depths < 2)[0]
+    #     if sampling_interval_index and len(surface_depths) > 0:
+    #         index = np.where(depths < 2)[0]
+    #         gap_surfaced_index = sampling_interval_index[index[0]]
+    #         surfaced_time = self.ds.DATETIME[gap_surfaced_index - 1]
+    #         download_gap = (
+    #             (download_ts - surfaced_time)
+    #             .values.astype("timedelta64[s]")
+    #             .astype(int)
+    #         )
+    #         if download_gap > 65535:
+    #             self.logger.error(
+    #                 "Probable Time Overflow sampling interval is higher than average and there are multiple resurface values"
+    #             )
+    #             self.qcdf.iloc[gap_surfaced_index::, -1] = fail_flag[0]
