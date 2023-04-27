@@ -9,7 +9,6 @@ from shapely.ops import nearest_points
 from ops_qc.utils import calc_speed, point_on_land
 from ops_qc.utils import haversine, start_end_dist
 import re
-import pdb
 
 """
 QC Tests for ocean observations.  The test options are:
@@ -560,7 +559,6 @@ def check_timestamp_overflow(
         except:
             pass
         first_surface = row
-        pdb.set_trace()
         download_ts = pd.to_datetime(
             self.ds.download_time, format="%d/%m/%Y %H:%M:%S"
         ).to_numpy(dtype="datetime64[s]")
