@@ -115,7 +115,7 @@ def impossible_date(
     min_date=datetime(2010, 1, 1),
     max_date="offload",
     fail_flag=4,
-    flag_name="flag_date",
+    flag_name="flag_impossible_date",
 ):
     """
     Makes sure observation data is within a specified valid range.
