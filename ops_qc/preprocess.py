@@ -48,7 +48,8 @@ class PreProcessMangopare(object):
                     'email_status': 'Email Status',               
                     'email_frequency': 'Email Frequency', 
                     'expected_deck_unit_serial_number': 'Deck unit serial number',
-                    'deployment_method':'Fishing method'},
+                    'deployment_method':'Fishing method',
+                    'programme_name':'Programme'},
                  add_sitename=True,
                  status_dict={},
                  logger=logging):
