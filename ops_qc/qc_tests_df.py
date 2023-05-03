@@ -466,7 +466,7 @@ def check_timestamp_overflow(
     surface=2,
     flag_name="flag_timestamp_overflow",
     log_interval=5,
-    first_surface_ts=None,
+    first_surface=None,
     fail_flag=[3, 4],
 ):
     """
@@ -485,12 +485,21 @@ def check_timestamp_overflow(
     elif "WAVE" in sensor_moana_firmware:
         sensor_moana_firmware = 0
     if sensor_moana_firmware < moana_firmware:
-        sampling_interval_index = []
-        delta_time = np.diff(self.ds.DATETIME).astype("timedelta64[s]").astype(int)
-        for count, interval in enumerate(delta_time, start=1):
-            if interval > (log_interval * 60):
-                sampling_interval_index.append(count)
-        surface_depths = np.where(self.ds["PRESSURE"] < 2)[0]
+        if self.ds["PRESSURE"].max() > 10:
+            sampling_interval_index = []
+            delta_time = np.diff(self.ds.DATETIME).astype("timedelta64[s]").astype(int)
+            for count, interval in enumerate(delta_time, start=1):
+                if interval > (log_interval * 60):
+                    sampling_interval_index.append(count)
+            surface_depths = np.where(self.ds["PRESSURE"] < 2)[0]
+        else:
+            # trolling and seaworks
+            sampling_interval_index = []
+            delta_time = np.diff(self.ds.DATETIME).astype("timedelta64[s]").astype(int)
+            for count, interval in enumerate(delta_time, start=1):
+                if interval > (20 * 60):
+                    sampling_interval_index.append(count)
+            surface_depths = np.where(self.ds["PRESSURE"] < 2.1)[0]
         sampling_interval_previous = [ind - 1 for ind in sampling_interval_index]
         for surface in surface_depths:
             if (
@@ -499,9 +508,6 @@ def check_timestamp_overflow(
             ):
                 first_surface = surface
                 break
-            else:
-                first_surface = None
-        #        first_surface = row
         download_ts = pd.to_datetime(
             self.ds.download_time, format="%d/%m/%Y %H:%M:%S"
         ).to_numpy(dtype="datetime64[s]")
