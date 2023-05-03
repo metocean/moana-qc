@@ -9,6 +9,7 @@ from shapely.ops import nearest_points
 from ops_qc.utils import calc_speed, point_on_land
 from ops_qc.utils import haversine, start_end_dist
 import re
+import pdb
 
 """
 QC Tests for ocean observations.  The test options are:
@@ -528,6 +529,7 @@ def reset_code_check(
         sensor_moana_firmware < moana_firmware
         and self.ds.attrs["reset_codes_data"] != "None"
     ):
+        #        pdb.set_trace()
         first_reset_location = int(self.ds.attrs["reset_codes_index"].split(", ")[0])
         self.qcdf.iloc[first_reset_location::, -1] = fail_flag
 
@@ -550,15 +552,23 @@ def check_timestamp_overflow(
     elif "WAVE" in sensor_moana_firmware:
         sensor_moana_firmware = 0
     if sensor_moana_firmware < moana_firmware:
-        try:
-            for row, depth in enumerate(self.ds.PRESSURE.values[1::], start=1):
-                if depth < 2.0:
-                    if first_surface_ts is None:
-                        surfaced = True
-                        break
-        except:
-            pass
-        first_surface = row
+        sampling_interval_index = []
+        delta_time = np.diff(self.ds.DATETIME).astype("timedelta64[s]").astype(int)
+        for count, interval in enumerate(delta_time, start=1):
+            if interval > (log_interval * 60):
+                sampling_interval_index.append(count)
+        surface_depths = np.where(self.ds["PRESSURE"] < 2)[0]
+        sampling_interval_previous = [ind - 1 for ind in sampling_interval_index]
+        for surface in surface_depths:
+            if (
+                surface in sampling_interval_index
+                or surface in sampling_interval_previous
+            ):
+                first_surface = surface
+                break
+            else:
+                first_surface = None
+        #        first_surface = row
         download_ts = pd.to_datetime(
             self.ds.download_time, format="%d/%m/%Y %H:%M:%S"
         ).to_numpy(dtype="datetime64[s]")
@@ -604,6 +614,7 @@ def check_timestamp_overflow(
     #     download_ts = pd.to_datetime(
     #         self.ds.download_time, format="%d/%m/%Y %H:%M:%S"
     #     ).to_numpy(dtype="datetime64[s]")
+    #     surface_depths = np.where(self.sd["PRESSURE"] < 2)[0]
     #     depths = self.ds["PRESSURE"].isel({"DATETIME": sampling_interval_index})
     #     surface_depths = np.where(depths < 2)[0]
     #     if sampling_interval_index and len(surface_depths) > 0:
