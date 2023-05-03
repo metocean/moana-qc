@@ -2,7 +2,7 @@ FROM metocean/ops-libs:3.6-master
 
 ADD . $SOURCE/ops-qc
 
-ARG GIT_TOKEN
+#ARG GIT_TOKEN
 
 RUN pip install -r $SOURCE/ops-qc/requirements/default.txt &&\
     pip install -I -r $SOURCE/ops-qc/requirements/opslibs.txt &&\
