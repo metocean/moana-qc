@@ -16,7 +16,8 @@ QC Tests for ocean observations.  The test options are:
 gear_type, timing_gap, impossible_date, impossible_location,
 position_on_land, impossible_speed, global_range, climatology_test,
 spike, stuck_value, rate_of_change_test, remove_ref_location,
-stationary_position_check, temp_drift, start_end_dist_check
+stationary_position_check, temp_drift, start_end_dist_check,
+reset_code_check, check_timestamp_overflow
 
 Currently, some tests are not recommended or not complete:
 position_on_land, climatology_test.
@@ -24,7 +25,8 @@ position_on_land, climatology_test.
 Tests that are particularly useful/necessary: (based on deployments so far)
 impossible_date, impossible_location, impossible_speed, timing_gap,
 global_range, remove_ref_location, spike, temp_drift, stationary_position_check,
-start_end_dist_check
+start_end_dist_check, reset_code_check, check_timestamp_overflow
+
 
 Possibly useful:
 gear_type, stuck_value, rate_of_change_test
@@ -428,6 +430,93 @@ def temp_drift(self, fail_flag=3, flag_name="flag_temp_drift"):
             ] = fail_flag
 
 
+# 16.  Flag data for moana_firmware <2 after a reset
+
+
+def reset_code_check(
+    self, moana_firmware=2.00, fail_flag=4, flag_name="flag_reset_old_firmware"
+):
+    """
+    For older firmware versions, mark any timestamps after
+    reset as "bad."  Newer firmware is ok after reset.
+    """
+    self.qcdf[flag_name] = np.ones_like(self.df["DATETIME"], dtype="uint8")
+    sensor_moana_firmware = self.ds.attrs["moana_firmware"]
+    if "WAVE" not in sensor_moana_firmware:
+        sensor_moana_firmware = [
+            float(s) for s in re.findall(r"[\d]*[.][\d]+", sensor_moana_firmware)
+        ][0]
+    elif "WAVE" in sensor_moana_firmware:
+        sensor_moana_firmware = 0
+    if (
+        sensor_moana_firmware < moana_firmware
+        and self.ds.attrs["reset_codes_data"] != "None"
+    ):
+        #        pdb.set_trace()
+        first_reset_location = int(self.ds.attrs["reset_codes_index"].split(", ")[0])
+        self.qcdf.iloc[first_reset_location::, -1] = fail_flag
+
+
+# 17. Checks for timestamp overflow of data
+
+
+def check_timestamp_overflow(
+    self,
+    moana_firmware=2.00,
+    surface=2,
+    flag_name="flag_timestamp_overflow",
+    log_interval=5,
+    first_surface_ts=None,
+    fail_flag=[3, 4],
+):
+    """
+    For older firmware versions. There is a possibility to have a timestamp overflow if
+    data resurfaces, has a time gap greater than 5 minutes before starting a new profile,
+    as multiple profiles can happen within one continuous measurement. Additionally this resurface
+    and gap must occur if the time gap between this measurement and the download time is
+    greater than 18.2 hours. Newer firmware doesn't have this timestamp overflow error.
+    """
+    self.qcdf[flag_name] = np.ones_like(self.df["DATETIME"], dtype="uint8")
+    sensor_moana_firmware = self.ds.attrs["moana_firmware"]
+    if "WAVE" not in sensor_moana_firmware:
+        sensor_moana_firmware = [
+            float(s) for s in re.findall(r"[\d]*[.][\d]+", sensor_moana_firmware)
+        ][0]
+    elif "WAVE" in sensor_moana_firmware:
+        sensor_moana_firmware = 0
+    if sensor_moana_firmware < moana_firmware:
+        sampling_interval_index = []
+        delta_time = np.diff(self.ds.DATETIME).astype("timedelta64[s]").astype(int)
+        for count, interval in enumerate(delta_time, start=1):
+            if interval > (log_interval * 60):
+                sampling_interval_index.append(count)
+        surface_depths = np.where(self.ds["PRESSURE"] < 2)[0]
+        sampling_interval_previous = [ind - 1 for ind in sampling_interval_index]
+        for surface in surface_depths:
+            if (
+                surface in sampling_interval_index
+                or surface in sampling_interval_previous
+            ):
+                first_surface = surface
+                break
+            else:
+                first_surface = None
+        #        first_surface = row
+        download_ts = pd.to_datetime(
+            self.ds.download_time, format="%d/%m/%Y %H:%M:%S"
+        ).to_numpy(dtype="datetime64[s]")
+        download_overflow = (
+            (download_ts - self.ds.DATETIME).values.astype("timedelta64[s]").astype(int)
+        )
+        download_possible_overflow_index = [
+            count
+            for count, interval in enumerate(download_overflow)
+            if interval > 65535
+        ]
+        if first_surface in download_possible_overflow_index:
+            self.qcdf.iloc[first_surface::, -1] = fail_flag[0]
+
+
 # anything from here depends on previous qc tests
 
 
@@ -507,127 +596,3 @@ def start_end_dist_check(
 
 
 # Sensor known "
-
-
-# 18?.  Flag data for moana_firmware <2 after a reset
-def reset_code_check(
-    self, moana_firmware=2.00, fail_flag=4, flag_name="flag_reset_old_firmware"
-):
-    """
-    For older firmware versions, mark any timestamps after
-    reset as "bad."  Newer firmware is ok after reset.
-    """
-    self.qcdf[flag_name] = np.ones_like(self.df["DATETIME"], dtype="uint8")
-    sensor_moana_firmware = self.ds.attrs["moana_firmware"]
-    if "WAVE" not in sensor_moana_firmware:
-        sensor_moana_firmware = [
-            float(s) for s in re.findall(r"[\d]*[.][\d]+", sensor_moana_firmware)
-        ][0]
-    elif "WAVE" in sensor_moana_firmware:
-        sensor_moana_firmware = 0
-    if (
-        sensor_moana_firmware < moana_firmware
-        and self.ds.attrs["reset_codes_data"] != "None"
-    ):
-        #        pdb.set_trace()
-        first_reset_location = int(self.ds.attrs["reset_codes_index"].split(", ")[0])
-        self.qcdf.iloc[first_reset_location::, -1] = fail_flag
-
-
-def check_timestamp_overflow(
-    self,
-    moana_firmware=2.00,
-    surface=2,
-    flag_name="flag_timestamp_overflow",
-    log_interval=5,
-    first_surface_ts=None,
-    fail_flag=[3, 4],
-):
-    self.qcdf[flag_name] = np.ones_like(self.df["DATETIME"], dtype="uint8")
-    sensor_moana_firmware = self.ds.attrs["moana_firmware"]
-    if "WAVE" not in sensor_moana_firmware:
-        sensor_moana_firmware = [
-            float(s) for s in re.findall(r"[\d]*[.][\d]+", sensor_moana_firmware)
-        ][0]
-    elif "WAVE" in sensor_moana_firmware:
-        sensor_moana_firmware = 0
-    if sensor_moana_firmware < moana_firmware:
-        sampling_interval_index = []
-        delta_time = np.diff(self.ds.DATETIME).astype("timedelta64[s]").astype(int)
-        for count, interval in enumerate(delta_time, start=1):
-            if interval > (log_interval * 60):
-                sampling_interval_index.append(count)
-        surface_depths = np.where(self.ds["PRESSURE"] < 2)[0]
-        sampling_interval_previous = [ind - 1 for ind in sampling_interval_index]
-        for surface in surface_depths:
-            if (
-                surface in sampling_interval_index
-                or surface in sampling_interval_previous
-            ):
-                first_surface = surface
-                break
-            else:
-                first_surface = None
-        #        first_surface = row
-        download_ts = pd.to_datetime(
-            self.ds.download_time, format="%d/%m/%Y %H:%M:%S"
-        ).to_numpy(dtype="datetime64[s]")
-        download_overflow = (
-            (download_ts - self.ds.DATETIME).values.astype("timedelta64[s]").astype(int)
-        )
-        download_possible_overflow_index = [
-            count
-            for count, interval in enumerate(download_overflow)
-            if interval > 65535
-        ]
-        if first_surface in download_possible_overflow_index:
-            self.logger.error(
-                "Probable Time Overflow sampling interval is higher than average and there are multiple resurface values"
-            )
-            self.qcdf.iloc[first_surface::, -1] = fail_flag[0]
-
-    # def check_timestamp_overflow_surfaced(
-    #    self,
-    #    moana_firmware=2.00,
-    #    fail_flag=[3, 4],
-    #    flag_name="flag_timestamp_overflow_surfaced",
-    #    log_interval=5,
-    #    download_overflow=65535,
-    # ):
-    # """
-    # For older firmware versions, check for timestamp overflow.
-    # """
-    # self.qcdf[flag_name] = np.ones_like(self.df["DATETIME"], dtype="uint8")
-    # sensor_moana_firmware = self.ds.attrs["moana_firmware"]
-    # if "WAVE" not in sensor_moana_firmware:
-    #     sensor_moana_firmware = [
-    #         float(s) for s in re.findall(r"[\d]*[.][\d]+", sensor_moana_firmware)
-    #     ][0]
-    # elif "WAVE" in sensor_moana_firmware:
-    #     sensor_moana_firmware = 0
-    # if sensor_moana_firmware < moana_firmware:
-    #     delta_time = np.diff(self.ds.DATETIME).astype("timedelta64[s]").astype(int)
-    #     sampling_interval_index = []
-    #     for count, interval in enumerate(delta_time, start=1):
-    #         if interval > (delta_time.mean() + (delta_time.std())):
-    #             sampling_interval_index.append(count)
-    #     download_ts = pd.to_datetime(
-    #         self.ds.download_time, format="%d/%m/%Y %H:%M:%S"
-    #     ).to_numpy(dtype="datetime64[s]")
-    #     surface_depths = np.where(self.sd["PRESSURE"] < 2)[0]
-    #     depths = self.ds["PRESSURE"].isel({"DATETIME": sampling_interval_index})
-    #     surface_depths = np.where(depths < 2)[0]
-    #     if sampling_interval_index and len(surface_depths) > 0:
-    #         index = np.where(depths < 2)[0]
-    #         gap_surfaced_index = sampling_interval_index[index[0]]
-    #         surfaced_time = self.ds.DATETIME[gap_surfaced_index - 1]
-    #         download_gap = (
-    #             (download_ts - surfaced_time)
-    #             .values.astype("timedelta64[s]")
-    #             .astype(int)
-    #         )
-    #         if download_gap > 65535:
-    #             self.logger.error(
-    #                 "Probable Time Overflow sampling interval is higher than average and there are multiple resurface values"
-    #             )
-    #             self.qcdf.iloc[gap_surfaced_index::, -1] = fail_flag[0]
