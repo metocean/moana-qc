@@ -10,3 +10,5 @@ mandrill
 glob2
 shapely
 requests
+netCDF4
+

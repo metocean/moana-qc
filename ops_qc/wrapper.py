@@ -1,12 +1,11 @@
 import os
 import logging
-import pytz
 import numpy as np
 import pandas as pd
 import xarray as xr
 import seawater as sw
 import datetime as dt
-from ops_qc.utils import catch, haversine, start_end_dist, import_pycallable
+from ops_qc.utils import catch, start_end_dist, import_pycallable
 
 xr.set_options(keep_attrs=True)
 
@@ -410,10 +409,11 @@ class QcWrapper(object):
                 if k in self.status_dict
             }
             status_dict2['filename'] = filename
-            self._status_data = self._status_data.append(
-                status_dict2, ignore_index=True)
-        except Exception:
-            self.logger.error(f"Could not append status info for {filename}")
+            #self._status_data = self._status_data.append(
+            #    status_dict2, ignore_index=True)
+            self._status_data = pd.concat([self._status_data, pd.DataFrame([status_dict2])], ignore_index=True)
+        except Exception as exc:
+            self.logger.error(f"Could not append status info for {filename} due to {exc}")
 
     def _status_checks(self, filename):
         check_passed = True

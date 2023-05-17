@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 import pandas as pd
 from datetime import datetime
-from ops_qc.utils import haversine, calc_speed, load_yaml
+from ops_qc.utils import haversine, calc_speed
 
 
 class TestVariousUtils(unittest.TestCase):
@@ -17,8 +17,8 @@ class TestVariousUtils(unittest.TestCase):
 
     def test_haversine(self):
         dist_value = haversine(lat1=-36.5, lon1=160, lat2=-38, lon2=165)
-        expected_value = 472.8638055302368
-        assert expected_value == dist_value
+        expected_value = np.round(472.8638055302368,5)
+        assert expected_value == np.round(dist_value,5)
 
     def test_calc_speed(self):
         df = calc_speed(self.df,units='kts')

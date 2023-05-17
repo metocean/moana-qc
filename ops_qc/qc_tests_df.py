@@ -1,15 +1,11 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime
-import logging
 import seawater as sw
 import shapefile
-from shapely.geometry import Point, shape
-from shapely.ops import nearest_points
 from ops_qc.utils import calc_speed, point_on_land
-from ops_qc.utils import haversine, start_end_dist
+from ops_qc.utils import start_end_dist
 import re
-import pdb
 
 """
 QC Tests for ocean observations.  The test options are:
@@ -452,7 +448,6 @@ def reset_code_check(
         sensor_moana_firmware < moana_firmware
         and self.ds.attrs["reset_codes_data"] != "None"
     ):
-        #        pdb.set_trace()
         first_reset_location = int(self.ds.attrs["reset_codes_index"].split(", ")[0])
         self.qcdf.iloc[first_reset_location::, -1] = fail_flag
 
@@ -510,7 +505,7 @@ def check_timestamp_overflow(
                 break
         download_ts = pd.to_datetime(
             self.ds.download_time, format="%d/%m/%Y %H:%M:%S"
-        ).to_numpy(dtype="datetime64[s]")
+        ).to_datetime64()
         download_overflow = (
             (download_ts - self.ds.DATETIME).values.astype("timedelta64[s]").astype(int)
         )

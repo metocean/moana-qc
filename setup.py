@@ -33,7 +33,7 @@ if __name__ == '__main__':
           long_description=read('README.md'),
           test_suite='pytest',
           author_email='ops@metocean.co.nz',
-          url='http://github.com/metocean/ops-qc',
+          url='http://github.com/metocean/moana-qc',
           packages=['ops_qc'],
           package_data={'ops_qc': ['attribute_list.yml']}
           )

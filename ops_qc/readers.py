@@ -71,7 +71,7 @@ class MangopareStandardReader(object):
             self.df = pd.read_csv(
                 self.filename,
                 skiprows=self.start_line,
-                error_bad_lines=True,
+                on_bad_lines='error',
                 float_precision="round_trip",
             )
         except Exception as exc:
@@ -294,14 +294,14 @@ class MangopareMetadataReader(object):
                 download = github_session.get(self.metafile).content
                 self.fisher_metadata = pd.read_csv(
                     io.StringIO(download.decode("utf-8")),
-                    error_bad_lines=False,
+                    on_bad_lines='skip',
                     parse_dates=["Date supplied", "Date returned"],
                     date_parser=lambda x: pd.to_datetime(x, dayfirst=True),
                 )
             else:
                 self.fisher_metadata = pd.read_csv(
                     io.open(self.metafile, errors="replace"),
-                    error_bad_lines=False,
+                    on_bad_lines='skip',
                     parse_dates=["Date supplied", "Date returned"],
                     date_parser=lambda x: pd.to_datetime(x, dayfirst=True),
                 )
