@@ -1,11 +1,11 @@
 FROM python:3.8-slim-buster
 
-ADD . $SOURCE/ops-qc
+ADD . $SOURCE/moana-qc
 
 ARG GIT_TOKEN
 
-RUN pip install -r $SOURCE/ops-qc/requirements/default.txt &&\
-    pip install -r $SOURCE/ops-qc/requirements/tests.txt &&\
-    pip install $SOURCE/ops-qc
+RUN pip install -r $SOURCE/moana-qc/requirements/default.txt &&\
+    pip install -r $SOURCE/moana-qc/requirements/tests.txt &&\
+    pip install $SOURCE/moana-qc
 
 CMD ["/bin/bash"]
