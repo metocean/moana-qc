@@ -69,26 +69,39 @@ Currently, all QC'd files are saved in netCDF format (see wrapper.py).  If neede
 Each time the wrapper is run on a list of files, a status file (csv) is created with information on any errors that may have occurred during processing.  This file is saved in the same directory as the output quality controlled nc files.  Note that all of this is in beta, so will be improved in the future.
 
 ---
-## Building and running the docker image
+## Installation: Building and running the docker image
 
-The metocean/ops-qc repository contains two dockerfiles.  MetOcean users want to use Dockerfile, external users want to use the one called Dockerfile_external (which is independent of MetOcean's internal libraries).
+The metocean/ops-qc repository contains a default (external) [`Dockerfile`](https://github.com/metocean/moana-qc/blob/master/Dockerfile) and an internal operational [`Dockerfile_internal`](https://github.com/metocean/moana-qc/blob/master/Dockerfile_internal).  To build a new image, external users want to use the default `Dockerfile` (which is independent of MetOcean's internal libraries).  For MetOcean operational internal use, please build from `Dockerfile_internal`.
 
-To build the Dockerfile_external version, use something like: `docker build -f Dockefile_external -t moana-qc .` from the moana-qc directory.
+To build the external use Dockerfile version (outside of Metservice/MetOcean ops system), from the moana-qc directory, use something like: 
+```shell
+docker build -f Dockerfile -t moana-qc .
+```
 
 The metocean/ops-qc/Dockerfile docker image requires some libraries in private git repositories, but are needed for the current operational version at MetOcean.  They are accessed via a github token.  To run from a computer with the github token under variable GIT_TOKEN, build the docker image via
 
-`docker build --no-cache --build-arg GIT_TOKEN=${GIT_TOKEN} -t metocean/moana-qc:latest .`
+```shell
+docker build -f Dockerfile_MOS --no-cache --build-arg GIT_TOKEN=${GIT_TOKEN} -t metocean/moana-qc:latest .
+```
 
-Then run the docker image via something like
+Then run the docker image via
 
-`docker run -ti -v /source:/source -v /data:/data metocean/moana-qc:latest` (MetOcean internal) or `docker run -ti -v /source:/source -v /data:/data moana-qc:latest`
+for default use:
+```shell
+docker run -ti -v /source:/source -v /data:/data moana-qc:latest
+```
+
+or for MetOcean internal use:
+```shell
+docker run -ti -v /source:/source -v /data:/data metocean/moana-qc:latest`
+```
 
 `/data` is a directory where the sensor data can be found and also where the output directory will be.  If you need the docker container to access another directory, add it with the -v tag.
 
 ---
 ## Other repository notes
 
-Need to work on unittests...feel free to contribute in this space!
+Need to work on unittests and setup.py...feel free to contribute in this space!
 
 ---
 ## Licensing
