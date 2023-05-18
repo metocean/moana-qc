@@ -3,7 +3,7 @@ from .. import qc_preprocess
 from importlib import reload
 
 docker run -ti -v /Users/jjakoboski/Desktop/MetOcean/Data/mangopare:/data/obs/mangopare -
-v /Users/jjakoboski/Desktop/MetOcean/ops-qc:/source/ops-qc metocean/ops-qc:v0.1
+v /Users/jjakoboski/Desktop/MetOcean/moana-qc:/source/moana-qc metocean/moana-qc:v0.1
 
 def test_mangopare_reader():
     # for mobile gear:
@@ -48,8 +48,8 @@ from ops_qc import wrapper
 good,bad=wrapper.QcWrapper(filelist,outfile_ext,out_dir,test_list).run()
 
 
-docker run -ti -v /source:/source -v /data:/data -v /data_exchange:/data_exchange --network=host metocean/ops-qc:v0.3
-cd /source/ops-qc/ops_qc
+docker run -ti -v /source:/source -v /data:/data -v /data_exchange:/data_exchange --network=host metocean/moana-qc:v0.3
+cd /source/moana-qc/ops_qc
 import utils
 import wrapper
 filelist = utils.list_new_files(numdays=3)

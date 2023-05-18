@@ -179,7 +179,7 @@ def position_on_land(self, fail_flag=3, flag_name="flag_land"):
     """
     self.qcdf[flag_name] = np.ones_like(self.df["LATITUDE"], dtype="uint8")
     all_shapes = shapefile.Reader(
-        "/source/ops-qc/ops_qc/land_mask/ne_10m_land.shp"
+        "/source/moana-qc/ops_qc/land_mask/ne_10m_land.shp"
     ).shapes()
     failed = []
     for lon, lat in zip(self.df["LONGITUDE"], self.df["LATITUDE"]):

@@ -71,14 +71,14 @@ Each time the wrapper is run on a list of files, a status file (csv) is created 
 ---
 ## Installation: Building and running the docker image
 
-The metocean/ops-qc repository contains a default (external) [`Dockerfile`](https://github.com/metocean/moana-qc/blob/master/Dockerfile) and an internal operational [`Dockerfile_internal`](https://github.com/metocean/moana-qc/blob/master/Dockerfile_internal).  To build a new image, external users want to use the default `Dockerfile` (which is independent of MetOcean's internal libraries).  For MetOcean operational internal use, please build from `Dockerfile_internal`.
+The metocean/moana-qc repository contains a default (external) [`Dockerfile`](https://github.com/metocean/moana-qc/blob/master/Dockerfile) and an internal operational [`Dockerfile_internal`](https://github.com/metocean/moana-qc/blob/master/Dockerfile_internal).  To build a new image, external users want to use the default `Dockerfile` (which is independent of MetOcean's internal libraries).  For MetOcean operational internal use, please build from `Dockerfile_internal`.
 
 To build the external use Dockerfile version (outside of Metservice/MetOcean ops system), from the moana-qc directory, use something like: 
 ```shell
 docker build -f Dockerfile -t moana-qc .
 ```
 
-The metocean/ops-qc/Dockerfile docker image requires some libraries in private git repositories, but are needed for the current operational version at MetOcean.  They are accessed via a github token.  To run from a computer with the github token under variable GIT_TOKEN, build the docker image via
+The metocean/moana-qc/Dockerfile docker image requires some libraries in private git repositories, but are needed for the current operational version at MetOcean.  They are accessed via a github token.  To run from a computer with the github token under variable GIT_TOKEN, build the docker image via
 
 ```shell
 docker build -f Dockerfile_MOS --no-cache --build-arg GIT_TOKEN=${GIT_TOKEN} -t metocean/moana-qc:latest .

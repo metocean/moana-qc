@@ -27,7 +27,7 @@ jobs:
       - name: Build Docker Image
 #        env:
 #          GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
-#        run: docker build --build-arg GIT_TOKEN -t metocean/ops-qc:${GITHUB_REF#refs/*/} .
+#        run: docker build --build-arg GIT_TOKEN -t metocean/moana-qc:${GITHUB_REF#refs/*/} .
         run: docker build -t metocean/moana-qc:${GITHUB_REF#refs/*/} .
       - name: Run tests
 #        env:

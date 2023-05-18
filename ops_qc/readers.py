@@ -56,7 +56,7 @@ class MangopareStandardReader(object):
             "date_quality_controlled": datetime.utcnow()
             .astimezone()
             .strftime("%Y-%m-%dT%H:%M:%S %z"),
-            "quality_control_repository": "https://github.com/metocean/ops-qc",
+            "quality_control_repository": "https://github.com/metocean/moana-qc",
             #'QC git revision': str(subprocess.check_output(['git', 'log', '-n', '1', '--pretty=tformat:%h-%ad', '--date=short']).strip()),
             "qc_package_version": ops_qc.__version__,
             "raw_data_filename": self.filename,
