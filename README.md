@@ -69,7 +69,19 @@ Currently, all QC'd files are saved in netCDF format (see wrapper.py).  If neede
 Each time the wrapper is run on a list of files, a status file (csv) is created with information on any errors that may have occurred during processing.  This file is saved in the same directory as the output quality controlled nc files.  Note that all of this is in beta, so will be improved in the future.
 
 ---
-## Installation: Building and running the docker image
+## Installation: From source or via docker image
+
+This repository contains code to run the `ops-qc` ("operational" or automatic quality control) python package.  
+
+### Option 1 | Via pip
+
+```shell
+python -m pip install 'git+https://github.com/metocean/moana-qc'
+```
+
+### Option 2 | Buliding a docker image
+
+The following assumes [`docker`](https://www.docker.com/) is installed.
 
 The metocean/moana-qc repository contains a default (external) [`Dockerfile`](https://github.com/metocean/moana-qc/blob/master/Dockerfile) and an internal operational [`Dockerfile_internal`](https://github.com/metocean/moana-qc/blob/master/Dockerfile_internal).  To build a new image, external users want to use the default `Dockerfile` (which is independent of MetOcean's internal libraries).  For MetOcean operational internal use, please build from `Dockerfile_internal`.
 
