@@ -25,8 +25,8 @@ def getreq(fpath):
 if __name__ == '__main__':
     setup(name='ops_qc',
           version=get_package_version('ops_qc'),
-          description='Quality Control Library for Manogpare Sensor',
-          author='Ops Team - Julie Jakoboski',
+          description='Quality Control Library for Moana/Manogpare Sensor',
+          author='MetOcean Solutions',
           include_package_data=True,
           install_requires=getreq('requirements/default.txt'),
           test_require=getreq('requirements/tests.txt'),
