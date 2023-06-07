@@ -258,11 +258,7 @@ class MangopareMetadataReader(object):
         username=[],
         token=[],
         dateformat="%Y%m%dT%H%M%S",
-        gear_class=None,
-        logger=logging,
-    ):
-        if gear_class is None:
-            gear_class = {
+        gear_class={
                 "Bottom trawl": "mobile",
                 "Potting": "stationary",
                 "Long lining": "mobile",
@@ -273,8 +269,10 @@ class MangopareMetadataReader(object):
                 "Research": "mobile",
                 "Education": "mobile",
                 "Bottom long line": "mobile",
-                "Waka": "mobile",
-            }
+                "Waka": "mobile"
+            },
+        logger=logging
+    ):
         self.metafile = metafile
         self.username = username
         self.token = token
