@@ -8,39 +8,8 @@ recursive: True
 
 transform:
     - class:       ops_qc.THREDDS.THREDDS.Wrapper
-      propagate:   True
-      out_dir:     '/data/obs/mangopare/processed/'
+      out_dir:     '/data/obs/mangopare/test/'
       outfile_ext: '_public'
-      datareader:   
-        class: ops_qc.readers.MangopareStandardReader
-      metareader:   
-        class: ops_qc.readers.MangopareMetadataReader
       preprocessor: 
         class: ops_qc.preprocess.PreProcessMangopare
-      save_flags:   True
-      convert_p_to_z: True
-      default_latitude: -40
-      attr_file:    '/archive/obs/mangopare/attribute_list.yml'
-      startstring:  "DateTime (UTC)"
-      dateformat:   '%Y%m%dT%H%M%S'
-      gear_class:   {'Bottom trawl':'mobile',
-                    'Potting':'stationary',
-                    'Long lining':'stationary',
-                    'Trawling':'mobile',
-                    'Midwater trawl': 'mobile',
-                    'Purse seine netting':'stationary',
-                    'Bottom trawling':'mobile',
-                    'Research':'mobile',
-                    'Education':'mobile',
-                    'Bottom trawler':'mobile',
-                    'Waka':'mobile',
-                    'Danish seining':'stationary',
-                    'Netting':'stationary',
-                    'Set netting':'stationary',
-                    'Bottom long line':'stationary',
-                    'Dredge':'mobile',
-                    'Instrument deployment':'mobile',
-                    'Potting, long lining':'stationary',
-                    'Diving':'stationary',
-                    'Trolling':'mobile',
-                    'Surface long line':'stationary'}
+      attr_file:    '/source/moana-qc/ops_qc/THREDDS/attribute_list.yml'

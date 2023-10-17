@@ -72,9 +72,10 @@ Each time the wrapper is run on a list of files, a status file (csv) is created 
 
 ---
 ## Files available for the Public (mangopare specific)
-Two columns have been added to the mangopare metadata (Public, Publication Date). The first column "Public" especifies if the data is available for the Public or not (True or False). If True, the second column "Publication Date" especifies the date when the sharing data agreement was signed.   
+Two columns have been added to the mangopare metadata (Public, Publication Date). The first column "Public" especifies if the data is available for the Public or not (boolean, True or False). If True, the second column "Publication Date" especifies the date when the sharing data agreement was signed.   
 
 A new code has been developed to adapt and transfer the data into our THREDDS server (see ops_qc/THREDDS folder).
+
 ---
 
 
