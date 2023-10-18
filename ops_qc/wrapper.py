@@ -455,9 +455,6 @@ class QcWrapper(object):
     def _process_files(self):
         """Read, reprocess, and apply qc"""
         self._status_data = pd.DataFrame(columns=self.status_dict_keys)
-        import pdb
-
-        pdb.set_trace()
         self._saved_files = []
         self._set_filelist()
 

@@ -14,13 +14,12 @@ out_dir:     '/data/obs/mangopare/publish/'
 outfile_ext: '_public'
 attr_file:    '/source/moana-qc/ops_qc/THREDDS/attribute_list.yml'
 
-shellcmd: rsync -rtPp metocean@mata1:/data/obs/mangopare/publish/*.nc metocean@dataserv1.hm:/data/moana/Mangopare/
+#shellcmd: rsync -rtPp metocean@mata1:/data/obs/mangopare/publish/*.nc metocean@dataserv1.hm:/data/moana/Mangopare/
 
 schedule:
     docker:
-      image:           metocean/ops-qc:THREDDS
+      image: metocean/ops-qc:THREDDS
       volumes:         
-        - /data_exchange:/data_exchange
         - /data:/data
         - /archive/obs/mangopare:/archive/obs/mangopare
     priority:          3
