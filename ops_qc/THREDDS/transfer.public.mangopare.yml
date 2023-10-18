@@ -10,6 +10,4 @@ transform:
     - class:       ops_qc.THREDDS.THREDDS.Wrapper
       out_dir:     '/data/obs/mangopare/test/'
       outfile_ext: '_public'
-      preprocessor: 
-        class: ops_qc.preprocess.PreProcessMangopare
       attr_file:    '/source/moana-qc/ops_qc/THREDDS/attribute_list.yml'

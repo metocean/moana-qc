@@ -4,7 +4,7 @@ coords_attr_info:
       long_name: 'time'
       standard_name: 'time'
       units: ''
-      valid_max: 999999
+      valid_max: 999999.
       valid_min: 0.
     LATITUDE: 
       long_name: 'latitude'
@@ -26,59 +26,59 @@ vars_attr_info:
     TEMPERATURE:
       long_name: 'TEMPERATURE'
       standard_name: 'sea_water_temperature'
+      _FillValue: 99999.
       coordinates: 'LONGITUDE, LATITUDE'
-      _Fillv=Value: 99999
       units: 'degree_C'
-      valid_min:  -20
-      valid_max: 35
+      valid_min:  -20.
+      valid_max: 35.
       resolution: 0.001
     DEPTH:
       long_name: 'DEPTH'  
       standard_name: 'depth'
+      _FillValue: 99999.
       coordinates: 'LONGITUDE, LATITUDE'
-      _FillValue: 99999
       units: 'm'
-      valid_min:  0
-      valid_max: 1000
+      valid_min:  0.
+      valid_max: 1000.
       resolution: 0.1 
     QC_FLAG: 
       long_name: 'Overall Quality Flag'
       standard_name: 'overall status_flag'
+      _FillValue: 99999.
       coordinates: 'LONGITUDE, LATITUDE'
       conventions: 'FVON standard flags'
-      _FillValue: ' '
       flag_meanings:  'No QC Applied, Good, Probably Good, Probably Bad, Bad, Overwritten'
       flag_values: '0,1,2,3,4,5'
-    DATETIME_QC:
+    DATETIME_QC: 
       long_name: 'Time Quality Flag'
       standard_name: 'time status_flag'
+      _FillValue: 99999.
       coordinates: 'LONGITUDE, LATITUDE'
       conventions: 'FVON standard flags'
-      _FillValue: ' '
       flag_meanings:  'No QC Applied, Good, Probably Good, Probably Bad, Bad, Overwritten'
       flag_values: '0,1,2,3,4,5'
     LOCATION_QC: 
       long_name: 'Position Quality Flag'
       standard_name: 'location status_flag'
+      _FillValue: 99999.
       coordinates: 'LONGITUDE, LATITUDE'
       conventions: 'FVON standard flags'
-      _FillValue: ' '
       flag_meanings:  'No QC Applied, Good, Probably Good, Probably Bad, Bad, Overwritten'
       flag_values: '0,1,2,3,4,5'
     TEMPERATURE_QC:
       long_name: 'Temperature Quality Flag'
       standard_name: 'sea_water_temperature status_flag'
+      _FillValue: 99999.
       coordinates: 'LONGITUDE, LATITUDE'
       conventions: 'FVON standard flags'
-      _FillValue: ' '
       flag_meanings:  'No QC Applied, Good, Probably Good, Probably Bad, Bad, Overwritten'
       flag_values: '0,1,2,3,4,5'
     DEPTH_QC:
       long_name: 'Depth Quality Flag'
       standard_name: 'depth status_flag'
+      _FillValue: 99999.
       coordinates: 'LONGITUDE, LATITUDE'
       conventions: 'FVON standard flags'
-      _FillValue: ' '
       flag_meanings:  'No QC Applied, Good, Probably Good, Probably Bad, Bad, Overwritten'
       flag_values: '0,1,2,3,4,5'
 
@@ -86,13 +86,13 @@ vars_attr_info:
 global_attr_info:
     PI_name: 'Dr. Julie Jakoboski'
     contact: 'info@metocean.co.nz'
-    author: 'MetOcean Solutions (MetService New Zealand) data provider'
-    title: 'Mangōpare Temperature and Depth Sensor Observations'
+    author: 'MOANA Project'
+    title: 'Mangōpare Temperature and Depth Sensor Observations Public Data'
     references: 'https://www.moanaproject.org/temperature-sensors'
     conventions: 'CF-1.6'
-    history: 'Initial automatic quality control and processing applied.'
+    history: 'Transformation of files ready to be publish on THREDDS server.'
     acknowledgement: 'This work is a contribution to the Moana Project (www.moanaproject.org) funded by the New Zealand Ministry of Business Innovation and Employment, contract number METO1801.'
-    disclaimer: 'The obtained data is a combined effort of the overall community, community scientists, research institutions and fishing industry.'
+    disclaimer: 'The published data is a combined effort of the overall community, community scientists, research institutions and fishing industry.'
     quality_control_log: ['qc_tests_applied', 'qc_tests_failed']
 
 global_attrs:
@@ -101,9 +101,8 @@ global_attrs:
     protocol_version : 'Protocol Version'
     moana_calibration_date : 'Sensor Calibration Date'
     moana_battery : 'Sensor Battery'
-    max_lifetime_depth : 'Max Lifetime Depth'
-    reset_codes : 'Reset Codes'
-    baseline : 'Baseline'
+#    max_lifetime_depth : 'Max Lifetime Depth'
+#    baseline : 'Baseline'
     deck_unit_firmware_version : 'DU Firmware'
     deck_unit_battery_voltage : 'DU Battery Voltage'
     deck_unit_battery_percent : 'DU Battery Percentage'
@@ -117,7 +116,8 @@ global_attrs:
     quality_control_repository : 'QC Repository'
     qc_package_version : 'QC Version'
     quality_control_log : ''
-    instrument_sample_interval: ' '
+    instrument_sample_interval: ''
+    coordinates: ''
     programme_name: '' #: Programme,
 #    publication_date: '' #: Publication Date,
     PI_name: ''
