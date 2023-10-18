@@ -1,13 +1,31 @@
-pycallable:   ops_transfer.base.CyclicTransfer
-description:  'Transfer of Publicly available Mangopare Observations'
-action:       copy  #test with copy, but should be move in the end
-source:       ['/data_exchange/zebratech/incoming/*/MOANA*_%y%m%d*','/data_exchange/zebratech/incoming/Fisherman_details/*']
-destination:  '/data/obs/mangopare/raw/'
-force: True
-recursive: True
+# pycallable:   ops_transfer.base.CyclicTransfer
+# description:  'Transfer of Publicly available Mangopare Observations'
+# action:       copy  #test with copy, but should be move in the end
+# source:       ['/data_exchange/zebratech/incoming/*/MOANA*_%y%m%d*','/data_exchange/zebratech/incoming/Fisherman_details/*']
+# destination:  '/data/obs/mangopare/raw/'
+# force: True
+# recursive: True
+shellcmd: rsync -rtPp metocean@mata1:/data/obs/mangopare/test/publish/*.nc metocean@dataserv1.hm:/data/moana/Mangopare/
 
 transform:
     - class:       ops_qc.THREDDS.THREDDS.Wrapper
-      out_dir:     '/data/obs/mangopare/test/'
+      out_dir:     '/data/obs/mangopare/test/publish/'
       outfile_ext: '_public'
       attr_file:    '/source/moana-qc/ops_qc/THREDDS/attribute_list.yml'
+
+schedule:
+    docker:
+      image:           metocean/ops-qc:THREDDS
+      volumes:         
+        - /data_exchange:/data_exchange
+        - /data:/data
+        - /archive/obs/mangopare:/archive/obs/mangopare
+    priority:          3
+    hourly_cycles:     [0]
+#    countdown:         25h
+    soft_time_limit:   60min
+    memleak_threshold: 5000
+    max_retries:       0     # Maximum number of retries before giving up
+    retry_delay:       60min  # time to wait for next retry [s]
+    link: 
+      -   prod.mangopare_emails
