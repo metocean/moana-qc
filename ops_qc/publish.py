@@ -6,7 +6,7 @@ import xarray as xr
 import seawater as sw
 import datetime as dt
 from glob import glob
-from ops_qc.utils import load_yaml, import_pycallable
+from ops_qc.utils import load_yaml
 
 xr.set_options(keep_attrs=True)
 
@@ -40,7 +40,7 @@ class Wrapper(object):
     def __init__(
         self,
         filelist=None,
-        outfile_ext="_qc_%y%m%d",
+        outfile_ext="published",
         out_dir=None,
         attr_file=os.path.join(
             os.path.dirname(os.path.realpath(__file__)), "attribute_list.yml"
@@ -65,8 +65,8 @@ class Wrapper(object):
         self.global_attr_info = load_yaml(self.attr_file, self.global_attr_dict_name)
         self.global_attrs = load_yaml(self.attr_file, self.global_attrs_dict)
 
-    def set_cycle(self, cycle_dt):
-        self.cycle_dt = cycle_dt
+    # def set_cycle(self, cycle_dt):
+    #     self.cycle_dt = cycle_dt
 
     def _available_for_publication(self, filename):
         try:
@@ -75,9 +75,12 @@ class Wrapper(object):
                 "public"
             ]
             # Check if the current data is after the agreement signature date
-            first_measurement = xr.open_dataset(
+            self.first_measurement = xr.open_dataset(
                 filename, cache=False, engine="netcdf4"
             )["DATETIME"][0].values
+            self.last_measurement = xr.open_dataset(
+                filename, cache=False, engine="netcdf4"
+            )["DATETIME"][-1].values
             publication_date = dt.datetime.strptime(
                 xr.open_dataset(filename, cache=False, engine="netcdf4").attrs[
                     "publication_date"
@@ -85,7 +88,7 @@ class Wrapper(object):
                 "%d/%m/%Y",
             )
             publication_date = np.datetime64(publication_date)
-            if first_measurement - publication_date > 0:
+            if self.first_measurement - publication_date > 0:
                 return eval(public)
             else:
                 return False
@@ -99,7 +102,7 @@ class Wrapper(object):
         for var, varinfo in self.global_attrs.items():
             ## New attributes provided
             if var in self.global_attr_info:
-                if "quality" in var:
+                if "quality_control_log" in var:
                     self.ds.attrs[var] = (
                         self.global_attr_info[var][0]
                         + "="
@@ -113,7 +116,7 @@ class Wrapper(object):
                     self.ds.attrs[var] = self.global_attr_info[var]
             else:
                 try:
-                    self.ds.attrs[var] = self.ds_o.attrs[var]
+                    self.ds.attrs[var] = self.ds_o.attrs[varinfo]
                 except:
                     if "vertical_max" in var:
                         self.ds.attrs[var] = str(
@@ -123,6 +126,14 @@ class Wrapper(object):
                         self.ds.attrs[var] = str(
                             np.round(self.ds["DEPTH"].min().values, 1)
                         )
+                    elif "time_coverage_start" in var:
+                        self.ds.attrs[var] = pd.to_datetime(
+                            self.first_measurement
+                        ).strftime("%d/%m/%Y %H:%M:%S")
+                    elif "time_coverage_end" in var:
+                        self.ds.attrs[var] = pd.to_datetime(
+                            self.last_measurement
+                        ).strftime("%d/%m/%Y %H:%M:%S")
                     else:
                         self.ds.attrs[var] = ""
                         self.logger.error(
@@ -138,31 +149,45 @@ class Wrapper(object):
         Loads global variable attributes from attribute file.
         """
         for var, varinfo in self.vars_info.items():
+            if "new_name" in varinfo:
+                var = varinfo["new_name"]
             for attr, attrinfo in varinfo.items():
-                self.ds[var].attrs[attr] = attrinfo
+                if "new_name" not in attr:
+                    self.ds[var].attrs[attr] = attrinfo
 
     def _add_coords_attrs(self):
         """
         Loads global variable attributes from attribute file.
         """
         for var, varinfo in self.coords_info.items():
+            if "new_name" in varinfo:
+                var = varinfo["new_name"]
             for attr, attrinfo in varinfo.items():
-                if "DATE" in var and "unit" in attr:
-                    self.ds[var].attrs[attr] = self.ds_o[var].attrs[attr]
-                else:
+                if "new_name" not in attr:
                     self.ds[var].attrs[attr] = attrinfo
 
     def _reformat_file(self):
         self.ds_o = xr.open_dataset(self.filename, cache=False, decode_cf=False)
         ### Generate new file using the data from the previous file
         df = pd.DataFrame()
-        for coords, _ in self.coords_info.items():
-            df[coords] = self.ds_o[coords]
-        for var, _ in self.vars_info.items():
-            df[var] = self.ds_o[var]
-        df = df.set_index(["DATETIME"])
+        for coords, items in self.coords_info.items():
+            if "new_name" in items:
+                coordsn = items["new_name"]
+                df[coordsn] = self.ds_o[coords]
+            else:
+                df[coords] = self.ds_o[coords]
+
+        for var, items in self.vars_info.items():
+            if "new_name" in items:
+                varn = items["new_name"]
+                df[varn] = self.ds_o[var]
+            else:
+                df[var] = self.ds_o[var]
+        df = df.set_index(["DATE_TIME"])
         self.ds = xr.Dataset.from_dataframe(df)
         for coords, _ in self.coords_info.items():
+            if "new_name" in items:
+                coords = items["new_name"]
             self.ds = self.ds.assign_coords({coords: self.ds[coords]})
         ## Adding attributes
         self._add_coords_attrs()
@@ -184,7 +209,8 @@ class Wrapper(object):
             )
 
     def run(self):
-        self.filelist = glob(cycle_dt.strftime(self.filelist))
+        self.filelist = cycle_dt.strftime(self.filelist)
+        self.filelist = glob(self.filelist)
         for file in self.filelist:
             if self._available_for_publication(file):
                 self.filename = file
@@ -194,8 +220,15 @@ class Wrapper(object):
                     self.out_dir = head
                 # create (mkdir) out_dir if it doesn't exist
                 self._initialize_outdir(self.out_dir)
+                name = os.path.splitext(tail)[0].split("_")
+                end_date_name = pd.to_datetime(self.last_measurement).strftime(
+                    "%Y%m%d_%H%M%S"
+                )
                 savefile = "{}{}{}{}".format(
-                    self.out_dir, os.path.splitext(tail)[0], self.outfile_ext, ".nc"
+                    self.out_dir,
+                    "_".join([name[0], end_date_name]),
+                    self.outfile_ext,
+                    ".nc",
                 )
                 self.ds.to_netcdf(savefile, mode="w", format="NETCDF4")
                 # self._saved_files.append(savefile)

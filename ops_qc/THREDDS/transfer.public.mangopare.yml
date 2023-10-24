@@ -11,7 +11,7 @@ pycallable: ops_qc.publish.Wrapper
 #    - class:       ops_qc.publish.Wrapper
 filelist: '/data/obs/mangopare/processed/*MOANA*_%y%m%d*.nc'
 out_dir:     '/data/obs/mangopare/publish/'
-outfile_ext: '_public'
+outfile_ext: '_published'
 attr_file:    '/source/moana-qc/ops_qc/THREDDS/attribute_list.yml'
 
 #shellcmd: rsync -rtPp metocean@mata1:/data/obs/mangopare/publish/*.nc metocean@dataserv1.hm:/data/moana/Mangopare/

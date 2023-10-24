@@ -1,9 +1,8 @@
 coords_attr_info:
-    DATETIME: 
-      calendar: 'proleptic gregorian'
+    DATETIME:
+      new_name: 'DATE_TIME' 
       long_name: 'time'
       standard_name: 'time'
-      units: ''
       valid_max: 999999.
       valid_min: 0.
     LATITUDE: 
@@ -24,11 +23,12 @@ coords_attr_info:
 
 vars_attr_info:
     TEMPERATURE:
-      long_name: 'TEMPERATURE'
+      new_name: 'TEMP'
+      long_name: 'sea temperature in-situ ITS-90 scale'
       standard_name: 'sea_water_temperature'
       _FillValue: 99999.
       coordinates: 'LONGITUDE, LATITUDE'
-      units: 'degree_C'
+      units: 'degree_Celsius'
       valid_min:  -20.
       valid_max: 35.
       resolution: 0.001
@@ -38,6 +38,7 @@ vars_attr_info:
       _FillValue: 99999.
       coordinates: 'LONGITUDE, LATITUDE'
       units: 'm'
+      axis: 'z'
       valid_min:  0.
       valid_max: 1000.
       resolution: 0.1 
@@ -47,31 +48,34 @@ vars_attr_info:
       _FillValue: 99999.
       coordinates: 'LONGITUDE, LATITUDE'
       conventions: 'FVON standard flags'
-      flag_meanings:  'No QC Applied, Good, Probably Good, Probably Bad, Bad, Overwritten'
+      flag_meanings:  'No QC Applied | Good | Probably Good | Probably Bad | Bad | Overwritten'
       flag_values: '0,1,2,3,4,5'
-    DATETIME_QC: 
+    DATETIME_QC:
+      new_name: 'DATE_TIME_QC'
       long_name: 'Time Quality Flag'
       standard_name: 'time status_flag'
       _FillValue: 99999.
       coordinates: 'LONGITUDE, LATITUDE'
       conventions: 'FVON standard flags'
-      flag_meanings:  'No QC Applied, Good, Probably Good, Probably Bad, Bad, Overwritten'
+      flag_meanings:  'No QC Applied | Good | Probably Good | Probably Bad | Bad | Overwritten'
       flag_values: '0,1,2,3,4,5'
-    LOCATION_QC: 
+    LOCATION_QC:
+      new_name: 'POSITION_QC' 
       long_name: 'Position Quality Flag'
       standard_name: 'location status_flag'
       _FillValue: 99999.
       coordinates: 'LONGITUDE, LATITUDE'
       conventions: 'FVON standard flags'
-      flag_meanings:  'No QC Applied, Good, Probably Good, Probably Bad, Bad, Overwritten'
+      flag_meanings:  'No QC Applied | Good | Probably Good | Probably Bad | Bad | Overwritten'
       flag_values: '0,1,2,3,4,5'
     TEMPERATURE_QC:
+      new_name: 'TEMP_QC'
       long_name: 'Temperature Quality Flag'
       standard_name: 'sea_water_temperature status_flag'
       _FillValue: 99999.
       coordinates: 'LONGITUDE, LATITUDE'
       conventions: 'FVON standard flags'
-      flag_meanings:  'No QC Applied, Good, Probably Good, Probably Bad, Bad, Overwritten'
+      flag_meanings:  'No QC Applied | Good | Probably Good | Probably Bad | Bad | Overwritten'
       flag_values: '0,1,2,3,4,5'
     DEPTH_QC:
       long_name: 'Depth Quality Flag'
@@ -79,150 +83,73 @@ vars_attr_info:
       _FillValue: 99999.
       coordinates: 'LONGITUDE, LATITUDE'
       conventions: 'FVON standard flags'
-      flag_meanings:  'No QC Applied, Good, Probably Good, Probably Bad, Bad, Overwritten'
+      flag_meanings:  'No QC Applied | Good | Probably Good | Probably Bad | Bad | Overwritten'
       flag_values: '0,1,2,3,4,5'
 
 
 global_attr_info:
-    PI_name: 'Dr. Julie Jakoboski'
-    contact: 'info@metocean.co.nz'
-    author: 'MOANA Project'
-    title: 'Mangōpare Temperature and Depth Sensor Observations Public Data'
+    abstract: 'Moana Project-Mangopare sensor deployments'
+    author: 'Dr. Mireya Montaño'
+    author_email: 'mireya.montano@metocean.co.nz'
+    acknowledgement: 'Data quality-control and processing provided by MetOcean Solutions, a Division of the Meteorological Service of New Zealand.  Mangōpare sensor and deck unit provided by Zebra-Tech, Ltd, Nelson, New Zealand as part of the Moana Project.  This work is a contribution to the Moana Project (www.moanaproject.org) funded by the New Zealand Ministry of Business Innovation and Employment, contract number METO1801.'
+    citation: '  '
+    conventions: 'CF-1.6 FVON-0.1'
+    data_centre: 'MetOcean Solutions, a Division of the Meteorological Service of New Zealand'
+    data_centre_email: 'info@metocean.co.nz'
+    disclaimer: 'By using the data that Meteorological Service of New Zealand Limited (MetService) makes available on this platform, you agree to this disclaimer.  The data is supplied by third parties to MetService and is aggregated and anonymised by MetService.  MetService does not independently check the data to ensure it is correct, accurate, complete, current, or suitable for use.  The data is made available by MetService on as is and as available basis.  You agree that any reliance you place on the data, including any analysis of, or decision you make based on, the data (or that analysis) is at your own risk.  You agree that MetService has no responsibility or liability for the data (or for any error or omission in the data) or for how you use that data.  To the maximum extent permitted by law, MetService disclaims all warranties, conditions, guarantees, and/or representations relating to the data and how you use that data.'
+    file_version: 'Level 1 - Quality Controlled Data'
+    geospatial_vertical_positive: 'down'
+    history: 'Transformation of files ready to be published on THREDDS server.'
+    instrument: 'Mangōpare Sensor'
+    license: 'Creative Commons Attribution 4.0 International License'
+    programme: 'Moana Project'
+    principal_investigator: 'Dr. Julie Jakoboski'
+    principal_investigator_email: "julie.jakoboski@metocean.co.nz" 
+    title: 'Mangōpare Temperature and Depth Sensor Observations Published Data'
     references: 'https://www.moanaproject.org/temperature-sensors'
-    conventions: 'CF-1.6'
-    history: 'Transformation of files ready to be publish on THREDDS server.'
-    acknowledgement: 'This work is a contribution to the Moana Project (www.moanaproject.org) funded by the New Zealand Ministry of Business Innovation and Employment, contract number METO1801.'
-    disclaimer: 'The published data is a combined effort of the overall community, community scientists, research institutions and fishing industry.'
     quality_control_log: ['qc_tests_applied', 'qc_tests_failed']
 
 global_attrs:
-    moana_serial_number : 'MOANA Serial Number'
-    moana_firmware: 'MOANA Firmware'
-    protocol_version : 'Protocol Version'
-    moana_calibration_date : 'Sensor Calibration Date'
-    moana_battery : 'Sensor Battery'
-#    max_lifetime_depth : 'Max Lifetime Depth'
-#    baseline : 'Baseline'
-    deck_unit_firmware_version : 'DU Firmware'
-    deck_unit_battery_voltage : 'DU Battery Voltage'
-    deck_unit_battery_percent : 'DU Battery Percentage'
-    upload_position : 'Upload Position'
-    upload_signal_strength : 'Upload Signal Strength'
-    upload_attempts : 'Upload Attempts'
-    upload_time : 'Upload Time' 
-    download_position : 'Download Position' 
-    download_time : 'Download Time' 
-    date_quality_controlled : 'QC Data'
-    quality_control_repository : 'QC Repository'
-    qc_package_version : 'QC Version'
-    quality_control_log : ''
-    instrument_sample_interval: ''
-    coordinates: ''
-    programme_name: '' #: Programme,
-#    publication_date: '' #: Publication Date,
-    PI_name: ''
-    contact: '' #: Contact,
-    author: '' #: Author,
-    title: ''
-    references: '' #: References ,
+    abstract: ''
+    acknowledgement: ''
+    author: ''
+    autor_email: ''
+    citation: ''
     conventions: ''
-    history: '' # : History ,
-    acknowledgement: '' #: Acknowledgement,
-    disclaimer: '' #: Disclaimer,,
-    geospatial_lat_max: '' #: Maximum Latitude,
-    geospatial_lat_min: '' #: Minimum Latitude,
-    geospatial_lon_max: '' #: Maximum Longitude,
-    geospatial_lon_min: '' #: Minimum Longitude,
+    coordinates: ''
+    data_centre: ''
+    data_centre_email: ''
+    disclaimer: ''
+    file_version: ''
+    geospatial_lat_max: 'geospatial_lat_max' #: Maximum Latitude,
+    geospatial_lat_min: 'geospatial_lat_min' #: Minimum Latitude,
+    geospatial_lon_max: 'geospatial_lon_max' #: Maximum Longitude,
+    geospatial_lon_min: 'geospatial_lon_max' #: Minimum Longitude,
     geospatial_vertical_max: '' #: Maximum Depth,
     geospatial_vertical_min: '' #: Minimum Depth,
-    start_end_dist_m: '' #: Distance Travelled,
+    geospatial_vertical_positive: ''
+    history: '' # : History ,
+    instrument: ''
+    instrument_serial_number : 'moana_serial_number'
+    instrument_firmware: 'moana_firmware'
+    instrument_calibration_date : 'moana_calibration_date'
+    instrument_battery : 'moana_battery'
+#    instrument_sample_interval: ''
+    license: ''
+    programme: '' #: Programme,
+    principal_investigator: ''
+    principal_investigator_email: ''
+    quality_control_date : 'date_quality_controlled'
+    quality_control_log : ''
+    quality_control_source : 'quality_control_repository'
+    references: '' #: References ,
+    start_end_dist_m: 'start_end_dist_m' #: Distance Travelled,
+    time_coverage_start: ''
+    time_coverage_end: ''
+    title: ''
+    toolbox_version : 'qc_package_version'
+    upload_position : 'upload_position'
+    upload_time : 'upload_time' 
 
-#    standard_name_vocabulary,
 
 
-
-
-        # dimensions = {
-        #     "DATE_TIME",
-        #     "N_PARAM",
-        #     "N_SENSOR",
-        # }
-
-        # general_info = {
-        #     "DATA_TYPE":{"long_name": "Data type", "conventions": "Argo reference table", "_FillValue": ""},
-        #     "FORMAT_VERSION":{"long_name": "File Format version", "_FillValue": ""},
-        #     "HANDBOOK_VERSION"{"long_name": "Data handbook version", "_FillValue": ""}, 
-        #     "DATE_CREATION": {"long_name" : "Date of file creation", "conventions":"YYYYMMDDHHMISS", "_FillValue": ""},
-        #     "DATA_UPDATE" : {"long_name" : "Date of update of this file", "conventions":"YYYYMMDDHHMISS", "_FillValue": ""},
-        # }
-
-        # float_char = {
-        #     "PLATFORM_NUMBER",
-        #     "PLATFORM_WIGOS_ID",
-        #     "PTT",
-        #     "TRANS_SYSTEM",
-        #     "TRANS_SYSTEM_ID",
-        #     "TRANS_FREQUENCY",
-        #     "POSITIONING_SYSTEM",
-        #     "PLATFORM_FAMILY",
-        #     "PLATFORM_TYPE",
-        #     "PLATFORM_MAKER",
-        #     "FIRMWARE_VERSION",
-        #     "MANUAL_VERSION",
-        #     "FLOAT_SERIAL_NO",
-        #     "STANDARD_FORMAT_ID",
-        #     "DAC_FORMAT_ID",
-        #     "WMO_INST_TYPE",
-        #     "PROJECT_NAME",
-        #     "DATA_CENTRE",
-        #     "PI_NAME",
-        #     "ANOMALY",
-        #     "BATTERY TYPE",
-        #     "BATTERY PACKS",
-        #     "FLOAT_OWNER",
-        #     "OPERATING_INSTITUTION",
-        #     "CUSTOMISATION",
-        # }
-
-        # mission_info = {
-        #     "LAUNCH_DATE",
-        #     "LAUNCH_LATITUDE",
-        #     "LAUNCH_LONGITUDE",
-        #     "LAUNCH_QC",
-        #     "START_DATE",
-        #     "START_DATE_QC",
-        #     "STARTUP_DATE",
-        #     "STARTUP_DATE_QC",
-        #     "DEPLOYMENT_PLATFORM",
-        #     "DEPLOYMENT_CRUISE_ID",
-        #     "END_MISSION_DATE",
-        #     "END_MISSION_STATUS",
-        # }
-
-        # parameter_info = {
-        #     "PARAMETER",
-        #     "PARAMETER_SENSOR",
-        #     "PARAMETER_UNITS",
-        #     "PARAMETER_ACCURACY",
-        #     "PARAMETER_RESOLUTION",
-        # }
-
-        # IMOS = {
-        #     "instrument_sample_interval",
-        #     "quality_control_log",
-        #     "geospatial_vertical_max",
-        #     "geospatial_vertical_min",
-        #     "standard_name_vocabulary",
-        #     "toolbox_version",
-        # }
-
-        # global_attributes = {
-        #     "title",
-        #     "institution",
-        #     "source",
-        #     "history",
-        #     "references",
-        #     "comment",
-        #     "user_manual_version",
-        #     "Conventions"
-        # }
