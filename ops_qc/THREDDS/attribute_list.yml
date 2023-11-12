@@ -100,7 +100,7 @@ global_attr_info:
     file_version: 'Level 1 - Quality Controlled Data'
     geospatial_vertical_positive: 'down'
     history: 'Transformation of files ready to be published on THREDDS server.'
-    instrument: 'Mangōpare Sensor'
+    instrument: 'Moana TD'
     license: 'Creative Commons Attribution 4.0 International License'
     programme: 'Moana Project'
     principal_investigator: 'Dr. Julie Jakoboski'
@@ -148,8 +148,8 @@ global_attrs:
     time_coverage_end: ''
     title: ''
     toolbox_version : 'qc_package_version'
-    upload_position : 'upload_position'
-    upload_time : 'upload_time' 
+      #    upload_position : 'upload_position'
+      #    upload_time : 'upload_time' 
 
 
 
