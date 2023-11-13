@@ -10,7 +10,7 @@ from ops_qc.utils import load_yaml
 
 xr.set_options(keep_attrs=True)
 
-cycle_dt = dt.datetime.utcnow()
+# cycle_dt = dt.datetime.utcnow()
 
 
 class Wrapper(object):
@@ -114,7 +114,7 @@ class Wrapper(object):
                     )
                 elif "instrument" in var:
                     max_depth = self.ds_o.attrs["max_lifetime_depth"].split()[0]
-                    if max_depth > 200:
+                    if float(max_depth) > 200:
                         self.ds.attrs[var] = self.global_attr_info[var].format(1000)
                     else:
                         self.ds.attrs[var] = self.global_attr_info[var].format(200)
@@ -189,9 +189,9 @@ class Wrapper(object):
                 df[varn] = self.ds_o[var]
             else:
                 df[var] = self.ds_o[var]
-        df = df.set_index(["DATE_TIME"])
+        df = df.set_index(["TIME"])
         self.ds = xr.Dataset.from_dataframe(df)
-        for coords, _ in self.coords_info.items():
+        for coords, items in self.coords_info.items():
             if "new_name" in items:
                 coords = items["new_name"]
             self.ds = self.ds.assign_coords({coords: self.ds[coords]})
@@ -215,7 +215,7 @@ class Wrapper(object):
             )
 
     def run(self):
-        self.filelist = cycle_dt.strftime(self.filelist)
+        self.filelist = self.cycle_dt.strftime(self.filelist)
         self.filelist = glob(self.filelist)
         for file in self.filelist:
             if self._available_for_publication(file):

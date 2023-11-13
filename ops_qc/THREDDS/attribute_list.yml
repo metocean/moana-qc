@@ -1,25 +1,31 @@
 coords_attr_info:
     DATETIME:
-      new_name: 'DATE_TIME' 
+      new_name: 'TIME' 
       long_name: 'time'
       standard_name: 'time'
+      axis: 'T'
       valid_max: 999999.
       valid_min: 0.
+      ancillary_variables: "TIME_QC"
     LATITUDE: 
       long_name: 'latitude'
       reference_datum: 'WGS84 geographic coordinate system'
       standard_name: 'latitude'
       units: 'degrees_north'
+      _FillValue: 99999.
       valid_max: 90.
       valid_min: -90.
+      ancillary_variables: "POSITION_QC"
     LONGITUDE:
       long_name: 'longitude'
       reference_datum: 'WGS84 geographic coordinate system'
       standard_name: 'longitude'
       units: 'degrees_east'
+      _FillValue: 99999.
       valid_max: 180.
       valid_min: -180.
-
+      ancillary_variables: "POSITION_QC"
+      
 
 vars_attr_info:
     TEMPERATURE:
@@ -32,6 +38,7 @@ vars_attr_info:
       valid_min:  -20.
       valid_max: 35.
       resolution: 0.001
+      ancillary_variables: "TEMP_QC"
     DEPTH:
       long_name: 'DEPTH'  
       standard_name: 'depth'
@@ -42,23 +49,24 @@ vars_attr_info:
       valid_min:  0.
       valid_max: 1000.
       resolution: 0.1 
+      ancillary_variables: "DEPTH_QC"
     QC_FLAG: 
-      long_name: 'Overall Quality Flag'
-      standard_name: 'overall status_flag'
+      long_name: 'Global Quality Flag'
+      standard_name: 'Global status_flag'
       _FillValue: 99999.
       coordinates: 'LONGITUDE, LATITUDE'
       conventions: 'FVON standard flags'
       flag_meanings:  'No QC Applied | Good | Probably Good | Probably Bad | Bad | Overwritten'
-      flag_values: '0,1,2,3,4,5'
+      flag_values: '0, 1, 2, 3, 4, 5'
     DATETIME_QC:
-      new_name: 'DATE_TIME_QC'
+      new_name: 'TIME_QC'
       long_name: 'Time Quality Flag'
       standard_name: 'time status_flag'
       _FillValue: 99999.
       coordinates: 'LONGITUDE, LATITUDE'
       conventions: 'FVON standard flags'
       flag_meanings:  'No QC Applied | Good | Probably Good | Probably Bad | Bad | Overwritten'
-      flag_values: '0,1,2,3,4,5'
+      flag_values: '0, 1, 2, 3, 4, 5' 
     LOCATION_QC:
       new_name: 'POSITION_QC' 
       long_name: 'Position Quality Flag'
@@ -67,7 +75,7 @@ vars_attr_info:
       coordinates: 'LONGITUDE, LATITUDE'
       conventions: 'FVON standard flags'
       flag_meanings:  'No QC Applied | Good | Probably Good | Probably Bad | Bad | Overwritten'
-      flag_values: '0,1,2,3,4,5'
+      flag_values: '0, 1, 2, 3, 4, 5'
     TEMPERATURE_QC:
       new_name: 'TEMP_QC'
       long_name: 'Temperature Quality Flag'
@@ -76,7 +84,7 @@ vars_attr_info:
       coordinates: 'LONGITUDE, LATITUDE'
       conventions: 'FVON standard flags'
       flag_meanings:  'No QC Applied | Good | Probably Good | Probably Bad | Bad | Overwritten'
-      flag_values: '0,1,2,3,4,5'
+      flag_values: '0, 1, 2, 3, 4, 5' 
     DEPTH_QC:
       long_name: 'Depth Quality Flag'
       standard_name: 'depth status_flag'
@@ -84,7 +92,7 @@ vars_attr_info:
       coordinates: 'LONGITUDE, LATITUDE'
       conventions: 'FVON standard flags'
       flag_meanings:  'No QC Applied | Good | Probably Good | Probably Bad | Bad | Overwritten'
-      flag_values: '0,1,2,3,4,5'
+      flag_values: '0, 1, 2, 3, 4, 5'
 
 
 global_attr_info:
@@ -94,6 +102,7 @@ global_attr_info:
     acknowledgement: 'Data quality-control and processing provided by MetOcean Solutions, a Division of the Meteorological Service of New Zealand.  Mangōpare sensor and deck unit provided by Zebra-Tech, Ltd, Nelson, New Zealand as part of the Moana Project.  This work is a contribution to the Moana Project (www.moanaproject.org) funded by the New Zealand Ministry of Business Innovation and Employment, contract number METO1801.'
     citation: '  '
     conventions: 'CF-1.6 FVON-0.1'
+    coordinates: 'TIME LONGITUDE LATITUDE DEPTH'
     data_centre: 'MetOcean Solutions, a Division of the Meteorological Service of New Zealand'
     data_centre_email: 'info@metocean.co.nz'
     disclaimer: 'By using the data that Meteorological Service of New Zealand Limited (MetService) makes available on this platform, you agree to this disclaimer.  The data is supplied by third parties to MetService and is aggregated and anonymised by MetService.  MetService does not independently check the data to ensure it is correct, accurate, complete, current, or suitable for use.  The data is made available by MetService on as is and as available basis.  You agree that any reliance you place on the data, including any analysis of, or decision you make based on, the data (or that analysis) is at your own risk.  You agree that MetService has no responsibility or liability for the data (or for any error or omission in the data) or for how you use that data.  To the maximum extent permitted by law, MetService disclaims all warranties, conditions, guarantees, and/or representations relating to the data and how you use that data.'
@@ -113,7 +122,7 @@ global_attrs:
     abstract: ''
     acknowledgement: ''
     author: ''
-    autor_email: ''
+    author_email: ''
     citation: ''
     conventions: ''
     coordinates: ''
