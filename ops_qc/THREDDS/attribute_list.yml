@@ -100,7 +100,7 @@ global_attr_info:
     file_version: 'Level 1 - Quality Controlled Data'
     geospatial_vertical_positive: 'down'
     history: 'Transformation of files ready to be published on THREDDS server.'
-    instrument: 'Moana TD'
+    instrument: 'Moana TD{}'
     license: 'Creative Commons Attribution 4.0 International License'
     programme: 'Moana Project'
     principal_investigator: 'Dr. Julie Jakoboski'

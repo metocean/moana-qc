@@ -6,6 +6,7 @@ dask===2020.12.0
 pytz
 PyYaml<5
 seawater
+#setuptools==57.5.0
 pyshp
 mandrill
 glob2

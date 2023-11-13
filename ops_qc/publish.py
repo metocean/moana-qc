@@ -112,6 +112,12 @@ class Wrapper(object):
                         + "="
                         + self.ds_o.attrs[self.global_attr_info[var][1]]
                     )
+                elif "instrument" in var:
+                    max_depth = self.ds_o.attrs["max_lifetime_depth"].split()[0]
+                    if max_depth > 200:
+                        self.ds.attrs[var] = self.global_attr_info[var].format(1000)
+                    else:
+                        self.ds.attrs[var] = self.global_attr_info[var].format(200)
                 else:
                     self.ds.attrs[var] = self.global_attr_info[var]
             else:
