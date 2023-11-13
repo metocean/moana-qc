@@ -105,11 +105,13 @@ class Wrapper(object):
                 if "quality_control_log" in var:
                     self.ds.attrs[var] = (
                         self.global_attr_info[var][0]
-                        + "="
-                        + self.ds_o.attrs[self.global_attr_info[var][0]][1:-1]
-                        + ", "
+                        + ": "
+                        + self.ds_o.attrs[self.global_attr_info[var][0]][1:-1].replace(
+                            "'", ""
+                        )
+                        + "; "
                         + self.global_attr_info[var][1]
-                        + "="
+                        + ": "
                         + self.ds_o.attrs[self.global_attr_info[var][1]]
                     )
                 elif "instrument" in var:
