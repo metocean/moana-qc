@@ -64,6 +64,14 @@ class Wrapper(object):
         self.vars_info = load_yaml(self.attr_file, self.var_attr_dict_name)
         self.global_attr_info = load_yaml(self.attr_file, self.global_attr_dict_name)
         self.global_attrs = load_yaml(self.attr_file, self.global_attrs_dict)
+        self.time_varname_source = [
+            var for var, varinfo in self.coords_info.items() if "TIME" in var
+        ][0]
+        self.time_varname_destination = [
+            varinfo["new_name"]
+            for var, varinfo in self.coords_info.items()
+            if "TIME" in var
+        ][0]
 
     # def set_cycle(self, cycle_dt):
     #     self.cycle_dt = cycle_dt
@@ -77,10 +85,10 @@ class Wrapper(object):
             # Check if the current data is after the agreement signature date
             self.first_measurement = xr.open_dataset(
                 filename, cache=False, engine="netcdf4"
-            )["DATETIME"][0].values
+            )[self.time_varname_source][0].values
             self.last_measurement = xr.open_dataset(
                 filename, cache=False, engine="netcdf4"
-            )["DATETIME"][-1].values
+            )[self.time_varname_source][-1].values
             publication_date = dt.datetime.strptime(
                 xr.open_dataset(filename, cache=False, engine="netcdf4").attrs[
                     "publication_date"
@@ -191,7 +199,7 @@ class Wrapper(object):
                 df[varn] = self.ds_o[var]
             else:
                 df[var] = self.ds_o[var]
-        df = df.set_index(["TIME"])
+        df = df.set_index([self.time_varname_destination])
         self.ds = xr.Dataset.from_dataframe(df)
         for coords, items in self.coords_info.items():
             if "new_name" in items:
