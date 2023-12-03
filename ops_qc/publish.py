@@ -50,6 +50,7 @@ class Wrapper(object):
         coords_attr_dict_name="coords_attr_info",
         global_attrs_dict="global_attrs",
         logger=logging,
+        **kwargs,
     ):
         self.filelist = filelist
         self.outfile_ext = outfile_ext
@@ -72,6 +73,7 @@ class Wrapper(object):
             for var, varinfo in self.coords_info.items()
             if "TIME" in var
         ][0]
+        self._saved_files = {"filelist": []}
 
     # def set_cycle(self, cycle_dt):
     #     self.cycle_dt = cycle_dt
@@ -224,9 +226,16 @@ class Wrapper(object):
                 )
             )
 
+    def _set_filelist(self):
+        if hasattr(self, "_success_files") and not self.filelist:
+            self.filelist = self._success_files
+        if not self.filelist:
+            self.logger.error(
+                "No file list found, please specify.  No transformation for publication performed."
+            )
+
     def run(self):
-        self.filelist = self.cycle_dt.strftime(self.filelist)
-        self.filelist = glob(self.filelist)
+        self._set_filelist()
         for file in self.filelist:
             if self._available_for_publication(file):
                 self.filename = file
@@ -247,4 +256,5 @@ class Wrapper(object):
                     ".nc",
                 )
                 self.ds.to_netcdf(savefile, mode="w", format="NETCDF4")
-                # self._saved_files.append(savefile)
+                self._saved_files["filelist"].append(savefile)
+        return self._saved_files

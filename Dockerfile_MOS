@@ -1,4 +1,4 @@
-FROM metocean/ops-libs:3.8-master
+FROM metocean/ops-qc:v0.4.7
 
 ADD . $SOURCE/moana-qc
 
