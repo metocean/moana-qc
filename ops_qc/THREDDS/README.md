@@ -7,9 +7,11 @@ This dataset contains temperature and pressure data obtained for the Moana Proje
 
 Only automatic quality control is included at this time, for use with measurements transmitted in near real-time.  For more information on the sensor programme, see Jakoboski et. al, 2023, in preparation, contact info@moanaproject.org, or visit the websites above.
 
+This the very first public release of these data, and as such, we expect to make improvements as we go.  Please submit feedback to info@moanaproject.org and we will incorporate any comments as soon as we can.
+
 --
 ## Licensing
-Creative Commons Attribution 4.0 International License
+This dataset is available for use under the Creative Commons Attribution 4.0 International License.
 
 ---
 ## Atrribution Statement
@@ -142,11 +144,13 @@ Quality flag values = [0,1,2,3,4]
 - QF = 4: Test failed, bad data
 Once all tests have been performed, a "global" quality flag is calculated (the "worst" value for all tests for each measurement), called "QC_FLAG."
 
-A list of QC tests to applied to a file are included under the XXXXX attribute.
+A list of QC tests to applied to a file are included under the `quality_control_log` attribute.
 
 ---
-## Stationary vs mobile gear
-Please see the QC github repository [LINK] for details on position processing.
+## Position Information
+Reported measurement positions are derived from the vessel position.  Fishing methods (or any other deployment method) are dividing into two categories for processing: "stationary" or "mobile."  (Should be "passive" or "towed" in the future).  Towed is simply gear towed behind a moving vessel.  In this case, the sensor is always assumed to be in the same location as the vessel.  Stationary gear is gear that is detached form the vessel (i.e. potting).  All measurements in a stationary deployment are currently given the same position, which is the average between the first and last "good" location as recorded by the deck unit.  If the first or last position is not near the surface, the stationary position cannot be calculated and processing will fail.  
+
+Please see the QC github repository (https://github.com/metocean/moana-qc) for additional details on position processing.
 
 ---
 ## Files are provided anonymously
@@ -157,16 +161,12 @@ Note that anyone who is part of the Mangōpare Sensor Programme can deploy a sen
 ---
 ## Other repository notes
 
-Need to work on unittests and setup.py...feel free to contribute in this space!
+This README.md is under development and will be updated in the near future!
 
 ---
 ## Community
 A fishing vessel, in-situ ocean observing quality control working group is in development through FVON (https://fvon.org/).  Please contact either the Moana Project (info@moanaproject.org) or FVON (through their website) for more information.
 
----
-
----
-## Current Notes
 
 
 
