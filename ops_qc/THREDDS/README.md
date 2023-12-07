@@ -1,15 +1,15 @@
 # The Mangōpare Sensor Programme 
 # Moana TD Sensor
 
-[![DOI](https://zenodo.org/badge/295919031.svg)](https://zenodo.org/badge/latestdoi/295919031)
-
 This dataset contains temperature and pressure data obtained for the Moana Project's Mangōpare Sensor Programme (https://www.moanaproject.org/temperature-sensors), using Moana TD sensors (https://www.zebra-tech.co.nz/moana/).  Data are provided operationally, in near real-time, and this THREDDS directory is currently updated every two hours.
 
 Only automatic quality control is included at this time, for use with measurements transmitted in near real-time.  For more information on the sensor programme, see Jakoboski et. al, 2023, in preparation, contact info@moanaproject.org, or visit the websites above.
 
-This the very first public release of these data, and as such, we expect to make improvements as we go.  Please submit feedback to info@moanaproject.org and we will incorporate any comments as soon as we can.
+THREDDS subsetting is not yet available, but hopefully will be in the near future.
 
---
+This the very first public release of these data, and as such, we expect to make improvements as we go.  Please submit feedback to info@moanaproject.org and we will incorporate any comments as soon as we can.  We are also interested in any uses of the data, so please let us know and we will include it in our publications list on the Moana Project website.
+
+---
 ## Licensing
 This dataset is available for use under the Creative Commons Attribution 4.0 International License.
 
@@ -17,15 +17,15 @@ This dataset is available for use under the Creative Commons Attribution 4.0 Int
 ## Atrribution Statement
 Data quality-control and processing provided by MetOcean Solutions, a Division of the Meteorological Service of New Zealand.  Mangōpare sensor and deck unit provided by Zebra-Tech, Ltd, Nelson, New Zealand as part of the Moana Project.  This work is a contribution to the Moana Project (www.moanaproject.org) funded by the New Zealand Ministry of Business Innovation and Employment, contract number METO1801.
 
---
+---
 ## Acknowledgements
 We would like to acknowledge all programme participants who volunteer their time and temperature measurements for the benefit of the users of the Mangōpare Sensor Programme Data.  
 
---
+---
 ## Disclaimer
 By using the data that Meteorological Service of New Zealand Limited (MetService) makes available on this platform, you agree to this disclaimer.  The data is supplied by third parties to MetService and is aggregated and anonymised by MetService.  MetService does not independently check the data to ensure it is correct, accurate, complete, current, or suitable for use.  The data is made available by MetService on as is and as available basis.  You agree that any reliance you place on the data, including any analysis of, or decision you make based on, the data (or that analysis) is at your own risk.  You agree that MetService has no responsibility or liability for the data (or for any error or omission in the data) or for how you use that data.  To the maximum extent permitted by law, MetService disclaims all warranties, conditions, guarantees, and/or representations relating to the data and how you use that data.
 
---
+---
 ## Data Format
 Currently, data are available in netCDF format.  If needed, additional formats can be added.  Each file contains coordinates, variables, and ancillary variables.
 
@@ -155,8 +155,6 @@ Please see the QC github repository (https://github.com/metocean/moana-qc) for a
 ---
 ## Files are provided anonymously
 Note that anyone who is part of the Mangōpare Sensor Programme can deploy a sensor.  This includes a wide range of vessels, including fishing, industry, research, recreational, and citizen science vessels.
-
----
 
 ---
 ## Other repository notes
