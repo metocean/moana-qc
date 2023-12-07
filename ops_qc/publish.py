@@ -180,9 +180,15 @@ class Wrapper(object):
         for var, varinfo in self.coords_info.items():
             if "new_name" in varinfo:
                 var = varinfo["new_name"]
+
             for attr, attrinfo in varinfo.items():
                 if "new_name" not in attr:
                     self.ds[var].attrs[attr] = attrinfo
+
+                if "TIME" in var and "unit" in attr:
+                    self.ds[var].attrs[attr] = self.ds_o[
+                        self.time_varname_source
+                    ].attrs[attr]
 
     def _reformat_file(self):
         self.ds_o = xr.open_dataset(self.filename, cache=False, decode_cf=False)

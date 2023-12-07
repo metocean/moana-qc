@@ -3,6 +3,7 @@ coords_attr_info:
       new_name: 'TIME' 
       long_name: 'time'
       standard_name: 'time'
+      units: ''
       axis: 'T'
       valid_max: 999999.
       valid_min: 0.
