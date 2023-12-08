@@ -27,7 +27,7 @@ By using the data that Meteorological Service of New Zealand Limited (MetService
 
 ---
 ## Data Format
-Currently, data are available in netCDF format.  If needed, additional formats can be added.  Each file contains coordinates, variables, and ancillary variables.
+Currently, data are available in netCDF format.  If needed, additional formats can be added.  Each file contains coordinates, variables, and ancillary variables.  Filenames are of the format: MOANA_yyyymmdd_hhmmss_published.nc, which reflects the date and timestamp of the file offload from the sensor to the deck unit.
 
 ### Coordinates:
     DATETIME:
