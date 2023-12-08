@@ -59,27 +59,27 @@ Currently, data are available in netCDF format.  If needed, additional formats c
 
 ### Variables:
 
-TEMPERATURE:
-      long_name: 'sea temperature in-situ ITS-90 scale'
-      standard_name: 'sea_water_temperature'
-      _FillValue: 99999.
-      coordinates: 'LONGITUDE, LATITUDE'
-      units: 'degree_Celsius'
-      valid_min:  -20.
-      valid_max: 35.
-      resolution: 0.001
-      ancillary_variables: "TEMP_QC"
-    DEPTH:
-      long_name: 'DEPTH'  
-      standard_name: 'depth'
-      _FillValue: 99999.
-      coordinates: 'LONGITUDE, LATITUDE'
-      units: 'm'
-      axis: 'z'
-      valid_min:  0.
-      valid_max: 1000.
-      resolution: 0.1 
-      ancillary_variables: "DEPTH_QC"
+    TEMPERATURE:
+          long_name: 'sea temperature in-situ ITS-90 scale'
+          standard_name: 'sea_water_temperature'
+          _FillValue: 99999.
+          coordinates: 'LONGITUDE, LATITUDE'
+          units: 'degree_Celsius'
+          valid_min:  -20.
+          valid_max: 35.
+          resolution: 0.001
+          ancillary_variables: "TEMP_QC"
+        DEPTH:
+          long_name: 'DEPTH'  
+          standard_name: 'depth'
+          _FillValue: 99999.
+          coordinates: 'LONGITUDE, LATITUDE'
+          units: 'm'
+          axis: 'z'
+          valid_min:  0.
+          valid_max: 1000.
+          resolution: 0.1 
+          ancillary_variables: "DEPTH_QC"
 
 ### Ancillary quality control variables:
 
