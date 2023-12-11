@@ -30,8 +30,7 @@ By using the data that Meteorological Service of New Zealand Limited (MetService
 Currently, data are available in netCDF format.  If needed, additional formats can be added.  Each file contains coordinates, variables, and ancillary variables.  Filenames are of the format: MOANA_yyyymmdd_hhmmss_published.nc, which reflects the date and timestamp of the file offload from the sensor to the deck unit.
 
 ### Coordinates:
-    DATETIME:
-      new_name: 'TIME' 
+    TIME:
       long_name: 'time'
       standard_name: 'time'
       axis: 'T'
@@ -60,52 +59,46 @@ Currently, data are available in netCDF format.  If needed, additional formats c
 ### Variables:
 
     TEMPERATURE:
-          long_name: 'sea temperature in-situ ITS-90 scale'
-          standard_name: 'sea_water_temperature'
-          _FillValue: 99999.
-          coordinates: 'LONGITUDE, LATITUDE'
-          units: 'degree_Celsius'
-          valid_min:  -20.
-          valid_max: 35.
-          resolution: 0.001
-          ancillary_variables: "TEMP_QC"
-        DEPTH:
-          long_name: 'DEPTH'  
-          standard_name: 'depth'
-          _FillValue: 99999.
-          coordinates: 'LONGITUDE, LATITUDE'
-          units: 'm'
-          axis: 'z'
-          valid_min:  0.
-          valid_max: 1000.
-          resolution: 0.1 
-          ancillary_variables: "DEPTH_QC"
+        long_name: 'sea temperature in-situ ITS-90 scale'
+        standard_name: 'sea_water_temperature'
+        _FillValue: 99999.
+        coordinates: 'LONGITUDE, LATITUDE'
+        units: 'degree_Celsius'
+        valid_min:  -20.
+        valid_max: 35.
+        resolution: 0.001
+        ancillary_variables: "TEMP_QC"
+    DEPTH:
+        long_name: 'DEPTH'  
+        standard_name: 'depth'
+        _FillValue: 99999.
+        coordinates: 'LONGITUDE, LATITUDE'
+        units: 'm'
+        axis: 'z'
+        valid_min:  0.
+        valid_max: 1000.
+        resolution: 0.1 
+        ancillary_variables: "DEPTH_QC"
 
 ### Ancillary quality control variables:
 
-    DATETIME_QC:
-      new_name: 'TIME_QC'
+    TIME_QC:
       long_name: 'Time Quality Flag'
       standard_name: 'time status_flag'
-      _FillValue: 99999.
       coordinates: 'LONGITUDE, LATITUDE'
       conventions: 'FVON standard flags'
       flag_meanings:  'No QC Applied | Good | Probably Good | Probably Bad | Bad | Overwritten'
       flag_values: '0, 1, 2, 3, 4, 5' 
-    LOCATION_QC:
-      new_name: 'POSITION_QC' 
+    POSITION_QC:
       long_name: 'Position Quality Flag'
       standard_name: 'location status_flag'
-      _FillValue: 99999.
       coordinates: 'LONGITUDE, LATITUDE'
       conventions: 'FVON standard flags'
       flag_meanings:  'No QC Applied | Good | Probably Good | Probably Bad | Bad | Overwritten'
       flag_values: '0, 1, 2, 3, 4, 5'
-    TEMPERATURE_QC:
-      new_name: 'TEMP_QC'
+    TEMP_QC:
       long_name: 'Temperature Quality Flag'
       standard_name: 'sea_water_temperature status_flag'
-      _FillValue: 99999.
       coordinates: 'LONGITUDE, LATITUDE'
       conventions: 'FVON standard flags'
       flag_meanings:  'No QC Applied | Good | Probably Good | Probably Bad | Bad | Overwritten'
@@ -113,7 +106,6 @@ Currently, data are available in netCDF format.  If needed, additional formats c
     DEPTH_QC:
       long_name: 'Depth Quality Flag'
       standard_name: 'depth status_flag'
-      _FillValue: 99999.
       coordinates: 'LONGITUDE, LATITUDE'
       conventions: 'FVON standard flags'
       flag_meanings:  'No QC Applied | Good | Probably Good | Probably Bad | Bad | Overwritten'
@@ -125,7 +117,6 @@ A global QC flag indicates the overall quality of each measurement, incorporatin
     QC_FLAG: 
       long_name: 'Global Quality Flag'
       standard_name: 'Global status_flag'
-      _FillValue: 99999.
       coordinates: 'LONGITUDE, LATITUDE'
       conventions: 'FVON standard flags'
       flag_meanings:  'No QC Applied | Good | Probably Good | Probably Bad | Bad | Overwritten'
