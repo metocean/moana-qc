@@ -1,7 +1,7 @@
-# The Mangōpare Sensor Programme 
+# The Mang&omacr;pare Sensor Programme 
 # Moana TD Sensor
 
-This dataset contains temperature and pressure data obtained for the Moana Project's Mangōpare Sensor Programme (https://www.moanaproject.org/temperature-sensors), using Moana TD sensors (https://www.zebra-tech.co.nz/moana/).  Data are provided operationally, in near real-time, and this THREDDS directory is currently updated every two hours.
+This dataset contains temperature and pressure data obtained for the Moana Project's Mang&omacr;pare Sensor Programme (https://www.moanaproject.org/temperature-sensors), using Moana TD sensors (https://www.zebra-tech.co.nz/moana/).  Data are provided operationally, in near real-time, and this THREDDS directory is currently updated every two hours.
 
 Only automatic quality control is included at this time, for use with measurements transmitted in near real-time.  For more information on the sensor programme, see Jakoboski et. al, 2023, in preparation, contact info@moanaproject.org, or visit the websites above.
 
@@ -15,11 +15,11 @@ This dataset is available for use under the Creative Commons Attribution 4.0 Int
 
 ---
 ## Atrribution Statement
-Data quality-control and processing provided by MetOcean Solutions, a Division of the Meteorological Service of New Zealand.  Mangōpare sensor and deck unit provided by Zebra-Tech, Ltd, Nelson, New Zealand as part of the Moana Project.  This work is a contribution to the Moana Project (www.moanaproject.org) funded by the New Zealand Ministry of Business Innovation and Employment, contract number METO1801.
+Data quality-control and processing provided by MetOcean Solutions, a Division of the Meteorological Service of New Zealand.  Mang&omacr;pare sensor and deck unit provided by Zebra-Tech, Ltd, Nelson, New Zealand as part of the Moana Project.  This work is a contribution to the Moana Project (www.moanaproject.org) funded by the New Zealand Ministry of Business Innovation and Employment, contract number METO1801.
 
 ---
 ## Acknowledgements
-We would like to acknowledge all programme participants who volunteer their time and temperature measurements for the benefit of the users of the Mangōpare Sensor Programme Data.  
+We would like to acknowledge all programme participants who volunteer their time and temperature measurements for the benefit of the users of the Mang&omacr;pare Sensor Programme Data.  
 
 ---
 ## Disclaimer
@@ -145,7 +145,7 @@ Please see the QC github repository (https://github.com/metocean/moana-qc) for a
 
 ---
 ## Files are provided anonymously
-Note that anyone who is part of the Mangōpare Sensor Programme can deploy a sensor.  This includes a wide range of vessels, including fishing, industry, research, recreational, and citizen science vessels.
+Note that anyone who is part of the Mang&omacr;pare Sensor Programme can deploy a sensor.  This includes a wide range of vessels, including fishing, industry, research, recreational, and citizen science vessels.
 
 ---
 ## Other repository notes
