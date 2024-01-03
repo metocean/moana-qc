@@ -80,9 +80,9 @@ A new code has been developed to adapt and transfer the data into our THREDDS se
 
 Relevant files are located in the THREDDS folder. 
 - THREDDS/attribute_list.yml : All the information related to the variables, coordinates, dimensions and global attributes. 
-- THREDDS/transfer.public.mangopare.yml : Config file to use for the scheduler, this could also be added to the current transfer.mangopare.yml to make the files published as soon as they are available 
----
+- THREDDS/transfer.public.mangopare.yml : Config file to use for the scheduler, this could also be added to the current transfer.mangopare.yml to make the files published as soon as they are available.
 
+---
 ## Installation: From source or via docker image
 
 This repository contains code to run the `ops-qc` ("operational" or automatic quality control) python package.  
