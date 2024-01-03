@@ -36,6 +36,8 @@ Fishing methods (or any other deployment method) are dividing into two categorie
 
 ---
 ## Quality control summary
+As the data is being delivered in a near-real-time basis these quality control tests are automatic. All the variables (Temperature, Depth, Longitude, Latitude and Time) and their associated Quality Control Flag (QC_Flag, <variable>_QC) are included in the files that are being delivered and are compliant to GTS standards (WMO, 2020). Given the mangōpare sensor's manufacture specifications and the parameters expected from near-real-time data the quality control process identifies if the measurements are within the accepted range. As per the "standard" oceanographic tests the highest quality data is going to be represented by a QC_Flag value of 1, while the bad data will present a QC_Flag value of 4 (WMO, 2020; U.S. Integrated Ocean Observing System, 2020; Wong et al. 2021). 
+ 
 "Standard" oceanographic QC tests for temperature and pressure data are included in qc_tests_df.py.  Most of these are based on QARTOD or Argo tests.  If any new tests are needed, that is most likely the best place to put them.  For each test, a quality flag is assigned:  
 
 Quality flag values = [0,1,2,3,4]
@@ -71,18 +73,6 @@ Currently, all QC'd files are saved in netCDF format (see wrapper.py).  If neede
 Each time the wrapper is run on a list of files, a status file (csv) is created with information on any errors that may have occurred during processing.  This file is saved in the same directory as the output quality controlled nc files.  Note that all of this is in beta, so will be improved in the future.
 
 ---
-## Files available for the Public (mangopare specific)
-Two columns have been added to the mangopare metadata (Public, Publication Date). The first column "Public" especifies if the data is available for the Public or not (boolean, True or False). If True, the second column "Publication Date" especifies the date when the sharing data agreement was signed.   
-
-A new code has been developed to adapt and transfer the data into our THREDDS server (see ops_qc/publish.py).
-
-Relevant files are located in the THREDDS folder. 
-- THREDDS/attribute_list.yml : All the information related to the variables, coordinates, dimensions and global attributes. 
-- THREDDS/transfer.public.mangopare.yml : Config file to use for the scheduler, this could also be added to the current transfer.mangopare.yml to make the files published as soon as they are available 
-
----
-
-
 ## Installation: From source or via docker image
 
 This repository contains code to run the `ops-qc` ("operational" or automatic quality control) python package.  
