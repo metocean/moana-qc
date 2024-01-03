@@ -73,6 +73,16 @@ Currently, all QC'd files are saved in netCDF format (see wrapper.py).  If neede
 Each time the wrapper is run on a list of files, a status file (csv) is created with information on any errors that may have occurred during processing.  This file is saved in the same directory as the output quality controlled nc files.  Note that all of this is in beta, so will be improved in the future.
 
 ---
+## Files available for the Public (mangopare specific)
+Two columns have been added to the mangopare metadata (Public, Publication Date). The first column "Public" especifies if the data is available for the Public or not (boolean, True or False). If True, the second column "Publication Date" especifies the date when the sharing data agreement was signed.   
+
+A new code has been developed to adapt and transfer the data into our THREDDS server (see ops_qc/publish.py).
+
+Relevant files are located in the THREDDS folder. 
+- THREDDS/attribute_list.yml : All the information related to the variables, coordinates, dimensions and global attributes. 
+- THREDDS/transfer.public.mangopare.yml : Config file to use for the scheduler, this could also be added to the current transfer.mangopare.yml to make the files published as soon as they are available 
+---
+
 ## Installation: From source or via docker image
 
 This repository contains code to run the `ops-qc` ("operational" or automatic quality control) python package.  
