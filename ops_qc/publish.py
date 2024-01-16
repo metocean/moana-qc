@@ -261,6 +261,13 @@ class Wrapper(object):
                     self.outfile_ext,
                     ".nc",
                 )
-                self.ds.to_netcdf(savefile, mode="w", format="NETCDF4")
+                encoding = {
+                    "TIME": {"dtype": "int32"},
+                    "QC_FLAG": {"dtype": "int32"},
+                    "POSITION_QC": {"dtype": "int32"},
+                }
+                self.ds.to_netcdf(
+                    savefile, mode="w", format="NETCDF4", encoding=encoding
+                )
                 self._saved_files["filelist"].append(savefile)
         return self._saved_files
