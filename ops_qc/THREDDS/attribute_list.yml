@@ -8,6 +8,7 @@ coords_attr_info:
       valid_max: 999999.
       valid_min: 0.
       ancillary_variables: "TIME_QC"
+      observation_type: "measured"
     LATITUDE: 
       long_name: 'latitude'
       reference_datum: 'WGS84 geographic coordinate system'
@@ -17,6 +18,7 @@ coords_attr_info:
       valid_max: 90.
       valid_min: -90.
       ancillary_variables: "POSITION_QC"
+      observation_type: "measured"
     LONGITUDE:
       long_name: 'longitude'
       reference_datum: 'WGS84 geographic coordinate system'
@@ -26,7 +28,7 @@ coords_attr_info:
       valid_max: 180.
       valid_min: -180.
       ancillary_variables: "POSITION_QC"
-      
+      observation_type: "measured"
 
 vars_attr_info:
     TEMPERATURE:
@@ -40,6 +42,7 @@ vars_attr_info:
       valid_max: 35.
       resolution: 0.001
       ancillary_variables: "TEMP_QC"
+      observation_type: "measured"
     DEPTH:
       long_name: 'DEPTH'  
       standard_name: 'depth'
@@ -47,10 +50,25 @@ vars_attr_info:
       coordinates: 'LONGITUDE, LATITUDE'
       units: 'm'
       axis: 'z'
+      positive: "down"
       valid_min:  0.
       valid_max: 1000.
       resolution: 0.1 
       ancillary_variables: "DEPTH_QC"
+      observation_type: "computed"
+      comment: "Depth computed using Gibbs-SeaWater toolbox (TEOS-10), from latitude and relative pressure measurements"
+    PRESSURE:
+      long_name: 'PRESSURE'  
+      standard_name: 'pressure'
+      _FillValue: 99999.
+      coordinates: 'LONGITUDE, LATITUDE'
+      units: 'dbar'
+      axis: 'z'
+      valid_min:  0.
+      valid_max: 1000.
+      resolution: 0.1 
+      ancillary_variables: "PRESSURE_QC"
+      observation_type: "measured"
     QC_FLAG: 
       long_name: 'Global Quality Flag'
       standard_name: 'Global status_flag'
@@ -89,6 +107,14 @@ vars_attr_info:
     DEPTH_QC:
       long_name: 'Depth Quality Flag'
       standard_name: 'depth status_flag'
+      _FillValue: 99999.
+      coordinates: 'LONGITUDE, LATITUDE'
+      conventions: 'FVON standard flags'
+      flag_meanings:  'No QC Applied | Good | Probably Good | Probably Bad | Bad | Overwritten'
+      flag_values: '0, 1, 2, 3, 4, 5'
+    PRESSURE_QC:
+      long_name: 'Pressure Quality Flag'
+      standard_name: 'pressure status_flag'
       _FillValue: 99999.
       coordinates: 'LONGITUDE, LATITUDE'
       conventions: 'FVON standard flags'

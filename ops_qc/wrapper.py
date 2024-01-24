@@ -3,7 +3,7 @@ import logging
 import numpy as np
 import pandas as pd
 import xarray as xr
-import seawater as sw
+import gsw
 import datetime as dt
 from ops_qc.utils import catch, start_end_dist, import_pycallable
 
@@ -11,11 +11,10 @@ xr.set_options(keep_attrs=True)
 
 cycle_dt = dt.datetime.utcnow()
 
-
 class QcWrapper(object):
     """
     Wrapper class for observational data quality control.  Takes a list of csv files containing
-    moana/mangōpare data and outputs qc'd data in netcdf files, one file per csv.  Also creates
+    moana/mangōpare data and outputs qc'd data in netcdf files, one file per csv.  Also creates 
     a status file that indicates if the qc was successful, and if not, why it wasn't.
 
     Arguments:
@@ -24,7 +23,7 @@ class QcWrapper(object):
         out_dir - directory to save qc'd netcdf files in
         test_list_1 -- list of qc tests to run in the first "batch," these tests should not
             depend on a previous test
-        test_list_2 -- list of qc tests to run in the second "batch," which may depend on
+        test_list_2 -- list of qc tests to run in the second "batch," which may depend on 
             qc tests in test_list_1
         fishing_metafile -- path and filename for the csv file that contains fisher metadata,
             can be a local directory or a csv file in a github repository
@@ -41,14 +40,14 @@ class QcWrapper(object):
         convert_p_to_z -- boolean, convert pressure to depth (true) or only keep pressure
             (false)
         default_latitude -- latitude to use in convert_p_to_z
-        attr_file -- location of attribute_list.yml, default uses the one in the python
+        attr_file -- location of attribute_list.yml, default uses the one in the python 
             package, should be a yaml file (see sample one in ops_qc directory)
         startstring -- string, used by datareader class to recognize the end of the header
             or start of the data
-        splitstring -- string, string to look for in error messages, anything before
+        splitstring -- string, string to look for in error messages, anything before 
             splitstring will be recorded in status_file_XXXX as "failure_mode", anything
             after as "detailed_error"
-        gear_class -- dictionary of fishing_method:gear_class pairs, matching every
+        gear_class -- dictionary of fishing_method:gear_class pairs, matching every 
             fishing method in the fishing_metafile to either "mobile" or "stationary"
 
     Returns:
@@ -103,11 +102,12 @@ class QcWrapper(object):
             "Instrument deployment": "mobile",
             "Potting, long lining": "stationary",
             "Diving": "stationary",
-            "Trolling": "mobile",
+            "Trolling": "mobile"
         },
         logger=logging,
         **kwargs,
     ):
+
         self.filelist = filelist
         self.outfile_ext = outfile_ext
         self.out_dir = out_dir
@@ -147,8 +147,6 @@ class QcWrapper(object):
             "moana_battery",
             "moana_serial_number",
             "moana_calibration_date",
-            "public",
-            "publication_date",
             "qc=1",
             "qc=2",
             "qc=3",
@@ -159,7 +157,7 @@ class QcWrapper(object):
             "failed",
             "failure_mode",
             "total_obs",
-            "detailed_error",
+            "detailed_error"
         ]
 
     def set_cycle(self, cycle_dt):
@@ -188,10 +186,14 @@ class QcWrapper(object):
             self.preprocessor = self._set_class(
                 self.preprocessor_class, self._default_preprocessor_class
             )
-            self.qc_class = self._set_class(self.qc_class, self._default_qc_class)
+            self.qc_class = self._set_class(
+                self.qc_class, self._default_qc_class
+            )
         except Exception as exc:
-            self.logger.error("Unable to set required classes for qc: {}".format(exc))
-            raise type(exc)(f"Unable to set requred classes for qc due to: {exc}")
+            self.logger.error(
+                "Unable to set required classes for qc: {}".format(exc))
+            raise type(exc)(f'Unable to set requred classes for qc due to: {exc}')
+
 
     def _set_filelist(self):
         try:
@@ -200,8 +202,10 @@ class QcWrapper(object):
             else:
                 self.files_to_qc = self.filelist
         except Exception as exc:
-            self.logger.error("No file list found, please specify.  No QC performed.")
-            raise type(exc)(f"No file list found, no QC performed due to: {exc}")
+            self.logger.error(
+                "No file list found, please specify.  No QC performed.")
+            raise type(exc)(f'No file list found, no QC performed due to: {exc}')
+
 
     def _save_qc_data(self, filename):
         """
@@ -215,7 +219,8 @@ class QcWrapper(object):
             # create (mkdir) out_dir if it doesn't exist
             self._initialize_outdir(self.out_dir)
             savefile = "{}{}{}{}".format(
-                self.out_dir, os.path.splitext(tail)[0], self.outfile_ext, ".nc"
+                self.out_dir, os.path.splitext(
+                    tail)[0], self.outfile_ext, ".nc"
             )
             self.ds.to_netcdf(savefile, mode="w", format="NETCDF4")
             # self._saved_files.append(savefile)
@@ -244,7 +249,8 @@ class QcWrapper(object):
             # create all the status files in self.save_file_dict
             #           for name,data in save_file_dict:
             basefile = f"status_file{self.status_file_ext}.csv"
-            filename = cycle_dt.strftime(os.path.join(self.status_file_dir, basefile))
+            filename = cycle_dt.strftime(
+                os.path.join(self.status_file_dir, basefile))
             self._status_data.to_csv(
                 filename, mode="a", header=not os.path.isfile(filename), index=False
             )
@@ -264,9 +270,8 @@ class QcWrapper(object):
                     exc
                 )
             )
-            raise type(exc)(
-                f"Could not create specified directory to save qc files in due to: {exc}"
-            )
+            raise type(exc)(f'Could not create specified directory to save qc files in due to: {exc}')
+
 
     def convert_pressure_to_depth(self):
         """
@@ -279,7 +284,7 @@ class QcWrapper(object):
             else:
                 d_lat = self.default_latitude
             depth = [
-                sw.eos80.dpth(catch(lambda: float(z)), d_lat)
+                gsw.z_from_p(catch(lambda: float(z)), d_lat)
                 for z in self.ds["PRESSURE"]
             ]
             self.ds["DEPTH"] = xr.Variable(
@@ -287,8 +292,11 @@ class QcWrapper(object):
                 data=depth,
                 attrs={"units": "[m]", "standard_name": "depth"},
             )
-            self.ds = self.ds.drop("PRESSURE")
+            self.ds["DEPTH"] = self.ds["DEPTH"]*-1
+            #self.ds = self.ds.drop("PRESSURE")
             self.ds = self.ds.rename({"PRESSURE_QC": "DEPTH_QC"})
+            self.ds["PRESSURE_QC"] = self.ds["DEPTH_QC"]
+            self.ds["DEPTH_QC"].attrs["long_name"] = "Overall Depth Quality Flag"
             return self.ds
         except Exception as exc:
             self.logger.error(
@@ -298,7 +306,7 @@ class QcWrapper(object):
             )
             pass
 
-    def _calc_positions(self, filename, surface_pressure=10, qcrange=[1, 2]):
+    def _calc_positions(self, filename, surface_pressure=10, qcrange=[1,2]):
         """
         Calculate locations for either stationary or mobile gear.
         Current state of this code assumes all stationary locations
@@ -306,60 +314,49 @@ class QcWrapper(object):
         the commented out regions...eventually will use those.
         """
         try:
-            if self.ds.attrs["gear_class"] == "stationary":
+            if self.ds.attrs['gear_class'] == 'stationary':
                 # this needs work
-                if "LOCATION_QC" in self.ds.data_vars:
-                    ds2 = self.ds.where(self.ds["LOCATION_QC"].isin(qcrange), drop=True)
+                if 'LOCATION_QC' in self.ds.data_vars:
+                    ds2 = self.ds.where(self.ds['LOCATION_QC'].isin(qcrange), drop=True)
                 else:
                     ds2 = self.ds
-                if "DATETIME_QC" in ds2.data_vars:
-                    ds2 = ds2.where(ds2["DATETIME_QC"].isin(qcrange), drop=True)
-                lat = np.nanmean([ds2.LATITUDE.values[0], ds2.LATITUDE.values[-1]])
-                lon = (
-                    np.nanmean([ds2.LONGITUDE.values[0], ds2.LONGITUDE.values[-1]])
-                    % 360
-                )
-                self.ds["LATITUDE"] = self.ds.LATITUDE.where(
-                    self.ds.LATITUDE == lat, other=lat
-                )
-                self.ds["LONGITUDE"] = self.ds.LONGITUDE.where(
-                    self.ds.LONGITUDE == lon, other=lon
-                )
-            if self.ds.attrs["gear_class"] == "mobile":
-                self.ds = self.ds.assign(
-                    {"LONGITUDE": lambda ds: ds["LONGITUDE"] % 360}
-                )
+                if 'DATETIME_QC' in ds2.data_vars:
+                    ds2 = ds2.where(
+                        ds2['DATETIME_QC'].isin(qcrange), drop=True)
+                lat = np.nanmean(
+                    [ds2.LATITUDE.values[0], ds2.LATITUDE.values[-1]])
+                lon = np.nanmean(
+                    [ds2.LONGITUDE.values[0], ds2.LONGITUDE.values[-1]]) % 360
+                self.ds['LATITUDE'] = self.ds.LATITUDE.where(self.ds.LATITUDE == lat, other=lat)
+                self.ds['LONGITUDE'] = self.ds.LONGITUDE.where(self.ds.LONGITUDE == lon, other=lon)
+            if self.ds.attrs['gear_class'] == 'mobile':
+                self.ds = self.ds.assign({"LONGITUDE": lambda ds: ds['LONGITUDE'] % 360})
         except Exception as exc:
-            self.logger.error(f"Position could not be calculated for {filename}: {exc}")
-            raise type(exc)(
-                f"Could not calculate stationary positions (len={len(self.ds.TEMPERATURE)}) due to: {exc}"
-            )
+            self.logger.error(
+                f"Position could not be calculated for {filename}: {exc}")
+            raise type(exc)(f'Could not calculate stationary positions (len={len(self.ds.TEMPERATURE)}) due to: {exc}')
 
-    def _calc_location_attrs(self, filename):
+    def _calc_location_attrs(self,filename):
         """
         Assigns derived position attributes to netdf and
         calculates the start_end_dist
         """
         try:
-            self.ds.attrs["geospatial_lat_max"] = "%.6f" % np.nanmax(
-                self.ds.LATITUDE.values
-            )
-            self.ds.attrs["geospatial_lat_min"] = "%.6f" % np.nanmin(
-                self.ds.LATITUDE.values
-            )
-            self.ds.attrs["geospatial_lon_max"] = "%.6f" % np.nanmax(
-                self.ds.LONGITUDE.values
-            )
-            self.ds.attrs["geospatial_lon_min"] = "%.6f" % np.nanmin(
-                self.ds.LONGITUDE.values
-            )
+            self.ds.attrs['geospatial_lat_max'] = "%.6f" % np.nanmax(
+                self.ds.LATITUDE.values)
+            self.ds.attrs['geospatial_lat_min'] = "%.6f" % np.nanmin(
+                self.ds.LATITUDE.values)
+            self.ds.attrs['geospatial_lon_max'] = "%.6f" % np.nanmax(
+                self.ds.LONGITUDE.values)
+            self.ds.attrs['geospatial_lon_min'] = "%.6f" % np.nanmin(
+                self.ds.LONGITUDE.values)
             sed = start_end_dist(self.ds)
-            self.ds.attrs["start_end_dist_m"] = "%.2f" % sed
+            self.ds.attrs['start_end_dist_m'] = "%.2f" % sed
         except Exception as exc:
-            self.logger.error(f"Position attrs not assigned for {filename}: {exc}")
-            raise type(exc)(
-                f"Position attrs or start_end_dist not assigned due to: {exc}"
-            )
+            self.logger.error(
+                f"Position attrs not assigned for {filename}: {exc}")
+            raise type(exc)(f'Position attrs or start_end_dist not assigned due to: {exc}')
+
 
     def _postprocess(self, filename):
         """
@@ -384,13 +381,14 @@ class QcWrapper(object):
                     self.status_dict[f"qc={values[0]}"] = counts[0]
             else:
                 self.status_dict.update(
-                    {"failed": "yes", "failure_mode": "No Good Data (all QC Flags = 4)"}
+                    {"failed": "yes",
+                        "failure_mode": "No Good Data (all QC Flags = 4)"}
                 )
         except Exception as exc:
             self.status_dict.update(
-                {"failed": "yes", "failure_mode": "Post-Processing Failed"}
-            )
-            self.logger.error(f"Could not postprocess {filename} due to {exc}")
+                {"failed": "yes", "failure_mode": "Post-Processing Failed"})
+            self.logger.error(
+                f"Could not postprocess {filename} due to {exc}")
 
     def _qc_files(self, test_list, filename):
         try:
@@ -399,12 +397,12 @@ class QcWrapper(object):
                 test_list,
                 self.save_flags,
                 self.attr_file,
-            ).run()
+                ).run()
         except Exception as exc:
             self.status_dict.update(
-                {"failed": "yes", "failure_mode": "Apply QC Tests Failed"}
-            )
-            self.logger.error(f"Could not qc {filename} due to {exc}")
+                {"failed": "yes", "failure_mode": "Apply QC Tests Failed"})
+            self.logger.error(
+                f"Could not qc {filename} due to {exc}")
 
     def _update_status(self, filename):
         try:
@@ -413,16 +411,12 @@ class QcWrapper(object):
                 for k in self.status_dict_keys
                 if k in self.status_dict
             }
-            status_dict2["filename"] = filename
-            # self._status_data = self._status_data.append(
+            status_dict2['filename'] = filename
+            #self._status_data = self._status_data.append(
             #    status_dict2, ignore_index=True)
-            self._status_data = pd.concat(
-                [self._status_data, pd.DataFrame([status_dict2])], ignore_index=True
-            )
+            self._status_data = pd.concat([self._status_data, pd.DataFrame([status_dict2])], ignore_index=True)
         except Exception as exc:
-            self.logger.error(
-                f"Could not append status info for {filename} due to {exc}"
-            )
+            self.logger.error(f"Could not append status info for {filename} due to {exc}")
 
     def _status_checks(self, filename):
         check_passed = True
@@ -467,39 +461,28 @@ class QcWrapper(object):
                     ds=self.ds,
                     fisher_metadata=self.fisher_metadata,
                     attr_file=self.attr_file,
-                    status_dict=self.status_dict,
+                    status_dict=self.status_dict
                 ).run()
                 passed = self._status_checks(filename)
                 if not passed:
                     continue
-                self._qc_files(self.test_list_1, filename)
+                self._qc_files(self.test_list_1,filename)
                 self._calc_location_attrs(filename)
                 self._calc_positions(filename)
-                if self.ds.attrs["gear_class"] == "stationary":
-                    self._qc_files(self.test_list_2, filename)
+                if self.ds.attrs['gear_class'] == 'stationary':
+                    self._qc_files(self.test_list_2,filename)
                 self._postprocess(filename)
                 self._update_status(filename)
             except Exception as exc:
                 if self.splitstring in str(exc):
                     estr = str(exc).split(self.splitstring)
-                    self.status_dict.update(
-                        {
-                            "failed": "yes",
-                            "failure_mode": estr[0],
-                            "detailed_error": estr[1],
-                        }
-                    )
+                    self.status_dict.update({"failed": "yes","failure_mode":estr[0],"detailed_error":estr[1]})
                 else:
-                    self.status_dict.update(
-                        {
-                            "failed": "yes",
-                            "failure_mode": str(exc),
-                            "detailed_error": "NA",
-                        }
-                    )
+                    self.status_dict.update({"failed": "yes","failure_mode":str(exc),"detailed_error":"NA"})
                 self._update_status(filename)
                 self.logger.error(
-                    "Could not qc data from {}. Traceback: {}".format(filename, exc)
+                    "Could not qc data from {}. Traceback: {}".format(
+                        filename, exc)
                 )
         self._save_status_data()
         self._success_files = self._saved_files

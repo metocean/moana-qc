@@ -5,6 +5,7 @@ xarray==2022.12.0
 dask===2020.12.0
 pytz
 PyYaml<5
+gsw
 seawater
 #setuptools==57.5.0
 pyshp
