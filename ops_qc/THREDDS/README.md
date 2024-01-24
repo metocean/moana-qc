@@ -68,6 +68,7 @@ Currently, data are available in netCDF format.  If needed, additional formats c
         valid_max: 35.
         resolution: 0.001
         ancillary_variables: "TEMP_QC"
+        observation_type = "measured"
     DEPTH:
         long_name: 'DEPTH'  
         standard_name: 'depth'
@@ -75,10 +76,25 @@ Currently, data are available in netCDF format.  If needed, additional formats c
         coordinates: 'LONGITUDE, LATITUDE'
         units: 'm'
         axis: 'z'
+        positive: 'down'
         valid_min:  0.
         valid_max: 1000.
         resolution: 0.1 
         ancillary_variables: "DEPTH_QC"
+        observation_type = "computed"
+        comment = "Depth computed using Gibbs-SeaWater toolbox (TEOS-10), from latitude and relative pressure measurements" ;
+    PRESSURE:
+        long_name: 'PRESSURE'  
+        standard_name: 'pressure'
+        _FillValue: 99999.
+        coordinates: 'LONGITUDE, LATITUDE'
+        units: 'dbar'
+        axis: 'z'
+        valid_min:  0.
+        valid_max: 1000.
+        resolution: 0.1 
+        ancillary_variables: "PRESSURE_QC"
+        observation_type = "measured"
 
 ### Ancillary quality control variables:
 
@@ -106,6 +122,13 @@ Currently, data are available in netCDF format.  If needed, additional formats c
     DEPTH_QC:
       long_name: 'Depth Quality Flag'
       standard_name: 'depth status_flag'
+      coordinates: 'LONGITUDE, LATITUDE'
+      conventions: 'FVON standard flags'
+      flag_meanings:  'No QC Applied | Good | Probably Good | Probably Bad | Bad | Overwritten'
+      flag_values: '0, 1, 2, 3, 4, 5'
+    PRESSURE_QC:
+      long_name: 'Pressure Quality Flag'
+      standard_name: 'pressure status_flag'
       coordinates: 'LONGITUDE, LATITUDE'
       conventions: 'FVON standard flags'
       flag_meanings:  'No QC Applied | Good | Probably Good | Probably Bad | Bad | Overwritten'
