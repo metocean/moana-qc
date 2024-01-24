@@ -82,7 +82,7 @@ Currently, data are available in netCDF format.  If needed, additional formats c
         resolution: 0.1 
         ancillary_variables: "DEPTH_QC"
         observation_type = "computed"
-        comment = "Depth computed using Gibbs-SeaWater toolbox (TEOS-10), from latitude and relative pressure measurements" ;
+        comment = "Depth computed using Gibbs-SeaWater toolbox (TEOS-10), from latitude and relative pressure measurements"
     PRESSURE:
         long_name: 'PRESSURE'  
         standard_name: 'pressure'
