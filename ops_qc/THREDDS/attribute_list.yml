@@ -166,7 +166,7 @@ global_attrs:
     geospatial_vertical_positive: ''
     history: '' # : History ,
     instrument: ''
-    instrument_serial_number : 'moana_serial_number'
+#    instrument_serial_number : 'moana_serial_number'
     instrument_firmware: 'moana_firmware'
     instrument_calibration_date : 'moana_calibration_date'
     instrument_battery : 'moana_battery'
