@@ -47,7 +47,8 @@ Quality flag values = [0,1,2,3,4]
 - QF = 2: Test failed, but probably still good data
 - QF = 3: Test failed, probably bad data
 - QF = 4: Test failed, bad data
-Once all tests have been performed, a "global" quality flag is calculated (the "worst" value for all tests for each measurement).
+  
+Quality control tests are applied to temperature, pressure, time, and position and an overall quality flag is calculated for each variable (the "worst" value for all tests associated with each variable).  Once all tests have been performed, a "global" quality flag is calculated (the "worst" value for all tests for each measurement, incorporating all variables).  A higher quality control flag value cannot be overwritten by a lower value.  If needed, additional quality flags may be added in the future (e.g., QF=5: Overwritten data) and will be recorded here.
 
 The tests from qc_test_df.py that should be included in a quality-control run are specified in warpper.py under the variable name `test_list`.  This variable is passed to apply_qc.py where each test is run.  See qc_tests_df.py documentation for lists of possible test names.  Some tests generally work well, others currently not at all.  This is indicated in the qc_tests_df.py docstring.
 
@@ -58,7 +59,7 @@ Right now, tests in qc_tests_df need a pandas dataframe with LONGITUDE, LATITUDE
 These are loose recommendations, depending on application, region, and any recent developments.
 Currently recommended qc tests in order:
 
-- test_list_1: ['impossible_date', 'impossible_location', 'impossible_speed', 'timing_gap', 'global_range', 'remove_ref_location', 'spike', 'temp_drift', 'stationary_position_check']
+- test_list_1: ['impossible_date', 'impossible_location', 'impossible_speed', 'timing_gap', 'global_range', 'remove_ref_location', 'spike', 'temp_drift', 'stationary_position_check', 'reset_code_check', 'check_timestamp_overflow']
 - test_list_2: ['start_end_dist_check']
 
 Stationary_position_check could go in either list, depending on whether this test should be applied to both mobile and stationary gear, or only 
@@ -66,7 +67,7 @@ stationary gear.
 
 ---
 ## File Format
-Currently, all QC'd files are saved in netCDF format (see wrapper.py).  If needed, additional formats can be added.  The user can choose whether to save quality flags for all individual tests or only save the global quality flag.
+Currently, all QC'd files are saved in netCDF format (see wrapper.py).  If needed, additional formats can be added.  The user can choose whether to save quality flags for all individual tests or only save the overall variable and global quality flags.
 
 ---
 ## Status file
