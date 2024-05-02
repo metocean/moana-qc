@@ -1,13 +1,13 @@
-FROM metocean/ops-qc:v0.4.7
+FROM metocean/ops-qc:v0.5.1
 
 ADD . $SOURCE/moana-qc
 
 ARG GIT_TOKEN
 
-RUN pip install -r $SOURCE/moana-qc/requirements/default.txt &&\
-    pip install -I -r $SOURCE/moana-qc/requirements/opslibs.txt &&\
-    pip install -r $SOURCE/moana-qc/requirements/tests.txt &&\
-    pip install $SOURCE/moana-qc &&\
+#RUN pip install -r $SOURCE/moana-qc/requirements/default.txt &&\
+#    pip install -I -r $SOURCE/moana-qc/requirements/opslibs.txt &&\
+# RUN pip install -r $SOURCE/moana-qc/requirements/tests.txt &&\
+RUN pip install $SOURCE/moana-qc &&\
     sudo pip uninstall -y cloudpickle &&\
     sudo pip uninstall -y ops-mds &&\
     sudo pip uninstall -y snowflake-sqlalchemy &&\

@@ -53,6 +53,7 @@ class PreProcessMangopare(object):
             "deployment_method": "Fishing method",
             "programme_name": "Programme",
             "public": "Public",
+            "wigos_ID": "WIGOS ID",
             "publication_date": "Publication Date",
         },
         add_sitename=True,
@@ -118,6 +119,15 @@ class PreProcessMangopare(object):
                         self.ds.attrs["public"] = str(row["Public"])
                     except:
                         pass
+                    try:
+                        self.ds.attrs["wigos_id"] = str(row["WIGOS ID"])
+                    except:
+                        self.ds.attrs["wigos_id"] = "NA"
+                    try: 
+                        self.ds.attrs["internal_id"] = str(row[0])
+                    except:
+                        pass
+                    
                     time_check += 1
                     self.status_dict.update(self.ds.attrs)
             if time_check < 1:
