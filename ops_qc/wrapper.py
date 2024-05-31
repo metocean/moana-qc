@@ -3,7 +3,7 @@ import logging
 import numpy as np
 import pandas as pd
 import xarray as xr
-import seawater as sw
+import gsw
 import datetime as dt
 from ops_qc.utils import catch, start_end_dist, import_pycallable
 
@@ -284,7 +284,7 @@ class QcWrapper(object):
             else:
                 d_lat = self.default_latitude
             depth = [
-                sw.eos80.dpth(catch(lambda: float(z)), d_lat)
+                gsw.z_from_p(catch(lambda: float(z)), d_lat)
                 for z in self.ds["PRESSURE"]
             ]
             self.ds["DEPTH"] = xr.Variable(
@@ -292,8 +292,11 @@ class QcWrapper(object):
                 data=depth,
                 attrs={"units": "[m]", "standard_name": "depth"},
             )
-            self.ds = self.ds.drop("PRESSURE")
+            self.ds["DEPTH"] = self.ds["DEPTH"]*-1
+            #self.ds = self.ds.drop("PRESSURE")
             self.ds = self.ds.rename({"PRESSURE_QC": "DEPTH_QC"})
+            self.ds["PRESSURE_QC"] = self.ds["DEPTH_QC"]
+            self.ds["DEPTH_QC"].attrs["long_name"] = "Overall Depth Quality Flag"
             return self.ds
         except Exception as exc:
             self.logger.error(

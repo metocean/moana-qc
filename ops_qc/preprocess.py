@@ -5,6 +5,7 @@ import logging
 import datetime
 from ops_qc.utils import load_yaml
 
+
 class PreProcessMangopare(object):
     """
     Mangopare position processing and fishing gear classification.
@@ -18,16 +19,16 @@ class PreProcessMangopare(object):
         status_dict -- dictionary with file processing status info,
             if not already provided, will start with empty dict.  If
             provided, will update dict with new processing info.
-        var_attr_dict_name -- string, name of dictionary in attr_file 
+        var_attr_dict_name -- string, name of dictionary in attr_file
             that contains variable attribute information
-        global_attr_dict_name -- string, name of dictionary in attr_file 
+        global_attr_dict_name -- string, name of dictionary in attr_file
             that contains global attribute information
         metadata_columns -- dictionary that contains netcdf global attribute
             names paired with corresponding column name in fisher metadata
             spreadsheet
-        add_sitename -- boolean, set "platform_code" global attribute to 
+        add_sitename -- boolean, set "platform_code" global attribute to
             vessel_id from fisher metadata spreadsheet (true) or NA (false)
-        status_dict -- dictionary that keeps track of qc failures and 
+        status_dict -- dictionary that keeps track of qc failures and
             is updated throughout the process
 
     Returns:
@@ -35,25 +36,30 @@ class PreProcessMangopare(object):
         self.status_dict -- updated status_dict with any new error information
     """
 
-    def __init__(self,
-                 ds,
-                 fisher_metadata,
-                 attr_file='attribute_list.yml',
-                 var_attr_dict_name='var_attr_info',
-                 global_attr_dict_name='global_attr_info',
-                 metadata_columns={
-                    'gear_class': 'Gear Class', 
-                    'vessel_email': 'Contact email',
-                    'vessel_name': 'Vessel name', 
-                    'email_status': 'Email Status',               
-                    'email_frequency': 'Email Frequency', 
-                    'expected_deck_unit_serial_number': 'Deck unit serial number',
-                    'deployment_method':'Fishing method',
-                    'programme_name':'Programme'},
-                 add_sitename=True,
-                 status_dict={},
-                 logger=logging):
-
+    def __init__(
+        self,
+        ds,
+        fisher_metadata,
+        attr_file="attribute_list.yml",
+        var_attr_dict_name="var_attr_info",
+        global_attr_dict_name="global_attr_info",
+        metadata_columns={
+            "gear_class": "Gear Class",
+            "vessel_email": "Contact email",
+            "vessel_name": "Vessel name",
+            "email_status": "Email Status",
+            "email_frequency": "Email Frequency",
+            "expected_deck_unit_serial_number": "Deck unit serial number",
+            "deployment_method": "Fishing method",
+            "programme_name": "Programme",
+            "public": "Public",
+            "wigos_ID": "WIGOS ID",
+            "publication_date": "Publication Date",
+        },
+        add_sitename=True,
+        status_dict={},
+        logger=logging,
+    ):
         self.ds = ds
         self.fisher_metadata = fisher_metadata
         self.attr_file = attr_file
@@ -63,7 +69,7 @@ class PreProcessMangopare(object):
         self.add_sitename = add_sitename
         self.status_dict = status_dict
         self.logger = logging
-        self.filename = self.ds.attrs['raw_data_filename']
+        self.filename = self.ds.attrs["raw_data_filename"]
 
     def _classify_gear(self):
         """
@@ -72,55 +78,91 @@ class PreProcessMangopare(object):
         Inputs include self.fisher_metadata from qc_readers.load_fisher_metadata and
         self.df from qc_readers.load_moana_standard/
         """
-        self.ds.attrs['gear_class'] = 'unknown'
+        self.ds.attrs["gear_class"] = "unknown"
         try:
-            ms = int(self.ds.attrs['moana_serial_number'])
-            sn_data = self.fisher_metadata.loc[self.fisher_metadata['Mangopare serial number'] == ms]
+            ms = int(self.ds.attrs["moana_serial_number"])
+            sn_data = self.fisher_metadata.loc[
+                self.fisher_metadata["Mangopare serial number"] == ms
+            ]
             self.status_dict.update(self.ds.attrs)
-            t_min = pd.to_datetime(np.min(self.ds['DATETIME']).values)
-            t_max = pd.to_datetime(np.max(self.ds['DATETIME']).values)
+            t_min = pd.to_datetime(np.min(self.ds["DATETIME"]).values)
+            t_max = pd.to_datetime(np.max(self.ds["DATETIME"]).values)
         except Exception as exc:
             self.logger.error(
-                'Could not calculate time range or sn data: {}'.format(exc))
-            raise type(exc)(f'Could not calculate time range or sn data, len(DATETIME)={len(self.ds.DATETIME)} due to: {exc}')
-            #self.status_dict.update(
+                "Could not calculate time range or sn data: {}".format(exc)
+            )
+            raise type(exc)(
+                f"Could not calculate time range or sn data, len(DATETIME)={len(self.ds.DATETIME)} due to: {exc}"
+            )
+            # self.status_dict.update(
             #    {'failed': 'yes', 'failure_mode': f'Could not calculate time range or sn data, len(DATETIME)={len(self.ds.DATETIME)}', 'detailed_error':str(exc)})
         try:
             time_check = 0
             for _, row in sn_data.iterrows():
                 # round max date to the first minute of the next day in spreadsheet
-                if t_min >= row['Date supplied'] and t_max <= pd.to_datetime(row['Date returned'].date()+datetime.timedelta(days=1)):
+                if t_min >= row["Date supplied"] and t_max <= pd.to_datetime(
+                    row["Date returned"].date() + datetime.timedelta(days=1)
+                ):
                     for attrname, rowname in self.metadata_columns.items():
                         self.ds.attrs[attrname] = row[rowname]
                     try:
-                        self.ds.attrs['vessel_id'] = int(row['Vessel id'])
+                        self.ds.attrs["vessel_id"] = int(row["Vessel id"])
                     except:
-                        self.ds.attrs['vessel_id'] = 'NA'
+                        self.ds.attrs["vessel_id"] = "NA"
                     try:
-                        self.ds.attrs['expected_deck_unit_serial_number'] = int(
-                            self.ds.attrs['expected_deck_unit_serial_number'])
+                        self.ds.attrs["expected_deck_unit_serial_number"] = int(
+                            self.ds.attrs["expected_deck_unit_serial_number"]
+                        )
                     except:
                         pass
+                    try:
+                        self.ds.attrs["public"] = str(row["Public"])
+                    except:
+                        pass
+                    try:
+                        self.ds.attrs["wigos_id"] = str(row["WIGOS ID"])
+                    except:
+                        self.ds.attrs["wigos_id"] = "NA"
+                    try: 
+                        self.ds.attrs["internal_id"] = str(row[0])
+                    except:
+                        pass
+                    
                     time_check += 1
                     self.status_dict.update(self.ds.attrs)
             if time_check < 1:
                 self.status_dict.update(
-                    {'failed': 'yes', 'failure_mode': 'No valid time range in fisher metadata.'})
+                    {
+                        "failed": "yes",
+                        "failure_mode": "No valid time range in fisher metadata.",
+                    }
+                )
                 self.logger.info(
-                    f'No valid time range found in fisher metadata for {self.filename}.')
+                    f"No valid time range found in fisher metadata for {self.filename}."
+                )
             if time_check > 1:
                 self.status_dict.update(
-                    {'failed': 'yes', 'failure_mode': 'Multiple entries in fisher metadata for this SN and time range.'})
+                    {
+                        "failed": "yes",
+                        "failure_mode": "Multiple entries in fisher metadata for this SN and time range.",
+                    }
+                )
                 self.logger.error(
-                    'Multiple entries found for this SN and time range in fisher metadata, skipping {}.'.format(self.filename))
+                    "Multiple entries found for this SN and time range in fisher metadata, skipping {}.".format(
+                        self.filename
+                    )
+                )
         except Exception as exc:
             self.logger.error(
-                'Gear Class calculation failed, labeled as unknown: {}'.format(exc))
-            raise type(exc)(f'Could not assign attribute(s) from csv header due to: {exc}')
-            #self.status_dict.update(
+                "Gear Class calculation failed, labeled as unknown: {}".format(exc)
+            )
+            raise type(exc)(
+                f"Could not assign attribute(s) from csv header due to: {exc}"
+            )
+            # self.status_dict.update(
             #    {'failed': 'yes', 'failure_mode': 'Could not assign attribute(s) from csv header.', 'detailed_error':str(exc)})
 
-    def _find_bottom(self, cutoff='4 minutes'):
+    def _find_bottom(self, cutoff="4 minutes"):
         """
         Uses timedelta to assign profile (PROF) or deployed (DEPL) status
         to each datapoint in fishing gear deployment.  Used to estimate average bottom or fishing
@@ -133,19 +175,26 @@ class PreProcessMangopare(object):
             cutoff = pd.Timedelta(cutoff)
             df = self.ds.to_dataframe()
             df.reset_index(inplace=True)
-            times = df['DATETIME']
-            t_delta = (times-times.shift()).fillna(pd.Timedelta('0 days'))
-            cat = np.chararray(len(self.ds['TEMPERATURE']))
-            cat[:] = 'D'
-            cat[t_delta < cutoff] = 'P'
+            times = df["DATETIME"]
+            t_delta = (times - times.shift()).fillna(pd.Timedelta("0 days"))
+            cat = np.chararray(len(self.ds["TEMPERATURE"]))
+            cat[:] = "D"
+            cat[t_delta < cutoff] = "P"
         except Exception as exc:
-            cat = np.empty(len(self.ds['TEMPERATURE']))
+            cat = np.empty(len(self.ds["TEMPERATURE"]))
             self.logger.error(
-                'Bottom not found for {}, np.nan applied instead: {}'.format(self.filename, exc))
+                "Bottom not found for {}, np.nan applied instead: {}".format(
+                    self.filename, exc
+                )
+            )
 
-        self.ds['PHASE'] = xr.Variable(dims='DATETIME', data=cat)
-        self.ds['PHASE'].attrs.update({'flag_values': [
-                                      'P', 'D'], 'flag_meanings': 'P indicates the measurement was classified as a profile, D indicates deployed (i.e. bottom, fishing)'})
+        self.ds["PHASE"] = xr.Variable(dims="DATETIME", data=cat)
+        self.ds["PHASE"].attrs.update(
+            {
+                "flag_values": ["P", "D"],
+                "flag_meanings": "P indicates the measurement was classified as a profile, D indicates deployed (i.e. bottom, fishing)",
+            }
+        )
 
     def _add_variable_attrs(self):
         """
@@ -159,26 +208,30 @@ class PreProcessMangopare(object):
             for var, [standard_name, units] in var_attr_info.items():
                 if var in self.ds.keys():
                     if standard_name:
-                        self.ds[var].attrs.update(
-                            {'standard_name': standard_name})
+                        self.ds[var].attrs.update({"standard_name": standard_name})
                     if units:
-                        self.ds[var].attrs.update({'units': units})
+                        self.ds[var].attrs.update({"units": units})
         except Exception as exc:
             self.logger.error(
-                'Could not assign variable attributes for {}: {}'.format(self.filename, exc))
+                "Could not assign variable attributes for {}: {}".format(
+                    self.filename, exc
+                )
+            )
 
     def _add_global_attrs(self):
         """
         Loads global variable attributes from attribute file.
         """
         try:
-            global_attr_info = load_yaml(
-                self.attr_file, self.global_attr_dict_name)
+            global_attr_info = load_yaml(self.attr_file, self.global_attr_dict_name)
             for var, varinfo in global_attr_info.items():
                 self.ds.attrs[var] = varinfo
         except Exception as exc:
             self.logger.error(
-                'Could not assign global attributes for {}: {}'.format(self.filename, exc))
+                "Could not assign global attributes for {}: {}".format(
+                    self.filename, exc
+                )
+            )
 
     def _set_sitename(self):
         """
@@ -189,24 +242,23 @@ class PreProcessMangopare(object):
         """
         try:
             if not self.add_sitename:
-                sitename = 'NA'
-            elif self.ds.attrs['vessel_id'] == 'NA':
+                sitename = "NA"
+            elif self.ds.attrs["vessel_id"] == "NA":
                 sitename = f'msn{self.ds.attrs["moana_serial_number"]}du{self.ds.attrs["deck_unit_serial_number"]}'
             else:
                 sitename = f'vid{self.ds.attrs["vessel_id"]}'
-            self.ds.attrs['platform_code'] = sitename
+            self.ds.attrs["platform_code"] = sitename
         except Exception as exc:
-            self.logger.error('Could not assign sitename/platform code.')
+            self.logger.error("Could not assign sitename/platform code.")
 
     def run(self):
         self._classify_gear()
-        if self.ds.attrs['gear_class'] != 'unknown':
+        if self.ds.attrs["gear_class"] != "unknown":
             # self._calc_positions()
-            self.ds = self.ds.dropna(how='any', dim='DATETIME')
+            self.ds = self.ds.dropna(how="any", dim="DATETIME")
             self._find_bottom()
             self._add_variable_attrs()
             self._set_sitename()
             self._add_global_attrs()
             self.status_dict.update(self.ds.attrs)
         return (self.ds, self.status_dict)
-

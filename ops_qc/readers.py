@@ -71,7 +71,7 @@ class MangopareStandardReader(object):
             self.df = pd.read_csv(
                 self.filename,
                 skiprows=self.start_line,
-                on_bad_lines='error',
+                on_bad_lines="error",
                 float_precision="round_trip",
             )
         except Exception as exc:
@@ -259,19 +259,19 @@ class MangopareMetadataReader(object):
         token=[],
         dateformat="%Y%m%dT%H%M%S",
         gear_class={
-                "Bottom trawl": "mobile",
-                "Potting": "stationary",
-                "Long lining": "mobile",
-                "Trawling": "mobile",
-                "Midwater trawl": "mobile",
-                "Purse seine netting": "mobile",
-                "Bottom trawling": "mobile",
-                "Research": "mobile",
-                "Education": "mobile",
-                "Bottom long line": "mobile",
-                "Waka": "mobile"
-            },
-        logger=logging
+            "Bottom trawl": "mobile",
+            "Potting": "stationary",
+            "Long lining": "mobile",
+            "Trawling": "mobile",
+            "Midwater trawl": "mobile",
+            "Purse seine netting": "mobile",
+            "Bottom trawling": "mobile",
+            "Research": "mobile",
+            "Education": "mobile",
+            "Bottom long line": "mobile",
+            "Waka": "mobile",
+        },
+        logger=logging,
     ):
         self.metafile = metafile
         self.username = username
@@ -292,7 +292,7 @@ class MangopareMetadataReader(object):
                 download = github_session.get(self.metafile).content
                 self.fisher_metadata = pd.read_csv(
                     io.StringIO(download.decode("utf-8")),
-                    on_bad_lines='skip',
+                    on_bad_lines="skip",
                     parse_dates=["Date supplied", "Date returned"],
                     date_parser=lambda x: pd.to_datetime(x, dayfirst=True),
                 )

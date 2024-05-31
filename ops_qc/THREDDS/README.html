@@ -1,0 +1,176 @@
+<h1 id="the-mangpare-sensor-programme">The Mang&#333;pare Senssor Programme</h1>
+<h1 id="moana-td-sensor">Moana TD Sensor</h1>
+<p>This dataset contains temperature and pressure data obtained for the Moana Project&#39;s Mang&omacr;pare Sensor
+  Programme (<a
+    href="https://www.moanaproject.org/temperature-sensors">https://www.moanaproject.org/temperature-sensors</a>), using
+  Moana TD sensors (<a href="https://www.zebra-tech.co.nz/moana/">https://www.zebra-tech.co.nz/moana/</a>). Data are
+  provided operationally, in near real-time, and this THREDDS directory is currently updated every two hours.</p>
+<p>Only automatic quality control is included at this time, for use with measurements transmitted in near real-time. For
+  more information on the sensor programme, see Jakoboski et. al, 2023, in preparation, contact <a
+    href="mailto:&#105;&#x6e;&#x66;&#111;&#x40;&#x6d;&#x6f;&#x61;&#110;&#x61;&#112;&#114;&#x6f;&#106;&#x65;&#x63;&#x74;&#x2e;&#x6f;&#x72;&#x67;">&#105;&#x6e;&#x66;&#111;&#x40;&#x6d;&#x6f;&#x61;&#110;&#x61;&#112;&#114;&#x6f;&#106;&#x65;&#x63;&#x74;&#x2e;&#x6f;&#x72;&#x67;</a>,
+  or visit the websites above.</p>
+<p>THREDDS subsetting is not yet available, but hopefully will be in the near future.</p>
+<p>This the very first public release of these data, and as such, we expect to make improvements as we go. Please submit
+  feedback to <a
+    href="mailto:&#105;&#110;&#102;&#111;&#x40;&#109;&#111;&#x61;&#x6e;&#97;&#x70;&#114;&#x6f;&#x6a;&#x65;&#99;&#116;&#x2e;&#111;&#114;&#103;">&#105;&#110;&#102;&#111;&#x40;&#109;&#111;&#x61;&#x6e;&#97;&#x70;&#114;&#x6f;&#x6a;&#x65;&#99;&#116;&#x2e;&#111;&#114;&#103;</a>
+  and we will incorporate any comments as soon as we can. We are also interested in any uses of the data, so please let
+  us know and we will include it in our publications list on the Moana Project website.</p>
+<hr>
+<h2 id="licensing">Licensing</h2>
+<p>This dataset is available for use under the Creative Commons Attribution 4.0 International License.</p>
+<hr>
+<h2 id="atrribution-statement">Atrribution Statement</h2>
+<p>Data quality-control and processing provided by MetOcean Solutions, a Division of the Meteorological Service of New
+  Zealand. Mang&omacr;pare sensor and deck unit provided by Zebra-Tech, Ltd, Nelson, New Zealand as part of the Moana
+  Project. This work is a contribution to the Moana Project (<a
+    href="http://www.moanaproject.org">www.moanaproject.org</a>) funded by the New Zealand Ministry of Business
+  Innovation and Employment, contract number METO1801.</p>
+<hr>
+<h2 id="acknowledgements">Acknowledgements</h2>
+<p>We would like to acknowledge all programme participants who volunteer their time and temperature measurements for the
+  benefit of the users of the Mang&omacr;pare Sensor Programme Data. </p>
+<hr>
+<h2 id="disclaimer">Disclaimer</h2>
+<p>By using the data that Meteorological Service of New Zealand Limited (MetService) makes available on this platform,
+  you agree to this disclaimer. The data is supplied by third parties to MetService and is aggregated and anonymised by
+  MetService. MetService does not independently check the data to ensure it is correct, accurate, complete, current, or
+  suitable for use. The data is made available by MetService on as is and as available basis. You agree that any
+  reliance you place on the data, including any analysis of, or decision you make based on, the data (or that analysis)
+  is at your own risk. You agree that MetService has no responsibility or liability for the data (or for any error or
+  omission in the data) or for how you use that data. To the maximum extent permitted by law, MetService disclaims all
+  warranties, conditions, guarantees, and/or representations relating to the data and how you use that data.</p>
+<hr>
+<h2 id="data-format">Data Format</h2>
+<p>Currently, data are available in netCDF format. If needed, additional formats can be added. Each file contains
+  coordinates, variables, and ancillary variables. Filenames are of the format: MOANA_yyyymmdd_hhmmss_published.nc,
+  which reflects the date and timestamp of the file offload from the sensor to the deck unit.</p>
+<h3 id="coordinates">Coordinates:</h3>
+<pre><code>TIME:
+  long_name: &#39;time&#39;
+  standard_name: &#39;time&#39;
+  axis: &#39;T&#39;
+  valid_max: 999999.
+  valid_min: 0.
+  ancillary_variables: &quot;TIME_QC&quot;
+LATITUDE: 
+  long_name: &#39;latitude&#39;
+  reference_datum: &#39;WGS84 geographic coordinate system&#39;
+  standard_name: &#39;latitude&#39;
+  units: &#39;degrees_north&#39;
+  _FillValue: 99999.
+  valid_max: 90.
+  valid_min: -90.
+  ancillary_variables: &quot;POSITION_QC&quot;
+LONGITUDE:
+  long_name: &#39;longitude&#39;
+  reference_datum: &#39;WGS84 geographic coordinate system&#39;
+  standard_name: &#39;longitude&#39;
+  units: &#39;degrees_east&#39;
+  _FillValue: 99999.
+  valid_max: 180.
+  valid_min: -180.
+  ancillary_variables: &quot;POSITION_QC&quot;
+</code></pre>
+<h3 id="variables">Variables:</h3>
+<pre><code>TEMPERATURE:
+    long_name: &#39;sea temperature in-situ ITS-90 scale&#39;
+    standard_name: &#39;sea_water_temperature&#39;
+    _FillValue: 99999.
+    coordinates: &#39;LONGITUDE, LATITUDE&#39;
+    units: &#39;degree_Celsius&#39;
+    valid_min:  -20.
+    valid_max: 35.
+    resolution: 0.001
+    ancillary_variables: &quot;TEMP_QC&quot;
+DEPTH:
+    long_name: &#39;DEPTH&#39;  
+    standard_name: &#39;depth&#39;
+    _FillValue: 99999.
+    coordinates: &#39;LONGITUDE, LATITUDE&#39;
+    units: &#39;m&#39;
+    axis: &#39;z&#39;
+    valid_min:  0.
+    valid_max: 1000.
+    resolution: 0.1 
+    ancillary_variables: &quot;DEPTH_QC&quot;
+</code></pre>
+<h3 id="ancillary-quality-control-variables">Ancillary quality control variables:</h3>
+<pre><code>TIME_QC:
+  long_name: &#39;Time Quality Flag&#39;
+  standard_name: &#39;time status_flag&#39;
+  coordinates: &#39;LONGITUDE, LATITUDE&#39;
+  conventions: &#39;FVON standard flags&#39;
+  flag_meanings:  &#39;No QC Applied | Good | Probably Good | Probably Bad | Bad | Overwritten&#39;
+  flag_values: &#39;0, 1, 2, 3, 4, 5&#39; 
+POSITION_QC:
+  long_name: &#39;Position Quality Flag&#39;
+  standard_name: &#39;location status_flag&#39;
+  coordinates: &#39;LONGITUDE, LATITUDE&#39;
+  conventions: &#39;FVON standard flags&#39;
+  flag_meanings:  &#39;No QC Applied | Good | Probably Good | Probably Bad | Bad | Overwritten&#39;
+  flag_values: &#39;0, 1, 2, 3, 4, 5&#39;
+TEMP_QC:
+  long_name: &#39;Temperature Quality Flag&#39;
+  standard_name: &#39;sea_water_temperature status_flag&#39;
+  coordinates: &#39;LONGITUDE, LATITUDE&#39;
+  conventions: &#39;FVON standard flags&#39;
+  flag_meanings:  &#39;No QC Applied | Good | Probably Good | Probably Bad | Bad | Overwritten&#39;
+  flag_values: &#39;0, 1, 2, 3, 4, 5&#39; 
+DEPTH_QC:
+  long_name: &#39;Depth Quality Flag&#39;
+  standard_name: &#39;depth status_flag&#39;
+  coordinates: &#39;LONGITUDE, LATITUDE&#39;
+  conventions: &#39;FVON standard flags&#39;
+  flag_meanings:  &#39;No QC Applied | Good | Probably Good | Probably Bad | Bad | Overwritten&#39;
+  flag_values: &#39;0, 1, 2, 3, 4, 5&#39;
+</code></pre>
+<h3 id="global-qc-flag">Global QC flag</h3>
+<p>A global QC flag indicates the overall quality of each measurement, incorporating all ancillary QC variables:</p>
+<pre><code>QC_FLAG: 
+  long_name: &#39;Global Quality Flag&#39;
+  standard_name: &#39;Global status_flag&#39;
+  coordinates: &#39;LONGITUDE, LATITUDE&#39;
+  conventions: &#39;FVON standard flags&#39;
+  flag_meanings:  &#39;No QC Applied | Good | Probably Good | Probably Bad | Bad | Overwritten&#39;
+  flag_values: &#39;0, 1, 2, 3, 4, 5&#39;
+</code></pre>
+<hr>
+<h2 id="quality-control-summary">Quality control summary</h2>
+<p>&quot;Standard&quot; oceanographic QC tests for temperature and pressure data are applied. Most of these are based on
+  QARTOD or Argo tests. A quality flag is assigned to each variable as an ancillary variable: </p>
+<p>Quality flag values = [0,1,2,3,4]</p>
+<ul>
+  <li>QF = 0: QC not performed</li>
+  <li>QF = 1: Test passed (good data)</li>
+  <li>QF = 2: Test failed, but probably still good data</li>
+  <li>QF = 3: Test failed, probably bad data</li>
+  <li>QF = 4: Test failed, bad data
+    Once all tests have been performed, a &quot;global&quot; quality flag is calculated (the &quot;worst&quot; value for
+    all tests for each measurement), called &quot;QC_FLAG.&quot;</li>
+</ul>
+<p>A list of QC tests to applied to a file are included under the <code>quality_control_log</code> attribute.</p>
+<hr>
+<h2 id="position-information">Position Information</h2>
+<p>Reported measurement positions are derived from the vessel position. Fishing methods (or any other deployment method)
+  are dividing into two categories for processing: &quot;stationary&quot; or &quot;mobile.&quot; (Should be
+  &quot;passive&quot; or &quot;towed&quot; in the future). Towed is simply gear towed behind a moving vessel. In this
+  case, the sensor is always assumed to be in the same location as the vessel. Stationary gear is gear that is detached
+  form the vessel (i.e. potting). All measurements in a stationary deployment are currently given the same position,
+  which is the average between the first and last &quot;good&quot; location as recorded by the deck unit. If the first
+  or last position is not near the surface, the stationary position cannot be calculated and processing will fail. </p>
+<p>Please see the QC github repository (<a
+    href="https://github.com/metocean/moana-qc">https://github.com/metocean/moana-qc</a>) for additional details on
+  position processing.</p>
+<hr>
+<h2 id="files-are-provided-anonymously">Files are provided anonymously</h2>
+<p>Note that anyone who is part of the Mang&omacr;pare Sensor Programme can deploy a sensor. This includes a wide range
+  of vessels, including fishing, industry, research, recreational, and citizen science vessels.</p>
+<hr>
+<h2 id="other-repository-notes">Other repository notes</h2>
+<p>This README.md is under development and will be updated in the near future!</p>
+<hr>
+<h2 id="community">Community</h2>
+<p>A fishing vessel, in-situ ocean observing quality control working group is in development through FVON (<a
+    href="https://fvon.org/">https://fvon.org/</a>). Please contact either the Moana Project (<a
+    href="mailto:&#105;&#x6e;&#x66;&#111;&#64;&#x6d;&#111;&#x61;&#110;&#97;&#x70;&#x72;&#111;&#x6a;&#101;&#x63;&#x74;&#46;&#111;&#x72;&#103;">&#105;&#x6e;&#x66;&#111;&#64;&#x6d;&#111;&#x61;&#110;&#97;&#x70;&#x72;&#111;&#x6a;&#101;&#x63;&#x74;&#46;&#111;&#x72;&#103;</a>)
+  or FVON (through their website) for more information.</p>
