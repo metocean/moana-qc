@@ -1,25 +1,69 @@
-# Moana TD Sensor Quality Control and Processing
+<a id="page-top"></a>
 
-[![DOI](https://zenodo.org/badge/295919031.svg)](https://zenodo.org/badge/latestdoi/295919031)
+<!-- PROJECT LOGO -->
+<br />
+<div align="center">
+  <a href="https://github.com/metocean/moana-qc">
+    <img src="images/logo.png" alt="Logo" width="260" height="260">
+  </a>
 
-This library contains code initially intended for the operational, near real-time quality-control of Mangōpare/Moana oceanographic observation data (https://www.moanaproject.org/temperature-sensors, https://www.zebra-tech.co.nz/moana/).  Only automatic quality control is included at this time, for use with measurements transmitted in near real-time.  For more information on the sensor programme, see Jakoboski et. al, 2023, in preparation, contact info@moanaproject.org, or visit the websites above.
+<h3 align="center">Moana TD Sensor Quality Control and Processing</h3>
+
+  <p align="center">
+    This library contains code to perform the operational, near real-time quality-control and processing of <a href="https://www.moanaproject.org/temperature-sensors">Mangōpare/Moana oceanographic observation data</a>, initially deveoped as part of the <a href="https://www.moanaproject.org/">Moana Project</a> with technology partner <a href="https://www.zebra-tech.co.nz/moana/">ZebraTech</a>.
+    <br />
+    <br />
+    <a href="https://github.com/metocean/moana-qc/blob/master/docs/"><strong>Documentation »</strong></a>
+    <br />
+  </p>
+</div>
+
+<p align="center">
+  <img src="https://img.shields.io/github/contributors/metocean/moana-qc">
+  <img src="https://img.shields.io/github/issues/metocean/moana-qc">
+  <img src="https://img.shields.io/github/actions/workflow/status/metocean/moana-qc/build_test_push.yml">
+  <img src="https://img.shields.io/github/license/metocean/moana-qc">
+  <a href="https://zenodo.org/badge/latestdoi/295919031"><img src="https://zenodo.org/badge/295919031.svg"></a>
+</p>
+
+<!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#about-the-programme">About The Programme</a>
+      <ul>
+        <li><a href="#quality-control-and-processing">Quality Control and Processing</a></li>
+        <li><a href="#code-structure">Code Structure</a></li>
+        <li><a href="#publically-available-files">Publically Available Files</a></li>
+      </ul>
+    </li>
+    <li><a href="#installation">Installation</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#references">References</a></li>
+    <li><a href="#licensing">Licensing</a></li>
+    <li><a href="#attribution_statement">Attribution Statement</a></li>
+    <li><a href="#community">Community</a></li>
+  </ol>
+</details>
+<br />
+
+
+# About The Programme
+This library contains code intended for the operational, near real-time quality-control of [Mangōpare/Moana oceanographic observation data](https://www.zebra-tech.co.nz/moana/).  Only automatic quality control is included at this time, for use with measurements transmitted in near real-time.  For more information on the [Moana Project](https://www.moanaproject.org/temperature-sensors)'s Mangōpare sensor programme, see [Jakoboski et. al (2024)](https://doi.org/10.1016/j.pocean.2024.103278), contact info@moanaproject.org, or visit the websites above.
 
 The current versions are for the purpose of quality-controlling data from the Moana Project's Mangopare (Te Tiro Moana) Mangōpare/Moana temperature and pressure sensor, but will be made more generic if needed.
 
----
-# Current Notes
-The master branch is currently intended for MetOcean operational use.  The external-aus branch is intended for development by the IMOS Fish-SOOP programme.  Please contact info@moanaproject.org if you'd like to create a new branch for development by your organisation.
+<p align="right">(<a href="#page-top">back to top</a>)</p>
 
----
-## Some to-dos
-- Add remaining qc tests (time checks from deck unit issue, grey list, qc reset check, calibration check, datetime after offload, datetime increasing)
-- Improve netcdf format/attributes/etc.
-- Change "mobile" to "towed" and "stationary" to "passive."  Not that important but more accurate names.
-- Complete and fix unittests.
-- Improve documentation.
+## Quality Control and Processing
 
----
-## Code structure
+Standard in-situ oceagraphic measurement quality control tests are applied to Mangōpare/Moana observations.  Please see the [docs](https://github.com/metocean/moana-qc/blob/master/docs/) for details on [quality control tests](https://github.com/metocean/moana-qc/blob/master/docs/moana_sensor_qc.md) and [data processing](https://github.com/metocean/moana-qc/blob/master/docs/sensor_processing.md).
+
+<p align="right">(<a href="#page-top">back to top</a>)</p>
+
+## Code Structure
+
 - wrapper.py is the highest level class, which coordinates all the others.  Within it, the user specifies the data reader, the metadata reader, a preprocessor, and the qc_class.
 - Data reader: reads the observations in each sensor offload file, formats variable names, and loads global attributes from the file header.
 - Metadata reader: right now, reads a spreadsheet with fisher metadata, including whether the sensor is stationary or mobile.
@@ -30,75 +74,40 @@ Defaults for the above are included in wrapper.py in case none are specified.
 
 Currently, the data and metadata readers are both classes in readers.py.
 
----
-## Stationary vs mobile gear
-Fishing methods (or any other deployment method) are dividing into two categories for processing: "stationary" or "mobile."  (Should be "passive" or "towed" in the future).  Towed is simply gear towed behind a moving vessel.  In this case, the sensor is always assumed to be in the same location as the vessel.  Stationary gear is gear that is detached form the vessel (i.e. potting).  All measurements in a stationary deployment are currently given the same position, which is the average between the first and last "good" location as recorded by the deck unit.  If the first or last position is not near the surface, the stationary position cannot be calculated and processing will fail (see qc test "stationary_position_check" in qc_tests_df.py).
+"Standard" oceanographic QC tests for temperature and pressure data are included in qc_tests_df.py.  Most of these are based on QARTOD or Argo tests.  If any new tests are needed, that is most likely the best place to put them.  For each test, a quality flag is assigned.  The tests from qc_test_df.py that should be included in a quality-control run are specified in warpper.py under the variable name `test_list`.  This variable is passed to apply_qc.py where each test is run.  See qc_tests_df.py documentation for lists of possible test names.  Some tests generally work well, others currently not at all.  This is indicated in the qc_tests_df.py docstring.
 
----
-## Quality control summary
-As the data is being delivered in a near-real-time basis these quality control tests are automatic. All the variables (Temperature, Depth, Longitude, Latitude and Time) and their associated Quality Control Flag (QC_Flag, <variable>_QC) are included in the files that are being delivered and are compliant to GTS standards (WMO, 2020). Given the mangōpare sensor's manufacture specifications and the parameters expected from near-real-time data the quality control process identifies if the measurements are within the accepted range. As per the "standard" oceanographic tests the highest quality data is going to be represented by a QC_Flag value of 1, while the bad data will present a QC_Flag value of 4 (WMO, 2020; U.S. Integrated Ocean Observing System, 2020; Wong et al. 2021). 
- 
-"Standard" oceanographic QC tests for temperature and pressure data are included in qc_tests_df.py.  Most of these are based on QARTOD or Argo tests.  If any new tests are needed, that is most likely the best place to put them.  For each test, a quality flag is assigned:  
+<p align="right">(<a href="#page-top">back to top</a>)</p>
 
-Quality flag values = [0,1,2,3,4]
+## Publically Available Files
 
-- QF = 0: QC not performed
-- QF = 1: Test passed (good data)
-- QF = 2: Test failed, but probably still good data
-- QF = 3: Test failed, probably bad data
-- QF = 4: Test failed, bad data
-  
-Quality control tests are applied to temperature, pressure, time, and position and an overall quality flag is calculated for each variable (the "worst" value for all tests associated with each variable).  Once all tests have been performed, a "global" quality flag is calculated (the "worst" value for all tests for each measurement, incorporating all variables).  A higher quality control flag value cannot be overwritten by a lower value.  If needed, additional quality flags may be added in the future (e.g., QF=5: Overwritten data) and will be recorded here.
-
-The tests from qc_test_df.py that should be included in a quality-control run are specified in warpper.py under the variable name `test_list`.  This variable is passed to apply_qc.py where each test is run.  See qc_tests_df.py documentation for lists of possible test names.  Some tests generally work well, others currently not at all.  This is indicated in the qc_tests_df.py docstring.
-
-Right now, tests in qc_tests_df need a pandas dataframe with LONGITUDE, LATITUDE, DATETIME, TEMPERATURE, and PRESSURE fields.  At some point this will be generalised.
-
----
-## Recommended Mangōpare QC tests
-These are loose recommendations, depending on application, region, and any recent developments.
-Currently recommended qc tests in order:
-
-- test_list_1: ['impossible_date', 'impossible_location', 'impossible_speed', 'timing_gap', 'global_range', 'remove_ref_location', 'spike', 'temp_drift', 'stationary_position_check', 'reset_code_check', 'check_timestamp_overflow']
-- test_list_2: ['start_end_dist_check']
-
-Stationary_position_check could go in either list, depending on whether this test should be applied to both mobile and stationary gear, or only 
-stationary gear.
-
----
-## File Format
-Currently, all QC'd files are saved in netCDF format (see wrapper.py).  If needed, additional formats can be added.  The user can choose whether to save quality flags for all individual tests or only save the overall variable and global quality flags.
-
----
-## Status file
-Each time the wrapper is run on a list of files, a status file (csv) is created with information on any errors that may have occurred during processing.  This file is saved in the same directory as the output quality controlled nc files.  Note that all of this is in beta, so will be improved in the future.
-
----
-## Files available for the Public (mangopare specific)
-Two columns have been added to the mangopare metadata (Public, Publication Date). The first column "Public" especifies if the data is available for the Public or not (boolean, True or False). If True, the second column "Publication Date" especifies the date when the sharing data agreement was signed.   
+(Mangōpare Specific)
+Two columns have been added to the Mangōpare metadata (Public, Publication Date). The first column "Public" especifies if the data is available for the Public or not (boolean, True or False). If True, the second column "Publication Date" especifies the date when the sharing data agreement was signed.   
 
 A new code has been developed to adapt and transfer the data into our THREDDS server (see ops_qc/publish.py).
 
 Relevant files are located in the THREDDS folder. 
 - THREDDS/attribute_list.yml : All the information related to the variables, coordinates, dimensions and global attributes. 
-- THREDDS/transfer.public.mangopare.yml : Config file to use for the scheduler, this could also be added to the current transfer.mangopare.yml to make the files published as soon as they are available.
+- THREDDS/transfer.public.mangopare.yml : Config file to use for operational deployment.
 
----
-## Installation: From source or via docker image
+If you use the publically available data, please cite the Zenodo reference for the dataset: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10420342.svg)](https://doi.org/10.5281/zenodo.10420342)
 
-This repository contains code to run the `ops-qc` ("operational" or automatic quality control) python package.  
+<p align="right">(<a href="#page-top">back to top</a>)</p>
 
-### Option 1 | Via pip
+# Installation
+
+This repository contains code to run the `ops-qc` ("operational" or automatic quality control) python package. Two installation options are available: from source or docker image:    
+
+## Option 1 | Via pip
 
 ```shell
 python -m pip install 'git+https://github.com/metocean/moana-qc'
 ```
 
-### Option 2 | Buliding a docker image
+## Option 2 | Buliding a docker image
 
 The following assumes [`docker`](https://www.docker.com/) is installed.
 
-The metocean/moana-qc repository contains a default (external) [`Dockerfile`](https://github.com/metocean/moana-qc/blob/master/Dockerfile) and an internal operational [`Dockerfile_internal`](https://github.com/metocean/moana-qc/blob/master/Dockerfile_internal).  To build a new image, external users want to use the default `Dockerfile` (which is independent of MetOcean's internal libraries).  For MetOcean operational internal use, please build from `Dockerfile_internal`.
+The metocean/moana-qc repository contains a default (external) [`Dockerfile`](https://github.com/metocean/moana-qc/blob/master/Dockerfile) and an internal operational [`Dockerfile_MOS`](https://github.com/metocean/moana-qc/blob/master/Dockerfile_MOS).  To build a new image, external users want to use the default `Dockerfile` (which is independent of MetOcean's internal libraries).  For MetOcean operational internal use, please build from `Dockerfile_MOS`.
 
 To build the external use Dockerfile version (outside of Metservice/MetOcean ops system), from the moana-qc directory, use something like: 
 ```shell
@@ -125,27 +134,55 @@ docker run -ti -v /source:/source -v /data:/data metocean/moana-qc:latest`
 
 `/data` is a directory where the sensor data can be found and also where the output directory will be.  If you need the docker container to access another directory, add it with the -v tag.
 
----
-## Other repository notes
+<p align="right">(<a href="#page-top">back to top</a>)</p>
 
-Need to work on unittests and setup.py...feel free to contribute in this space!
+# Contributing
 
----
-## Licensing
-Please see LICENSE.md for the license under which this code can be shared.  Please consider contributing to the code under this repository whenever possible rather then forking or cloning into a new repository so all can benefit from collaborative work.  If you need to fork/clone into a new repository, please let us know so we can include any new developments as a community.
+Any contributions are very welcome!  
 
----
-## Attribution Statement
+The master branch is currently intended for MetOcean operational use.  The external-aus branch is intended for development by the IMOS Fish-SOOP programme.
+
+To contribute, please fork the repo and create a pull request, or open an issue with an appropriate tag.
+
+1. Fork the Project
+2. Create a new Feature Branch (`git checkout -b feature/YourNewFeature`)
+3. Commit your Changes (`git commit -m 'Descriptive Comment'`)
+4. Push to the Branch (`git push origin feature/YourNewFeature`)
+5. Open a Pull Request
+
+<p align="right">(<a href="#page-top">back to top</a>)</p>
+
+# References
+
+For more an in-depth description of the Mangōpare sensor programme:
+
+Julie Jakoboski, Moninya Roughan, John Radford, João Marcos Azevedo Correia de Souza, Malene Felsing, Robert Smith, Naomi Puketapu-Waite, Mireya Montaño Orozco, Kimberley H. Maxwell, Cooper Van Vranken,
+Partnering with the commercial fishing sector and Aotearoa New Zealand’s ocean community to develop a nationwide subsurface temperature monitoring program, Progress in Oceanography, 2024, 103278, [https://doi.org/10.1016/j.pocean.2024.103278](https://doi.org/10.1016/j.pocean.2024.103278).
+
+For a description of the cross-disciplinary context of the Moana Project:
+
+Souza JMAC, Felsing M, Jakoboski J, Gardner JPA and Hudson M (2023) Moana Project: lessons learned from a national scale transdisciplinary research project. Front. Mar. Sci. 10:1322194. doi: [10.3389/fmars.2023.1322194](https://www.frontiersin.org/articles/10.3389/fmars.2023.1322194/full)
+
+<p align="right">(<a href="#page-top">back to top</a>)</p>
+
+# Licensing
+
+Please see [LICENSE.md](https://github.com/metocean/moana-qc/blob/master/LICENSE.md) for the license under which this code can be shared.  Please consider contributing to the code under this repository whenever possible rather then forking or cloning into a new repository so all can benefit from collaborative work.  If you need to fork/clone into a new repository, please let us know so we can include any new developments as a community.
+
+<p align="right">(<a href="#page-top">back to top</a>)</p>
+
+# Attribution Statement
+
 Original code base by MetOcean Solutions, a Division of Meteorological Service of New Zealand Ltd, developed as part of the Moana Project. The Moana Project is funded by the New Zealand Ministry of Business, Innovation, and Employment (MBIE) Endeavour Fund.
 
-Contributors to the current version in include: MetOcean Solutions, Berring Data Collective
+The Mangōpare sensor and deck unit hardware were developed by Zebra-Tech, Ltd, Nelson, New Zealand as part of the Moana Project.  Sensors are available through [ZebraTech](https://www.zebra-tech.co.nz/).
 
-The Mangōpare sensor and deck unit hardware were developed by Zebra-Tech, Ltd, Nelson, New Zealand as part of the Moana Project.  Sensors are available through https://www.zebra-tech.co.nz/
+<p align="right">(<a href="#page-top">back to top</a>)</p>
 
----
-## Community
-A fishing vessel, in-situ ocean observing quality control working group is in development through FVON (https://fvon.org/).  Please contact either the Moana Project (info@moanaproject.org) or FVON (through their website) for more information.
+# Community
 
----
+A fishing vessel, in-situ ocean observing quality control working group is in development through [FVON](https://fvon.org/).  Please contact either the Moana Project (info@moanaproject.org) or FVON (through their website) for more information.
+
+<p align="right">(<a href="#page-top">back to top</a>)</p>
 
 
