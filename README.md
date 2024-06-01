@@ -91,6 +91,8 @@ Relevant files are located in the THREDDS folder.
 
 If you use the publically available data, please cite the Zenodo reference for the dataset: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10420342.svg)](https://doi.org/10.5281/zenodo.10420342)
 
+Please see [THREDDS_README.md](https://github.com/metocean/moana-qc/blob/master/ops_qc/THREDDS/THREDDS_README.ipynb) for more information.
+
 <p align="right">(<a href="#page-top">back to top</a>)</p>
 
 # Installation
