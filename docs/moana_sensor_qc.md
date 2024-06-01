@@ -16,7 +16,7 @@ Currently recommended qc tests in order:
 - test_list_1: ['impossible_date', 'impossible_location', 'impossible_speed', 'timing_gap', 'global_range', 'remove_ref_location', 'spike', 'temp_drift', 'stationary_position_check', 'reset_code_check', 'check_timestamp_overflow']
 - test_list_2: ['start_end_dist_check']
 
-Stationary_position_check could go in either list, depending on whether this test should be applied to both mobile and stationary gear, or only stationary gear.  Please see [`data processing`][https://github.com/metocean/moana-qc/docs/moana_sensor_qc.md] documentation for more information on mobile and stationary gear.
+Stationary_position_check could go in either list, depending on whether this test should be applied to both mobile and stationary gear, or only stationary gear.  Please see [data processing](https://github.com/metocean/moana-qc/docs/moana_sensor_qc.md) documentation for more information on mobile and stationary gear.
 
 ## Test Values
 

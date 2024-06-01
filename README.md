@@ -158,8 +158,7 @@ To contribute, please fork the repo and create a pull request, or open an issue 
 
 For more an in-depth description of the Mangōpare sensor programme:
 
-Julie Jakoboski, Moninya Roughan, John Radford, João Marcos Azevedo Correia de Souza, Malene Felsing, Robert Smith, Naomi Puketapu-Waite, Mireya Montaño Orozco, Kimberley H. Maxwell, Cooper Van Vranken,
-Partnering with the commercial fishing sector and Aotearoa New Zealand’s ocean community to develop a nationwide subsurface temperature monitoring program, Progress in Oceanography, 2024, 103278, [https://doi.org/10.1016/j.pocean.2024.103278](https://doi.org/10.1016/j.pocean.2024.103278).
+Jakoboski J, Roughan M, Radford J, de Souza JMAC, Felsing M, Smith R, Puketapu-Waite N, Montaño Orozco M, Maxwell KH, and Van Vranken C (2024)  Partnering with the commercial fishing sector and Aotearoa New Zealand’s ocean community to develop a nationwide subsurface temperature monitoring program, Progress in Oceanography, 103278. doi: [https://doi.org/10.1016/j.pocean.2024.103278](https://doi.org/10.1016/j.pocean.2024.103278)
 
 For a description of the cross-disciplinary context of the Moana Project:
 
