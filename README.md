@@ -21,7 +21,7 @@
 <p align="center">
   <img src="https://img.shields.io/github/contributors/metocean/moana-qc">
   <img src="https://img.shields.io/github/issues/metocean/moana-qc">
-  <img src="https://img.shields.io/github/actions/workflow/status/metocean/moana-qc/build_test_push.yml">
+  <img src="https://img.shields.io/github/actions/workflow/status/metocean/moana-qc/build_test_push.yml?label=Build%20Test">
   <img src="https://img.shields.io/github/license/metocean/moana-qc">
   <a href="https://zenodo.org/badge/latestdoi/295919031"><img src="https://zenodo.org/badge/295919031.svg"></a>
 </p>
