@@ -1,5 +1,6 @@
 import os
 import logging
+import json
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -10,7 +11,7 @@ from ops_qc.utils import load_yaml
 
 xr.set_options(keep_attrs=True)
 
-# cycle_dt = dt.datetime.utcnow()
+cycle_dt = dt.datetime.utcnow()
 
 
 class Wrapper(object):
@@ -40,6 +41,7 @@ class Wrapper(object):
     def __init__(
         self,
         filelist=None,
+        filelist_json=None,
         outfile_ext="published",
         out_dir=None,
         attr_file=os.path.join(
@@ -53,6 +55,7 @@ class Wrapper(object):
         **kwargs,
     ):
         self.filelist = filelist
+        self.filelist_json = filelist_json
         self.outfile_ext = outfile_ext
         self.out_dir = out_dir
         self.attr_file = attr_file
@@ -75,8 +78,9 @@ class Wrapper(object):
         ][0]
         self._saved_files = {"filelist": []}
 
-    # def set_cycle(self, cycle_dt):
-    #     self.cycle_dt = cycle_dt
+    def set_cycle(self, cycle_dt):
+        self.cycle_dt = cycle_dt
+
 
     def _available_for_publication(self, filename):
         try:
@@ -235,12 +239,26 @@ class Wrapper(object):
     def _set_filelist(self):
         if hasattr(self, "_success_files") and not self.filelist:
             self.filelist = self._success_files
+        
+        # Read from JSON file if filelist still not set
+        if not self.filelist and self.filelist_json:
+            # Format the path with cycle_dt if available
+            filelist_json_path = self.cycle_dt.strftime(self.filelist_json) if hasattr(self, 'cycle_dt') else self.filelist_json
+            try:
+                with open(filelist_json_path, 'r') as f:
+                    data = json.load(f)
+                self.filelist = data.get('success_files', [])
+                self.logger.info(f"Loaded {len(self.filelist)} files from {filelist_json_path}")
+            except Exception as e:
+                self.logger.error(f"Could not read filelist JSON {filelist_json_path}: {e}")
+        
         if not self.filelist:
             self.logger.error(
                 "No file list found, please specify.  No transformation for publication performed."
             )
 
     def run(self):
+        self.set_cycle(cycle_dt)
         self._set_filelist()
         for file in self.filelist:
             if self._available_for_publication(file):

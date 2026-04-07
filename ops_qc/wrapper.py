@@ -1,5 +1,6 @@
 import os
 import logging
+import json
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -257,6 +258,41 @@ class QcWrapper(object):
         except Exception as exc:
             self.logger.error("Could not save status files: {}".format(exc))
 
+    def _save_success_files_list(self):
+        """
+        Save list of successfully processed files to a JSON file.
+        Includes metadata like timestamp and file count for validation.
+        If status_file_dir is not specified, saves in same directory as qc'd data.
+        Saves to a 'filelist' subdirectory.
+        Filename uses cycle_dt in format: success_files_list_YYYYMMDD_HHMMz.json
+        """
+        try:
+            if not self.status_file_dir:
+                self.status_file_dir = self.out_dir
+            
+            # Create filelist subdirectory
+            filelist_dir = os.path.join(self.status_file_dir, 'filelist')
+            self._initialize_outdir(filelist_dir)
+            
+            # Format filename with cycle_dt as YYYYMMDD_HHMMz
+            basefile = cycle_dt.strftime("success_files_list_%Y%m%d_%H00z.json")
+            filename = os.path.join(filelist_dir, basefile)
+            
+            # Prepare JSON structure with metadata
+            success_data = {
+                "cycle_dt": cycle_dt.strftime("%Y%m%d_%H%Mz"),
+                "total_files": len(self._saved_files),
+                "success_files": self._saved_files
+            }
+            
+            # Write JSON file
+            with open(filename, 'w') as f:
+                json.dump(success_data, f, indent=2)
+            
+            self.logger.info(f"Saved list of {len(self._saved_files)} successful files to {filename}")
+        except Exception as exc:
+            self.logger.error("Could not save success files list: {}".format(exc))
+
     def _initialize_outdir(self, dir_path):
         """
         Check if outdir exists, create if not
@@ -485,6 +521,7 @@ class QcWrapper(object):
                         filename, exc)
                 )
         self._save_status_data()
+        self._save_success_files_list()
         self._success_files = self._saved_files
 
     def run(self):
@@ -506,4 +543,5 @@ class QcWrapper(object):
             self._success_files = None
         else:
             self._process_files()
+        
         return self._success_files
