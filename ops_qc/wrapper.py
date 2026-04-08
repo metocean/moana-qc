@@ -1,5 +1,6 @@
 import os
 import logging
+import json
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -107,7 +108,12 @@ class QcWrapper(object):
         logger=logging,
         **kwargs,
     ):
-
+        # Extract filelist from config if passed via kwargs (from linked parent tasks)
+        if filelist is None and 'config' in kwargs:
+            filelist = kwargs['config'].get('filelist')
+            if filelist:
+                print(f"Extracted filelist from config kwargs: {len(filelist)} files")
+        
         self.filelist = filelist
         self.outfile_ext = outfile_ext
         self.out_dir = out_dir
@@ -256,6 +262,56 @@ class QcWrapper(object):
             )
         except Exception as exc:
             self.logger.error("Could not save status files: {}".format(exc))
+
+    def _save_success_files_list(self):
+        """
+        Save list of successfully processed files to a JSON file.
+        Includes metadata like timestamp and file count for validation.
+        If status_file_dir is not specified, saves in same directory as qc'd data.
+        Saves to a 'filelist' subdirectory.
+        Filename uses cycle_dt in format: success_files_list_YYYYMMDD_HHMMz.json
+        """
+        # Skip if no files were successfully saved
+        if not self._saved_files:
+            self.logger.info("No successful files to save to JSON list")
+            return
+        
+        try:
+            if not self.status_file_dir:
+                self.status_file_dir = self.out_dir
+            
+            if not self.status_file_dir:
+                self.logger.warning("Cannot save success files list: no output directory specified")
+                return
+            
+            # Create filelist subdirectory
+            filelist_dir = os.path.join(self.status_file_dir, 'filelist')
+            self._initialize_outdir(filelist_dir)
+            
+            # Format filename with cycle_dt as YYYYMMDD_HHMMz
+            basefile = self.cycle_dt.strftime("success_files_list_%Y%m%d_%H00z.json")
+            filename = os.path.join(filelist_dir, basefile)
+            
+            # Prepare JSON structure with metadata
+            success_data = {
+                "cycle_dt": self.cycle_dt.strftime("%Y%m%d_%H%Mz"),
+                "total_files": len(self._saved_files),
+                "filelist": self._saved_files
+            }
+            
+            # Write JSON file
+            with open(filename, 'w') as f:
+                json.dump(success_data, f, indent=2)
+            
+            msg = f"Saved list of {len(self._saved_files)} successful files to {filename}"
+            self.logger.info(msg)
+            print(msg)  # Ensure visibility in scheduler logs
+        except Exception as exc:
+            error_msg = f"Could not save success files list: {exc}"
+            self.logger.error(error_msg)
+            print(f"ERROR: {error_msg}")  # Ensure visibility in scheduler logs
+            import traceback
+            traceback.print_exc()  # Print full traceback for debugging
 
     def _initialize_outdir(self, dir_path):
         """
@@ -485,6 +541,7 @@ class QcWrapper(object):
                         filename, exc)
                 )
         self._save_status_data()
+        self._save_success_files_list()
         self._success_files = self._saved_files
 
     def run(self):
@@ -506,4 +563,5 @@ class QcWrapper(object):
             self._success_files = None
         else:
             self._process_files()
+        
         return self._success_files
