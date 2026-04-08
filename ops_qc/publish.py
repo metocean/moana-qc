@@ -11,7 +11,7 @@ from ops_qc.utils import load_yaml
 
 xr.set_options(keep_attrs=True)
 
-cycle_dt = dt.datetime.utcnow()
+# cycle_dt = dt.datetime.utcnow()
 
 
 class Wrapper(object):
@@ -44,6 +44,7 @@ class Wrapper(object):
         filelist_json=None,
         outfile_ext="published",
         out_dir=None,
+        status_file_dir=None,
         attr_file=os.path.join(
             os.path.dirname(os.path.realpath(__file__)), "attribute_list.yml"
         ),
@@ -54,8 +55,15 @@ class Wrapper(object):
         logger=logging,
         **kwargs,
     ):
+        # Extract filelist from config if passed via kwargs (from linked parent tasks)
+        if filelist is None and 'config' in kwargs:
+            filelist = kwargs['config'].get('filelist')
+            if filelist:
+                print(f"Extracted filelist from config kwargs: {len(filelist)} files")
+        
         self.filelist = filelist
         self.filelist_json = filelist_json
+        self.status_file_dir = status_file_dir
         self.outfile_ext = outfile_ext
         self.out_dir = out_dir
         self.attr_file = attr_file
@@ -103,7 +111,13 @@ class Wrapper(object):
             )
             publication_date = np.datetime64(publication_date)
             if self.first_measurement - publication_date > 0:
-                return eval(public)
+                # Convert public attribute to boolean (handles TRUE/True/true strings)
+                if isinstance(public, bool):
+                    return public
+                elif isinstance(public, str):
+                    return public.upper() == 'TRUE'
+                else:
+                    return bool(public)
             else:
                 return False
         except:
@@ -236,6 +250,56 @@ class Wrapper(object):
                 )
             )
 
+    def _save_success_files_list(self):
+        """
+        Save list of successfully published files to a JSON file.
+        Includes metadata like timestamp and file count for validation.
+        If status_file_dir is not specified, saves in same directory as published data.
+        Saves to a 'filelist' subdirectory.
+        Filename uses cycle_dt in format: published_files_list_YYYYMMDD_HHMMz.json
+        """
+        # Skip if no files were successfully saved
+        if not self._saved_files["filelist"]:
+            self.logger.info("No published files to save to JSON list")
+            return
+        
+        try:
+            if not self.status_file_dir:
+                self.status_file_dir = self.out_dir
+            
+            if not self.status_file_dir:
+                self.logger.warning("Cannot save published files list: no output directory specified")
+                return
+            
+            # Create filelist subdirectory
+            filelist_dir = os.path.join(self.status_file_dir, 'filelist')
+            self._initialize_outdir(filelist_dir)
+            
+            # Format filename with cycle_dt as YYYYMMDD_HHMMz
+            basefile = self.cycle_dt.strftime("published_files_list_%Y%m%d_%H00z.json")
+            filename = os.path.join(filelist_dir, basefile)
+            
+            # Prepare JSON structure with metadata
+            published_data = {
+                "cycle_dt": self.cycle_dt.strftime("%Y%m%d_%H%Mz"),
+                "total_files": len(self._saved_files["filelist"]),
+                "published_files": self._saved_files["filelist"]
+            }
+            
+            # Write JSON file
+            with open(filename, 'w') as f:
+                json.dump(published_data, f, indent=2)
+            
+            msg = f"Saved list of {len(self._saved_files['filelist'])} published files to {filename}"
+            self.logger.info(msg)
+            print(msg)  # Ensure visibility in scheduler logs
+        except Exception as exc:
+            error_msg = f"Could not save published files list: {exc}"
+            self.logger.error(error_msg)
+            print(f"ERROR: {error_msg}")  # Ensure visibility in scheduler logs
+            import traceback
+            traceback.print_exc()  # Print full traceback for debugging
+
     def _set_filelist(self):
         if hasattr(self, "_success_files") and not self.filelist:
             self.filelist = self._success_files
@@ -247,7 +311,8 @@ class Wrapper(object):
             try:
                 with open(filelist_json_path, 'r') as f:
                     data = json.load(f)
-                self.filelist = data.get('success_files', [])
+                # Support 'filelist', 'published_files', and 'success_files' keys
+                self.filelist = data.get('filelist', [])
                 self.logger.info(f"Loaded {len(self.filelist)} files from {filelist_json_path}")
             except Exception as e:
                 self.logger.error(f"Could not read filelist JSON {filelist_json_path}: {e}")
@@ -258,7 +323,7 @@ class Wrapper(object):
             )
 
     def run(self):
-        self.set_cycle(cycle_dt)
+        # self.set_cycle()
         self._set_filelist()
         for file in self.filelist:
             if self._available_for_publication(file):
@@ -288,4 +353,9 @@ class Wrapper(object):
                     savefile, mode="w", format="NETCDF4", encoding=encoding
                 )
                 self._saved_files["filelist"].append(savefile)
+        
+        # Save the list of published files to JSON
+
+        self._save_success_files_list()
+        
         return self._saved_files
