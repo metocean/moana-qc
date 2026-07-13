@@ -10,7 +10,7 @@
 <h3 align="center">Moana TD Sensor Quality Control and Processing</h3>
 
   <p align="center">
-    This library contains code to perform the operational, near real-time quality-control and processing of <a href="https://www.moanaproject.org/temperature-sensors">Mangōpare/Moana oceanographic observation data</a>, initially deveoped as part of the <a href="https://www.moanaproject.org/">Moana Project</a> with technology partner <a href="https://www.zebra-tech.co.nz/moana/">ZebraTech</a>.
+    This library contains code to perform the operational, near real-time quality-control and processing of <a href="https://www.moanaproject.org/temperature-sensors">Mangōpare/Moana oceanographic observation data</a>, initially deveoped as part of the <a href="https://www.moanaproject.org/">Moana Project</a> with technology partner <a href="https://www.zebra-tech.co.nz/moana/">ZebraTech</a>.  The program is managed under the Aotearoa Moana Observing System (<a href="https://www.amos.org.nz">AMOS</a>), so please contact AMOS for additional information.
     <br />
     <br />
     <a href="https://github.com/metocean/moana-qc/blob/master/docs/"><strong>Documentation »</strong></a>
@@ -50,9 +50,9 @@
 
 
 # About The Programme
-This library contains code intended for the operational, near real-time quality-control of [Mangōpare/Moana oceanographic observation data](https://www.zebra-tech.co.nz/moana/).  Only automatic quality control is included at this time, for use with measurements transmitted in near real-time.  For more information on the [Moana Project](https://www.moanaproject.org/temperature-sensors)'s Mangōpare sensor programme, see [Jakoboski et. al (2024)](https://doi.org/10.1016/j.pocean.2024.103278), contact info@moanaproject.org, or visit the websites above.
+This library contains code intended for the operational, near real-time quality-control of [Mangōpare/Moana oceanographic observation data](https://www.zebra-tech.co.nz/moana/).  Only automatic quality control is included at this time, for use with measurements transmitted in near real-time.  For more information on [AMOS](https://www.amos.org.nz)'s (formerly [Moana Project](https://www.moanaproject.org/temperature-sensors)) Mangōpare sensor programme, see [Jakoboski et. al (2024)](https://doi.org/10.1016/j.pocean.2024.103278), contact contact@amos.org.nz, or visit the websites above.
 
-The current versions are for the purpose of quality-controlling data from the Moana Project's Mangopare (Te Tiro Moana) Mangōpare/Moana temperature and pressure sensor, but will be made more generic if needed.
+The current versions are for the purpose of quality-controlling data from the AMOS/Moana Project's Mangopare (Te Tiro Moana) Mangōpare/Moana temperature and pressure sensor, but will be made more generic if needed.
 
 <p align="right">(<a href="#page-top">back to top</a>)</p>
 
@@ -174,7 +174,7 @@ Please see [LICENSE.md](https://github.com/metocean/moana-qc/blob/master/LICENSE
 
 # Attribution Statement
 
-Original code base by MetOcean Solutions, a Division of Meteorological Service of New Zealand Ltd, developed as part of the Moana Project. The Moana Project is funded by the New Zealand Ministry of Business, Innovation, and Employment (MBIE) Endeavour Fund.
+Original code base by MetOcean Solutions, a Division of Meteorological Service of New Zealand Ltd, originally developed as part of the Moana Project and updated and maintained for the Aotearoa Moana Observing System (AMOS). The Moana Project and ongoing AMOS funding is by the New Zealand Ministry of Business, Innovation, and Employment (MBIE) Endeavour Fund.
 
 The Mangōpare sensor and deck unit hardware were developed by Zebra-Tech, Ltd, Nelson, New Zealand as part of the Moana Project.  Sensors are available through [ZebraTech](https://www.zebra-tech.co.nz/).
 
@@ -182,7 +182,7 @@ The Mangōpare sensor and deck unit hardware were developed by Zebra-Tech, Ltd, 
 
 # Community
 
-A fishing vessel, in-situ ocean observing quality control working group is in development through [FVON](https://fvon.org/).  Please contact either the Moana Project (info@moanaproject.org) or FVON (through their website) for more information.
+A fishing vessel, in-situ ocean observing quality control working group is opearting through [FVON](https://fvon.org/).  Please contact either AMOS (contact@amos.org.nz) or FVON (through their website) for more information.
 
 <p align="right">(<a href="#page-top">back to top</a>)</p>
 
