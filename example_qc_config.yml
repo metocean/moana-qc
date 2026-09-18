@@ -1,0 +1,41 @@
+# Example QC Configuration for Cylc Workflows
+
+# Input/Output Paths
+out_dir: "/data/obs/mangopare/processed/%Y%m%d_%Hz/"
+status_file_dir: "/data/obs/mangopare/processed/status/"
+
+# File naming
+outfile_ext: "_qc_%y%m%d"
+status_file_ext: "_%y%m%d"
+
+# Fisher Metadata
+fishing_metafile: "/data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv"
+
+# QC Test Lists
+test_list_1:
+  - impossible_date
+  - impossible_location
+  - impossible_speed
+  - timing_gap
+  - global_range
+  - datetime_increasing
+  - remove_ref_location
+  - spike
+  - rate_of_change_test
+  - reset_code_check
+  - check_timestamp_overflow
+
+test_list_2:
+  - stationary_position_check
+  - temp_drift
+  - start_end_dist_check
+
+# Processing Options
+save_flags: false
+convert_p_to_z: true
+default_latitude: -40.0
+
+# Optional: Override gear classifications
+# gear_class:
+#   "Bottom trawl": "mobile"
+#   "Potting": "stationary"
