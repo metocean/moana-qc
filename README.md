@@ -39,6 +39,8 @@
       </ul>
     </li>
     <li><a href="#installation">Installation</a></li>
+    <li><a href="#usage">Usage</a></li>
+    <li><a href="#development">Development</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#references">References</a></li>
     <li><a href="#licensing">Licensing</a></li>
@@ -83,68 +85,200 @@ Currently, the data and metadata readers are both classes in readers.py.
 (Mangōpare Specific)
 Two columns have been added to the Mangōpare metadata (Public, Publication Date). The first column "Public" especifies if the data is available for the Public or not (boolean, True or False). If True, the second column "Publication Date" especifies the date when the sharing data agreement was signed.   
 
-A new code has been developed to adapt and transfer the data into our THREDDS server (see ops_qc/publish.py).
+Publication functionality is available via the `mangopare publish` command.
 
-Relevant files are located in the THREDDS folder. 
+Relevant files are located in the THREDDS folder: 
 - THREDDS/attribute_list.yml : All the information related to the variables, coordinates, dimensions and global attributes. 
 - THREDDS/transfer.public.mangopare.yml : Config file to use for operational deployment.
 
 If you use the publically available data, please cite the Zenodo reference for the dataset: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10420342.svg)](https://doi.org/10.5281/zenodo.10420342)
 
-Please see [THREDDS_README.md](https://github.com/metocean/moana-qc/blob/master/ops_qc/THREDDS/THREDDS_README.ipynb) for more information.
+Please see [THREDDS_README.md](https://github.com/metocean/moana-qc/blob/master/moana_qc/THREDDS/THREDDS_README.ipynb) for more information.
 
 <p align="right">(<a href="#page-top">back to top</a>)</p>
 
 # Installation
 
-This repository contains code to run the `ops-qc` ("operational" or automatic quality control) python package. Two installation options are available: from source or docker image:    
+This repository contains the `moana-qc` Python package for quality control and processing of Moana/Mangōpare sensor data.
 
-## Option 1 | Via pip
+## Requirements
 
-```shell
-python -m pip install 'git+https://github.com/metocean/moana-qc'
+- Python 3.10 or later
+- [uv](https://github.com/astral-sh/uv) package manager (recommended) or pip
+
+## Installation with uv (Recommended)
+
+```bash
+# Install uv if you haven't already
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install the package
+uv pip install -e .
+
+# Or for development with all tools
+uv pip install -e ".[dev]"
 ```
 
-## Option 2 | Buliding a docker image
+## Installation with pip
 
-The following assumes [`docker`](https://www.docker.com/) is installed.
+```bash
+# Install from source
+pip install -e .
 
-The metocean/moana-qc repository contains a default (external) [`Dockerfile`](https://github.com/metocean/moana-qc/blob/master/Dockerfile) and an internal operational [`Dockerfile_MOS`](https://github.com/metocean/moana-qc/blob/master/Dockerfile_MOS).  To build a new image, external users want to use the default `Dockerfile` (which is independent of MetOcean's internal libraries).  For MetOcean operational internal use, please build from `Dockerfile_MOS`.
+# Or with development dependencies
+pip install -e ".[dev]"
+```
 
-To build the external use Dockerfile version (outside of Metservice/MetOcean ops system), from the moana-qc directory, use something like: 
-```shell
+## For Cylc Workflows
+
+The package is designed to work with Cylc workflows using virtual environments:
+
+```bash
+# In your workflow setup
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e /source/moana-qc
+```
+
+See the [Cylc mangopare workflow documentation](/config/cylc-src-ops-test/mangopare/README.md) for integration details.
+
+<p align="right">(<a href="#page-top">back to top</a>)</p>
+
+# Usage
+
+The package provides a unified `mangopare` command-line interface for the complete data processing workflow:
+
+## Quick Start
+
+```bash
+# View all available commands
+mangopare --help
+
+# Get help for a specific subcommand
+mangopare qc --help
+```
+
+## Workflow Commands
+
+### 1. Identify New Files
+
+```bash
+mangopare newfiles \
+  --newfile-dir /data_exchange/zebratech/incoming \
+  --old-files-dirs /data/obs/mangopare/processed \
+  --output-json newfiles.json \
+  --cycle 20260409T0000
+```
+
+### 2. Run Quality Control
+
+```bash
+mangopare qc \
+  --filelist-json newfiles.json \
+  --out-dir /data/obs/mangopare/processed/ \
+  --cycle 20260409T0000 \
+  --fishing-metafile /data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv \
+  --test-list-1 impossible_date impossible_location impossible_speed timing_gap global_range \
+  --test-list-2 start_end_dist_check \
+  --save-flags \
+  --verbose
+```
+
+### 3. Publish for THREDDS
+
+```bash
+mangopare publish \
+  --filelist-json success_files_list.json \
+  --out-dir /data/obs/mangopare/published/ \
+  --cycle 20260409T0000 \
+  --attr-file moana_qc/THREDDS/attribute_list.yml
+```
+
+### 4. Transfer to Remote Server
+
+```bash
+mangopare transfer \
+  --filelist-json published_files_list.json \
+  --destination metocean@dataserv1.hm:/data/moana/Mangopare/public/ \
+  --cycle 20260409T0000
+```
+
+## Using Configuration Files
+
+For simpler command lines, use YAML configuration files:
+
+```bash
+# QC with config file
+mangopare qc --config qc_config.yml --cycle 20260409T0000
+
+# Publish with config file
+mangopare publish --config publish_config.yml --cycle 20260409T0000
+```
+
+Example `qc_config.yml`:
+```yaml
+out_dir: /data/obs/mangopare/processed/
+fishing_metafile: /data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv
+test_list_1:
+  - impossible_date
+  - impossible_location
+  - impossible_speed
+  - timing_gap
+  - global_range
+test_list_2:
+  - start_end_dist_check
+save_flags: true
+```
+
+## Legacy Commands
+
+For backward compatibility, individual commands are still available:
+- `moana-newfiles` (same as `mangopare newfiles`)
+- `moana-qc` (same as `mangopare qc`)
+- `moana-publish` (same as `mangopare publish`)
+- `moana-transfer` (same as `mangopare transfer`)
+
+See [CLI_COMMANDS.md](CLI_COMMANDS.md) for detailed documentation of all commands and options.
+
+<p align="right">(<a href="#page-top">back to top</a>)</p>
+
+# Development
+
+For contributing, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Docker Images
+
+The repository includes Dockerfiles for containerized deployment:
+
+### External/Public Use
+
+```bash
 docker build -f Dockerfile -t moana-qc .
-```
-
-The metocean/moana-qc/Dockerfile docker image requires some libraries in private git repositories, but are needed for the current operational version at MetOcean.  They are accessed via a github token.  To run from a computer with the github token under variable GIT_TOKEN, build the docker image via
-
-```shell
-docker build -f Dockerfile_MOS --no-cache --build-arg GIT_TOKEN=${GIT_TOKEN} -t metocean/moana-qc:latest .
-```
-
-Then run the docker image via
-
-for default use:
-```shell
 docker run -ti -v /source:/source -v /data:/data moana-qc:latest
 ```
 
-or for MetOcean internal use:
-```shell
-docker run -ti -v /source:/source -v /data:/data metocean/moana-qc:latest`
+### MetOcean Internal Operations
+
+For MetOcean operational use with internal dependencies:
+
+```bash
+docker build -f Dockerfile_MOS --no-cache --build-arg GIT_TOKEN=${GIT_TOKEN} -t metocean/moana-qc:latest .
+docker run -ti -v /source:/source -v /data:/data metocean/moana-qc:latest
 ```
 
-`/data` is a directory where the sensor data can be found and also where the output directory will be.  If you need the docker container to access another directory, add it with the -v tag.
+The `/data` directory should contain sensor data and will be used for outputs. Add additional directories with `-v` flags as needed.
 
 <p align="right">(<a href="#page-top">back to top</a>)</p>
 
 # Contributing
 
-Any contributions are very welcome!  
+We welcome contributions! This is an open-source project for oceanographic data quality control.
 
-The master branch is currently intended for MetOcean operational use.  The external-aus branch is intended for development by the IMOS Fish-SOOP programme.
+**Development Branch**: The `cylc` branch contains the modernized codebase for use with Cylc workflows and modern Python tooling.
 
-To contribute, please fork the repo and create a pull request, or open an issue with an appropriate tag.
+**Legacy Branch**: The `master` branch maintains backwards compatibility with existing scheduler systems.
+
+To contribute:
 
 1. Fork the Project
 2. Create a new Feature Branch (`git checkout -b feature/YourNewFeature`)

@@ -1,9 +1,10 @@
-import numpy as np
-import yaml
 import datetime as dt
 import glob
-import os
 import importlib as il
+import os
+
+import numpy as np
+import yaml
 from shapely.geometry import Point, shape
 from shapely.ops import nearest_points
 
@@ -13,7 +14,7 @@ Miscellanous functions used by multiple classes in the QC library.
 
 
 def catch(func, handle=lambda e: e, *args, **kwargs):
-    """ Values that return an error are overwritten as np.nan...we just ignore them for now """
+    """Values that return an error are overwritten as np.nan...we just ignore them for now"""
     try:
         return func(*args, **kwargs)
     except Exception:
@@ -33,55 +34,59 @@ def haversine(lat1, lon1, lat2, lon2, to_radians=True, earth_radius=6371):
     if to_radians:
         lat1, lon1, lat2, lon2 = np.radians([lat1, lon1, lat2, lon2])
 
-    a = np.sin((lat2 - lat1) / 2.0) ** 2 + \
-        np.cos(lat1) * np.cos(lat2) * np.sin((lon2 - lon1) / 2.0) ** 2
+    a = (
+        np.sin((lat2 - lat1) / 2.0) ** 2
+        + np.cos(lat1) * np.cos(lat2) * np.sin((lon2 - lon1) / 2.0) ** 2
+    )
 
     return earth_radius * 2 * np.arcsin(np.sqrt(a))
 
 
-def calc_speed(df, units='kts'):
+def calc_speed(df, units="kts"):
     """
     Calculate speed in km/hr, mph, or kts
     """
-    conversions = {'kts': 0.539957, 'mph': 0.621371}
-    df['speed'] = np.nan
+    conversions = {"kts": 0.539957, "mph": 0.621371}
+    df["speed"] = np.nan
     if len(df.DATETIME) > 1:
-        delta_time = df.DATETIME.diff().dt.total_seconds()/3600
+        delta_time = df.DATETIME.diff().dt.total_seconds() / 3600
         lat1 = df.LATITUDE.shift()
         lon1 = df.LONGITUDE.shift()
         lat2 = df.LONGITUDE
         lon2 = df.LATITUDE
         dist = haversine(lat1, lon1, lon2, lat2)
         cvf = conversions[units]
-        df['speed'] = [d / t * cvf if t != 0 else np.nan for d, t in zip(dist, delta_time)]
+        df["speed"] = [d / t * cvf if t != 0 else np.nan for d, t in zip(dist, delta_time)]
     else:
-        df['speed'] = np.nan
-    return (df)
+        df["speed"] = np.nan
+    return df
 
 
-def load_yaml(filename,dict_name):
+def load_yaml(filename, dict_name):
     """
     Load yaml file and return specified dictionary
     """
-    with open(filename, 'r') as stream:
+    with open(filename) as stream:
         try:
             for var in yaml.safe_load_all(stream):
                 attrs_list = var
-                return(attrs_list[dict_name])
+                return attrs_list[dict_name]
         except yaml.YAMLError as exc:
-            print('Could not open attribute file {}: {}'.format(filename, exc))
+            print(f"Could not open attribute file {filename}: {exc}")
 
-def append_to_textfile(filename,list_to_append):
+
+def append_to_textfile(filename, list_to_append):
     """
     Append a list, one item at a time,
     to a text file with path/name filename.
     """
-    f=open(filename, "a+")
+    f = open(filename, "a+")
     for file in list_to_append:
-        f.write(f'{file}\n')
+        f.write(f"{file}\n")
     f.close
 
-def list_new_files(numdays = 4, filestring = None, filedir = None, start_time = dt.datetime.now()):
+
+def list_new_files(numdays=4, filestring=None, filedir=None, start_time=dt.datetime.now()):
     """
     Searches in filedir for all files that match filestring.
     Formats filestring and filedir with datetime strftime
@@ -91,17 +96,18 @@ def list_new_files(numdays = 4, filestring = None, filedir = None, start_time = 
     """
     filelist = []
     if not filestring:
-        filestring = 'MOANA*_%y%m%d*.csv'
+        filestring = "MOANA*_%y%m%d*.csv"
     if not filedir:
-        filedir = '/data/obs/mangopare/incoming/**/'
+        filedir = "/data/obs/mangopare/incoming/**/"
     for day in np.arange(numdays):
-        cycle_dt = start_time - dt.timedelta(seconds=float(day*86400))
+        cycle_dt = start_time - dt.timedelta(seconds=float(day * 86400))
         fs = cycle_dt.strftime(filestring)
-        for file in glob.glob(os.path.join(filedir,fs), recursive=True):
+        for file in glob.glob(os.path.join(filedir, fs), recursive=True):
             filelist.append(file)
-    return(filelist)
+    return filelist
 
-def point_on_land(point,all_shapes,tol=0):
+
+def point_on_land(point, all_shapes, tol=0):
     """
     Takes a lat/lon point and a shapefile and determines if the point lies within
     the polygons defined by the shapefile.  If it does not, then it calculates the
@@ -112,35 +118,51 @@ def point_on_land(point,all_shapes,tol=0):
     # first check if point is on land
     is_on_land = sum([Point(point).within(shape(item)) for item in all_shapes])
     # if on land, check if within tolerance (tol) of coast
-    if is_on_land and tol!=0:
-        close_points = [nearest_points(shape(item),Point(point))[0].xy for item in all_shapes]
-        locs = [np.array([location[1][0],location[0][0]]) for location in close_points[1:]]
-        dist = np.min([haversine(lat1=point[1], lon1=point[0], lat2=loc[0], lon2=loc[1], earth_radius=6371000) for loc in locs]) 
-        if dist>tol:
-            return True
-        else:
-            return False
+    if is_on_land and tol != 0:
+        close_points = [nearest_points(shape(item), Point(point))[0].xy for item in all_shapes]
+        locs = [np.array([location[1][0], location[0][0]]) for location in close_points[1:]]
+        dist = np.min(
+            [
+                haversine(
+                    lat1=point[1], lon1=point[0], lat2=loc[0], lon2=loc[1], earth_radius=6371000
+                )
+                for loc in locs
+            ]
+        )
+        return dist > tol
     else:
         return False
 
-def start_end_dist(ds, qcrange = [1,2,3]):
+
+def start_end_dist(ds, qcrange=None):
     """
     Takes an xarray dataset with LATITUDE, LONGITUDE, LOCATION_QC,
     and DATETIME_QC variables and calculates the distance between the
     first and last "good" data points.  The qcrange input is a list
-    of qcflags that should be considered "good" data.  Returned 
+    of qcflags that should be considered "good" data.  Returned
     distance is in meters.
     """
-    ds2 = ds.where(ds['LOCATION_QC'].isin(qcrange), drop=True)
-    ds2 = ds2.where(
-        ds2['DATETIME_QC'].isin(qcrange), drop=True)
-    if len(ds2) > 1:
-        sed = haversine(
-            ds2.LATITUDE[0], ds2.LONGITUDE[0],
-            ds2.LATITUDE[-1], ds2.LONGITUDE[-1])*1000
+    if qcrange is None:
+        qcrange = [1, 2, 3]
+
+    # Create boolean mask for good data points
+    good_mask = (ds["LOCATION_QC"].isin(qcrange)) & (ds["DATETIME_QC"].isin(qcrange))
+    # Use boolean indexing instead of where to avoid attribute serialization issues
+    ds2 = ds.isel(DATETIME=good_mask)
+
+    if len(ds2.DATETIME) > 1:
+        sed = (
+            haversine(
+                ds2.LATITUDE.values[0],
+                ds2.LONGITUDE.values[0],
+                ds2.LATITUDE.values[-1],
+                ds2.LONGITUDE.values[-1]
+            ) * 1000
+        )
     else:
         sed = np.nan
     return sed
+
 
 def import_pycallable(pycallable):
     """
@@ -148,8 +170,8 @@ def import_pycallable(pycallable):
     Copied from MetOcean's internal ops_core so that
     this can be stand-alone
     """
-    pycallable = pycallable.split('.')
+    pycallable = pycallable.split(".")
     method = pycallable[-1]
-    module_str = '.'.join(pycallable[:-1])
+    module_str = ".".join(pycallable[:-1])
     module = il.import_module(module_str)
     return getattr(module, method)

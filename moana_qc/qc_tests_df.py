@@ -1,55 +1,32 @@
-import pandas as pd
-import numpy as np
-from datetime import datetime
-import seawater as sw
-import shapefile
-from ops_qc.utils import calc_speed, point_on_land
-from ops_qc.utils import start_end_dist
+"""Quality control tests for oceanographic observations.
+
+Available QC tests:
+    - gear_type, timing_gap, impossible_date, impossible_location
+    - position_on_land, impossible_speed, global_range, climatology_test
+    - spike, stuck_value, rate_of_change_test, remove_ref_location
+    - stationary_position_check, temp_drift, start_end_dist_check
+    - reset_code_check, check_timestamp_overflow
+
+Recommended tests (based on deployment experience):
+    - impossible_date, impossible_location, impossible_speed, timing_gap
+    - global_range, remove_ref_location, spike, temp_drift
+    - stationary_position_check, start_end_dist_check
+    - reset_code_check, check_timestamp_overflow
+
+Not recommended (incomplete or unreliable):
+    - position_on_land, climatology_test
+"""
+
+import itertools
 import re
+from datetime import datetime
 
-"""
-QC Tests for ocean observations.  The test options are:
-gear_type, timing_gap, impossible_date, impossible_location,
-position_on_land, impossible_speed, global_range, climatology_test,
-spike, stuck_value, rate_of_change_test, remove_ref_location,
-stationary_position_check, temp_drift, start_end_dist_check,
-reset_code_check, check_timestamp_overflow
+import gsw
+import numpy as np
+import pandas as pd
+import shapefile
 
-Currently, some tests are not recommended or not complete:
-position_on_land, climatology_test.
-
-Tests that are particularly useful/necessary: (based on deployments so far)
-impossible_date, impossible_location, impossible_speed, timing_gap,
-global_range, remove_ref_location, spike, temp_drift, stationary_position_check,
-start_end_dist_check, reset_code_check, check_timestamp_overflow
-
-
-Possibly useful:
-gear_type, stuck_value, rate_of_change_test
-
-Note these are constantly changing/being updated/improved.
-
-Inputs:
-    ds - xarray dataset with sensor data and global attributes from
-        preprocess.py
-    df - pandas dataframe version of ds containing data with columns 
-        DATETIME, LATITUDE, LONGITUDE, PRESSURE, TEMPERATURE
-    qcdf - pandas dataframe either empty or containing previous qc
-        flag values for qc tests already performed
-
-Outputs:
-    Updated self.qcdf with qc flags, one flag name for each test and one
-        qc flag value for each measurement. 
-
-To-do:
-    This does not need to have both ds and df versions of the same data.
-    It got this way from inheriting code that used the pandas approach,
-    but we needed the attributes from the xarray dataset.  It works this
-    way but could be cleaner.
-    Finish sensor-specific qc tests (mostly timing stuff).
-    Add greylist check.
-    Improve test "tuning."
-"""
+from moana_qc.utils import calc_speed, point_on_land, start_end_dist
 
 
 def gear_type(self, fail_flag=3, gear=None, flag_name="flag_gear_type"):
@@ -67,18 +44,14 @@ def gear_type(self, fail_flag=3, gear=None, flag_name="flag_gear_type"):
             gear = self.ds.attrs["gear_class"]
     except Exception as exc:
         self.logger.error(
-            "Could not determine gear type for gear_type qc test. Traceback: {}".format(
-                exc
-            )
+            f"Could not determine gear type for gear_type qc test. Traceback: {exc}"
         )
 
     self.qcdf[flag_name] = np.ones_like(self.df["DATETIME"], dtype="uint8")
     if "speed" not in self.df:
         self.df = calc_speed(self.df, units="kts")
     mean_speed = np.nanmean(self.df["speed"])
-    if (mean_speed > 0 and gear == "stationary") or (
-        mean_speed == 0 and gear == "mobile"
-    ):
+    if (mean_speed > 0 and gear == "stationary") or (mean_speed == 0 and gear == "mobile"):
         self.qcdf[flag_name] = fail_flag
 
 
@@ -99,7 +72,7 @@ def timing_gap(self, max_min=60, num_obs=5, fail_flag=4, flag_name="flag_timing_
         + [len(self.df.DATETIME) - 1]
     )
     if len(gap_ind) > 1:
-        for i1, i2 in zip(gap_ind[:-1], gap_ind[1:]):
+        for i1, i2 in itertools.pairwise(gap_ind):
             if i2 - i1 == 0:  # single end point
                 self.qcdf.loc[self.qcdf.index[i1], flag_name] = fail_flag
             elif i2 - i1 < num_obs:  # small group "clusters"
@@ -135,9 +108,7 @@ def datetime_increasing(self, fail_flag=4, flag_name="flag_datetime_inc"):
     Check that datetime is monotonically increasing
     """
     if not self.df["DATETIME"].is_monotonic_increasing:
-        self.qcdf[flag_name] = (
-            np.ones_like(self.df["LATITUDE"], dtype="uint8") * fail_flag
-        )
+        self.qcdf[flag_name] = np.ones_like(self.df["LATITUDE"], dtype="uint8") * fail_flag
 
 
 # 6. Impossible location test
@@ -178,9 +149,7 @@ def position_on_land(self, fail_flag=3, flag_name="flag_land"):
     Leaving this test out for now.
     """
     self.qcdf[flag_name] = np.ones_like(self.df["LATITUDE"], dtype="uint8")
-    all_shapes = shapefile.Reader(
-        "/source/moana-qc/ops_qc/land_mask/ne_10m_land.shp"
-    ).shapes()
+    all_shapes = shapefile.Reader("/source/moana-qc/ops_qc/land_mask/ne_10m_land.shp").shapes()
     failed = []
     for lon, lat in zip(self.df["LONGITUDE"], self.df["LATITUDE"]):
         lon = (lon + 180) % 360 - 180
@@ -209,7 +178,7 @@ def impossible_speed(self, max_speed=100, fail_flag=3, flag_name="flag_speed"):
 # 9. Global range test
 
 
-def global_range(self, ranges=None, fail_flag=[3, 4]):
+def global_range(self, ranges=None, fail_flag=None):
     """
     Simplified version based on our experience so far.
     Applies as many ranges tests to as many variables as you'd like.
@@ -220,6 +189,8 @@ def global_range(self, ranges=None, fail_flag=[3, 4]):
     upper limit," only with fail_flag[1].  Values that are less than the
     lower limit are flagged as fail_flag[1].
     """
+    if fail_flag is None:
+        fail_flag = [3, 4]
     if ranges is None:
         ranges = {
             "PRESSURE": [0, 1600, 2000, "flag_global_range_pres"],
@@ -252,26 +223,20 @@ def climatology_test(self):
     We don't have a reliable enough one for NZ to apply this.
     Leaving out for now.
     """
-    T_season_min = 0
-    T_season_max = 25
-    S_season_min = 0
-    S_season_max = 50
+    t_season_min = 0
+    t_season_max = 25
+    s_season_min = 0
+    s_season_max = 50
 
     self.df["flag_clima"] = 1
     self.df.loc[
-        (
-            (self.df["TEMPERATURE"] > T_season_max)
-            | (self.df["TEMPERATURE"] < T_season_min)
-        ),
+        ((self.df["TEMPERATURE"] > t_season_max) | (self.df["TEMPERATURE"] < t_season_min)),
         "flag_clima",
     ] = 3
 
     if "SALINITY" in self.df:
         self.df.loc[
-            (
-                (self.df["SALINITY"] > S_season_max)
-                | (self.df["SALINITY"] < S_season_min)
-            ),
+            ((self.df["SALINITY"] > s_season_max) | (self.df["SALINITY"] < s_season_min)),
             "flag_clima",
         ] = 3
 
@@ -366,7 +331,7 @@ def rate_of_change_test(
         exceed = np.insert(roc > thresh, 0, False)
         self.qcdf[flag_name].loc[exceed] = fail_flag
     except Exception as exc:
-        self.logger.error("Could not apply rate of change test: {}".format(exc))
+        self.logger.error(f"Could not apply rate of change test: {exc}")
 
 
 # 14.  Within radius of "bad" location (i.e. to remove calibration tests)
@@ -388,10 +353,9 @@ def remove_ref_location(
     self.qcdf[flag_name] = np.ones_like(self.df["LATITUDE"], dtype="uint8")
     lats = self.df["LATITUDE"]
     lons = self.df["LONGITUDE"]
-    d = [
-        float(sw.dist([ref_lat, lat], [ref_lon, lon])[0])
-        for lat, lon in zip(lats, lons)
-    ]
+    # Calculate distance using gsw (replaces deprecated seawater.dist)
+    # gsw.distance returns distance in kilometers
+    d = [gsw.distance([ref_lon, lon], [ref_lat, lat])[0] / 1000.0 for lat, lon in zip(lats, lons)]
     self.qcdf.loc[np.array(d) < bad_radius, flag_name] = fail_flag
 
 
@@ -413,25 +377,23 @@ def temp_drift(self, fail_flag=3, flag_name="flag_temp_drift"):
     thresh_std = [2, 3.5, 3, 3, 3, 3, 2.5, 2.5, 1.5]
     self.qcdf[flag_name] = np.ones_like(self.df["LATITUDE"], dtype="uint8")
     for p1, p2, tmm, tstd in zip(pres_bins[:-1], pres_bins[1:], thresh_mm, thresh_std):
-        t_in_bin = self.df.loc[
-            ((self.df["PRESSURE"] > p1) & (self.df["PRESSURE"] < p2))
-        ]["TEMPERATURE"]
+        t_in_bin = self.df.loc[((self.df["PRESSURE"] > p1) & (self.df["PRESSURE"] < p2))][
+            "TEMPERATURE"
+        ]
         if len(t_in_bin) < 1:
             continue
         t_std = np.nanstd(t_in_bin)
         t_diff = np.nanmax(t_in_bin) - np.nanmin(t_in_bin)
         if (t_std > tstd) & (t_diff > tmm):
-            self.qcdf.loc[
-                ((self.df["PRESSURE"] > p1) & (self.df["PRESSURE"] < p2)), flag_name
-            ] = fail_flag
+            self.qcdf.loc[((self.df["PRESSURE"] > p1) & (self.df["PRESSURE"] < p2)), flag_name] = (
+                fail_flag
+            )
 
 
 # 16.  Flag data for moana_firmware <2 after a reset
 
 
-def reset_code_check(
-    self, moana_firmware=2.00, fail_flag=4, flag_name="flag_reset_old_firmware"
-):
+def reset_code_check(self, moana_firmware=2.00, fail_flag=4, flag_name="flag_reset_old_firmware"):
     """
     For older firmware versions, mark any timestamps after
     reset as "bad."  Newer firmware is ok after reset.
@@ -439,15 +401,12 @@ def reset_code_check(
     self.qcdf[flag_name] = np.ones_like(self.df["DATETIME"], dtype="uint8")
     sensor_moana_firmware = self.ds.attrs["moana_firmware"]
     if "WAVE" not in sensor_moana_firmware:
-        sensor_moana_firmware = [
+        sensor_moana_firmware = next(
             float(s) for s in re.findall(r"[\d]*[.][\d]+", sensor_moana_firmware)
-        ][0]
+        )
     elif "WAVE" in sensor_moana_firmware:
         sensor_moana_firmware = 0
-    if (
-        sensor_moana_firmware < moana_firmware
-        and self.ds.attrs["reset_codes_data"] != "None"
-    ):
+    if sensor_moana_firmware < moana_firmware and self.ds.attrs["reset_codes_data"] != "None":
         first_reset_location = int(self.ds.attrs["reset_codes_index"].split(", ")[0])
         self.qcdf.iloc[first_reset_location::, -1] = fail_flag
 
@@ -462,7 +421,7 @@ def check_timestamp_overflow(
     flag_name="flag_timestamp_overflow",
     log_interval=5,
     first_surface=None,
-    fail_flag=[3, 4],
+    fail_flag=None,
 ):
     """
     For older firmware versions. There is a possibility to have a timestamp overflow if
@@ -471,12 +430,14 @@ def check_timestamp_overflow(
     and gap must occur if the time gap between this measurement and the download time is
     greater than 18.2 hours. Newer firmware doesn't have this timestamp overflow error.
     """
+    if fail_flag is None:
+        fail_flag = [3, 4]
     self.qcdf[flag_name] = np.ones_like(self.df["DATETIME"], dtype="uint8")
     sensor_moana_firmware = self.ds.attrs["moana_firmware"]
     if "WAVE" not in sensor_moana_firmware:
-        sensor_moana_firmware = [
+        sensor_moana_firmware = next(
             float(s) for s in re.findall(r"[\d]*[.][\d]+", sensor_moana_firmware)
-        ][0]
+        )
     elif "WAVE" in sensor_moana_firmware:
         sensor_moana_firmware = 0
     if sensor_moana_firmware < moana_firmware:
@@ -497,10 +458,7 @@ def check_timestamp_overflow(
             surface_depths = np.where(self.ds["PRESSURE"] < 2.1)[0]
         sampling_interval_previous = [ind - 1 for ind in sampling_interval_index]
         for surface in surface_depths:
-            if (
-                surface in sampling_interval_index
-                or surface in sampling_interval_previous
-            ):
+            if surface in sampling_interval_index or surface in sampling_interval_previous:
                 first_surface = surface
                 break
         download_ts = pd.to_datetime(
@@ -510,9 +468,7 @@ def check_timestamp_overflow(
             (download_ts - self.ds.DATETIME).values.astype("timedelta64[s]").astype(int)
         )
         download_possible_overflow_index = [
-            count
-            for count, interval in enumerate(download_overflow)
-            if interval > 65535
+            count for count, interval in enumerate(download_overflow) if interval > 65535
         ]
         if first_surface in download_possible_overflow_index:
             self.qcdf.iloc[first_surface::, -1] = fail_flag[0]
@@ -524,9 +480,9 @@ def check_timestamp_overflow(
 def stationary_position_check(
     self,
     surface_pres=10,
-    fail_flag=[2, 3],
+    fail_flag=None,
     flag_name="flag_surf_loc",
-    good_pos_qc=[1, 2],
+    good_pos_qc=None,
 ):
     """
     Stationary/passive pressures are currently calculated using an average of the start
@@ -535,6 +491,10 @@ def stationary_position_check(
     be using vessel positions when the vessel is far away from the gear.  This
     test should be done after all other pressure or location qc tests.
     """
+    if good_pos_qc is None:
+        good_pos_qc = [1, 2]
+    if fail_flag is None:
+        fail_flag = [2, 3]
     self.qcdf[flag_name] = np.ones_like(self.df["LATITUDE"], dtype="uint8")
     if self.ds.attrs["gear_class"] == "stationary":
         fail_flag = fail_flag[1]
@@ -551,7 +511,7 @@ def stationary_position_check(
             "flag_land",
             "flag_ref_loc",
         ]
-        if flagname in self.qcdf.keys()
+        if flagname in self.qcdf
     ]
     combined_flag = self.qcdf[include_flags].max(axis=1).astype("int")
     df2 = self.df.loc[combined_flag <= np.nanmax(good_pos_qc)]
@@ -566,9 +526,7 @@ def stationary_position_check(
         self.qcdf.loc[:, flag_name] = fail_flag
 
 
-def start_end_dist_check(
-    self, fail_flag=[2, 3], cutoffs=[5, 50], flag_name="flag_dist"
-):
+def start_end_dist_check(self, fail_flag=None, cutoffs=None, flag_name="flag_dist"):
     """
     Assigns quality flags based on the distance between the first and last
     positions of a stationary/passive deployment.  This test is designed to flag
@@ -581,7 +539,11 @@ def start_end_dist_check(
     for high position uncertainty or likely bad positions, depending
     on threshold (for now).
     """
-    if "start_end_dist_m" in self.ds.attrs.keys():
+    if cutoffs is None:
+        cutoffs = [5, 50]
+    if fail_flag is None:
+        fail_flag = [2, 3]
+    if "start_end_dist_m" in self.ds.attrs:
         sed = float(self.ds.attrs["start_end_dist_m"])
     else:
         sed = start_end_dist(self.ds)

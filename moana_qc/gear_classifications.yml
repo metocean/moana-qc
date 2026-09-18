@@ -1,0 +1,25 @@
+# Gear classification mapping
+# Maps fishing methods to gear classes (mobile or stationary)
+GEAR_CLASSIFICATIONS:
+  "Bottom trawl": "mobile"
+  "Bottom trawler": "mobile"
+  "Bottom trawling": "mobile"
+  "Bottom long line": "mobile"
+  "Dredge": "mobile"
+  "Education": "mobile"
+  "Instrument deployment": "mobile"
+  "Midwater trawl": "mobile"
+  "Research": "mobile"
+  "Trawling": "mobile"
+  "Trolling": "mobile"
+  "Waka": "mobile"
+  
+  # Stationary gear
+  "Danish seining": "stationary"
+  "Diving": "stationary"
+  "Long lining": "stationary"
+  "Netting": "stationary"
+  "Potting": "stationary"
+  "Potting, long lining": "stationary"
+  "Purse seine netting": "stationary"
+  "Set netting": "stationary"

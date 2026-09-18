@@ -1,27 +1,30 @@
+"""Weekly statistics and plotting module for Moana/Mangōpare data."""
+
+from __future__ import annotations
+
+import itertools
+import logging
 import os
 import re
-import logging       
-import simplekml
-import numpy as np
-import pandas as pd
-import xarray as xr
-import seawater as sw
-import datetime as dt
+from datetime import datetime, timedelta
 from glob import glob
-from erddapy import ERDDAP
+
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
-from ops_qc.utils import load_yaml
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
+import numpy as np
+import pandas as pd
+import simplekml
+import xarray as xr
 from cartopy.mpl.gridliner import LATITUDE_FORMATTER, LONGITUDE_FORMATTER
-import itertools
+from erddapy import ERDDAP
+
 xr.set_options(keep_attrs=True)
 
-# cycle_dt = dt.datetime.utcnow()
 
-class Wrapper(object):
+class Wrapper:
     """
     Wrapper class for publication of observational data onto THREDDS servers.
     Takes a list of quality-controlled netcdf files and reformats the ones available
@@ -36,24 +39,29 @@ class Wrapper(object):
         qc_class -- python class wrapper for running qc tests, returns updated xarray dataset
             that includes qc flags and updated status_file
         attr_file -- location of attribute_list.yml, default uses the one in the python
-            package, should be a yaml file (see sample one in ops_qc directory)
+            package
 
     """
-    
+
     def __init__(
         self,
         data_dir="/data/obs/mangopare/processed/",
         out_dir="/data/obs/mangopare/weekly_stats/%Y%m%d_00z/",
-        bbox=[161, 190, -52, -31],
+        bbox=None,
         resolution=1,
         lon_offset=180,
-        bounds=[0,2,4,8,12,16,24,28],
+        bounds=None,
         kml_output="mangopare_deployments_%Y%m%d.kml",
+        logger=None,
         **kwargs,
     ):
+        if bounds is None:
+            bounds = [0, 2, 4, 8, 12, 16, 24, 28]
+        if bbox is None:
+            bbox = [161, 190, -52, -31]
         self.data_dir = data_dir
         self.out_dir = out_dir
-        self.logger = logging
+        self.logger = logger if logger is not None else logging.getLogger(__name__)
         self.files = glob(os.path.join(self.data_dir, "*.nc"))
         self.bbox = bbox
         self.resolution = resolution
@@ -62,20 +70,24 @@ class Wrapper(object):
         self.kml = simplekml.Kml()
         self.kml_output = kml_output
 
-        self.x_edges = np.arange(self.bbox[0] - self.resolution, self.bbox[1] + self.resolution, self.resolution)
-        self.y_edges = np.arange(self.bbox[2] - self.resolution, self.bbox[3] + self.resolution, self.resolution)
-    
+        self.x_edges = np.arange(
+            self.bbox[0] - self.resolution, self.bbox[1] + self.resolution, self.resolution
+        )
+        self.y_edges = np.arange(
+            self.bbox[2] - self.resolution, self.bbox[3] + self.resolution, self.resolution
+        )
+
     def set_environment(self):
         """Create output directories."""
         self.logger.info("--- Creating directories")
         if not os.path.isdir(self.cycle_dt.strftime(self.out_dir)):
             os.makedirs(self.cycle_dt.strftime(self.out_dir))
-    
+
     def set_cycle(self, cycle_dt):
         self.cycle_dt = cycle_dt
-        self.outdir = cycle_dt.strftime(self.outdir)
+        self.outdir = cycle_dt.strftime(self.out_dir)
         self.week_end = cycle_dt.replace(minute=0, second=0, microsecond=0)
-        self.week_start = self.week_end - dt.timedelta(days=7)
+        self.week_start = self.week_end - timedelta(days=7)
 
     def find_files_in_date_range(self):
         """
@@ -98,35 +110,35 @@ class Wrapper(object):
                 file_dt = None
                 for fmt in ("%y%m%d%H%M%S", "%y%m%d%H%M"):
                     try:
-                        file_dt = dt.datetime.strptime(date_str, fmt)
+                        file_dt = datetime.strptime(date_str, fmt)
                         break
                     except ValueError:
                         continue
                 if file_dt and self.week_start <= file_dt <= self.week_end:
                     files_in_range.append(os.path.join(self.data_dir, fname))
         return files_in_range
-    
+
     def separate_files_by_public(self, files):
         public_files = []
         private_files = []
         for f in files:
             ds = xr.open_dataset(f)
             # Get the 'public' attribute, which may be a string
-            is_public = getattr(ds, 'public', False)
+            is_public = getattr(ds, "public", False)
             # Convert string to boolean if needed
             if isinstance(is_public, str):
-                is_public = is_public.lower() == 'true'
+                is_public = is_public.lower() == "true"
             if is_public:
                 public_files.append(f)
             else:
                 private_files.append(f)
         return public_files, private_files
-    
+
     def calc_grid_hist(self, x_coords, y_coords, time, x_edges, y_edges):
-        """Takes x,y (e.g., lon, lat) coordinates of each profile or 
-        sensor deployment and calculates the average monthly number 
-        of profiles/deployments per grid cell.  Grid cells are defined 
-        by x_edges and y_edges (e.g., longitude and latitude coordinates).  
+        """Takes x,y (e.g., lon, lat) coordinates of each profile or
+        sensor deployment and calculates the average monthly number
+        of profiles/deployments per grid cell.  Grid cells are defined
+        by x_edges and y_edges (e.g., longitude and latitude coordinates).
 
         Parameters
         ----------
@@ -160,9 +172,7 @@ class Wrapper(object):
         for xa, ya in itertools.product(x_edges, y_edges):
             yb = ya + self.resolution
             xb = xa + self.resolution
-            in_cell = df.loc[
-                (df.yc >= ya) & (df.yc < yb) & (df.xc >= xa) & (df.xc < xb)
-                ].dropna()
+            in_cell = df.loc[(df.yc >= ya) & (df.yc < yb) & (df.xc >= xa) & (df.xc < xb)].dropna()
             ctm = in_cell.resample("MS")["yc"].count().fillna(0).mean()
             x2.append((xa + xb) / 2)
             y2.append((ya + yb) / 2)
@@ -175,7 +185,7 @@ class Wrapper(object):
         return h, x, y
 
     def obtain_info(self, filelist):
-        """"
+        """ "
         Returns
         -------
         tuple[pd.DataFrame, dict, list]
@@ -197,25 +207,27 @@ class Wrapper(object):
                 continue
             lat.append(float(ds.LATITUDE[0]))
             lon.append(float(ds.LONGITUDE[0]))
-            deploy_time.append(ds.TIME[0].values)
+            deploy_time.append(ds.DATETIME[0].values)
             sensor_id = ds.attrs.get("moana_serial_number", "NA")
             sensor_ids.append(sensor_id)
             ds.close()
 
-        df = pd.DataFrame({"lat": lat, "lon": lon, "time": deploy_time, "sensor_id": sensor_ids}).dropna()
-        df['time'] = df['time'].dt.tz_localize('UTC')
+        df = pd.DataFrame(
+            {"lat": lat, "lon": lon, "time": deploy_time, "sensor_id": sensor_ids}
+        ).dropna()
+        df["time"] = df["time"].dt.tz_localize("UTC")
         return df
 
     def download_erddap(
-            url,
-            dataset_id,
-            start_time,
-            end_time,
-            lon_min,
-            lon_max,
-            lat_min,
-            lat_max,
-            variables,
+        self,
+        dataset_id,
+        start_time,
+        end_time,
+        lon_min,
+        lon_max,
+        lat_min,
+        lat_max,
+        variables,
     ):
         """Connects to ERDDAP, loads geospatial data into a pandas dataframe with
         time as the index.  Note that often you may need to query across a longitude
@@ -244,7 +256,7 @@ class Wrapper(object):
         pd.DataFrame
             Pandas dataframe containing the variables in variable_list as columns and with time as the index
         """
-        e = ERDDAP(server=url, protocol="tabledap")
+        e = ERDDAP(server=self, protocol="tabledap")
         e.response = "nc"
         e.dataset_id = dataset_id
         e.variables = variables
@@ -259,7 +271,14 @@ class Wrapper(object):
         df = e.to_pandas(parse_dates=["time (UTC)"], index_col="time (UTC)").dropna()
         return df
 
-    def load_argo(self, url="http://www.ifremer.fr/erddap", dataset_id = "ArgoFloats", variables = ["latitude", "longitude", "time", "float_serial_no", "pres"]):
+    def load_argo(
+        self,
+        url="http://www.ifremer.fr/erddap",
+        dataset_id="ArgoFloats",
+        variables=None,
+    ):
+        if variables is None:
+            variables = ["latitude", "longitude", "time", "float_serial_no", "pres"]
         dmin = self.week_start.strftime("%Y-%m-%dT%H:%M:%S")
         dmax = self.week_end.strftime("%Y-%m-%dT%H:%M:%S")
 
@@ -312,46 +331,65 @@ class Wrapper(object):
                 }
             )
 
-            #convert longitude to 0-360
+            # convert longitude to 0-360
             argo["lon"] = argo["lon"] % 360
         return argo
 
-    def generate_spatial_map_plot(self, argo_h, argo_x, argo_y,
-                                mangopare_h, mangopare_x, mangopare_y,
-                                filename):
+    def generate_spatial_map_plot(
+        self, argo_h, argo_x, argo_y, mangopare_h, mangopare_x, mangopare_y, filename
+    ):
         # plot parameters
         ms = 38
         bounds = [0, 4, 8, 12, 16, 24, 28]
         plt.rcParams.update(plt.rcParamsDefault)
         # Set up plots
-        fig, (ax0, ax1) = plt.subplots(nrows=1, ncols=2,
-                                    subplot_kw={'projection': ccrs.PlateCarree(central_longitude=self.lon_offset)},
-                                    figsize=(9, 6), dpi=120, facecolor='w', edgecolor='k')
+        fig, (ax0, ax1) = plt.subplots(
+            nrows=1,
+            ncols=2,
+            subplot_kw={"projection": ccrs.PlateCarree(central_longitude=self.lon_offset)},
+            figsize=(9, 6),
+            dpi=120,
+            facecolor="w",
+            edgecolor="k",
+        )
         ## Panel 1
         # plot Argo data
-        colors = plt.get_cmap('Blues')(np.linspace(0, 1, len(bounds) + 1))
+        colors = plt.get_cmap("Blues")(np.linspace(0, 1, len(bounds) + 1))
         cmap = mcolors.ListedColormap(colors[1:-1])
         cmap.set_over(colors[-1])
         cmap.set_under(colors[0])
         norm = mcolors.BoundaryNorm(boundaries=bounds, ncolors=len(bounds) - 1)
-        sc2 = ax0.scatter(argo_x + self.lon_offset, argo_y, c=argo_h, s=ms, marker='s', cmap=cmap, norm=norm)
-        ax0.plot([self.box[0], self.box[0], self.box[1], self.box[1]], [self.box[2], self.box[3], self.box[3], self.box[2]])
-        cb = plt.colorbar(sc2, ax=ax0, extend='both', orientation='horizontal', pad=0.1)
-        cb.set_label('Number of Argo profiles')
+        sc2 = ax0.scatter(
+            argo_x + self.lon_offset, argo_y, c=argo_h, s=ms, marker="s", cmap=cmap, norm=norm
+        )
+        ax0.plot(
+            [self.box[0], self.box[0], self.box[1], self.box[1]],
+            [self.box[2], self.box[3], self.box[3], self.box[2]],
+        )
+        cb = plt.colorbar(sc2, ax=ax0, extend="both", orientation="horizontal", pad=0.1)
+        cb.set_label("Number of Argo profiles")
         # plot properties
         ax0.set_extent(self.box, crs=ccrs.PlateCarree())
-        ax0.coastlines(resolution='10m', facecolor='grey')
-        land_10m = cfeature.NaturalEarthFeature('physical', 'land', '10m', edgecolor='black', facecolor=cfeature.COLORS['land'])
+        ax0.coastlines(resolution="10m", facecolor="grey")
+        land_10m = cfeature.NaturalEarthFeature(
+            "physical", "land", "10m", edgecolor="black", facecolor=cfeature.COLORS["land"]
+        )
         ax0.add_feature(land_10m)
-        gl = ax0.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
-                        linewidth=0, color='gray', alpha=0.5, linestyle='--')
+        gl = ax0.gridlines(
+            crs=ccrs.PlateCarree(),
+            draw_labels=True,
+            linewidth=0,
+            color="gray",
+            alpha=0.5,
+            linestyle="--",
+        )
         gl.top_labels = False
         gl.xlines = True
         gl.xlocator = mticker.FixedLocator(range(-180, 180, 5))
         gl.xformatter = LONGITUDE_FORMATTER
         gl.yformatter = LATITUDE_FORMATTER
-        gl.xlabel_style = {'size': 15, 'color': 'black'}
-        gl.xlabel_style = {'color': 'black'}
+        gl.xlabel_style = {"size": 15, "color": "black"}
+        gl.xlabel_style = {"color": "black"}
         ## Panel 2
         # plot Argo data
         colors = plt.get_cmap("Blues")(np.linspace(0, 1, len(bounds) + 1))
@@ -368,8 +406,19 @@ class Wrapper(object):
         cmap.set_over(colors[-1])
         cmap.set_under(colors[0])
         norm = mcolors.BoundaryNorm(boundaries=bounds, ncolors=len(bounds) - 1)
-        sc = ax1.scatter(mangopare_x + self.lon_offset, mangopare_y, c=mangopare_h, s=ms, marker="s", cmap=cmap, norm=norm)
-        ax1.plot([self.box[0], self.box[0], self.box[1], self.box[1]], [self.box[2], self.box[3], self.box[3], self.box[2]])
+        sc = ax1.scatter(
+            mangopare_x + self.lon_offset,
+            mangopare_y,
+            c=mangopare_h,
+            s=ms,
+            marker="s",
+            cmap=cmap,
+            norm=norm,
+        )
+        ax1.plot(
+            [self.box[0], self.box[0], self.box[1], self.box[1]],
+            [self.box[2], self.box[3], self.box[3], self.box[2]],
+        )
 
         # Colorbars
         cb = plt.colorbar(sc, ax=ax1, extend="both", orientation="horizontal", pad=0.1)
@@ -402,14 +451,10 @@ class Wrapper(object):
 
     def generate_kml_file(self, df, output_filename=None):
         for _, row in df.iterrows():
-            self.kml.newpoint(
-                name = str(row['sensor_id']),
-                coords = [(row['lon'], row['lat'])]
-            )
+            self.kml.newpoint(name=str(row["sensor_id"]), coords=[(row["lon"], row["lat"])])
         self.kml.save(self.cycle_dt.strftime(output_filename))
 
     def run(self):
-        self.set_cycle()
         files = self.find_files_in_date_range()
         self.logger.info(f"--- Found {len(files)} files in date range")
         if len(files) == 0:
@@ -420,51 +465,47 @@ class Wrapper(object):
         public_files, private_files = self.separate_files_by_public(files)
         df_public = self.obtain_info(public_files)
         public_h, public_x, public_y = self.calc_grid_hist(
-                                        x_coords=df_public['lon'].values,
-                                        y_coords=df_public['lat'].values,
-                                        time=df_public['time'].values,
-                                        x_edges=self.x_edges,
-                                        y_edges=self.y_edges,
-                                    )
+            x_coords=df_public["lon"].values,
+            y_coords=df_public["lat"].values,
+            time=df_public["time"].values,
+            x_edges=self.x_edges,
+            y_edges=self.y_edges,
+        )
         df_private = self.obtain_info(private_files)
         private_h, private_x, private_y = self.calc_grid_hist(
-                                        x_coords=df_private['lon'].values,
-                                        y_coords=df_private['lat'].values,
-                                        time=df_private['time'].values,
-                                        x_edges=self.x_edges,
-                                        y_edges=self.y_edges,
-                                    )
-        self.logger.info("--- Downloading Argo data from ERDDAP")
-        df_argo = self.load_argo()
-        argo_h, argo_x, argo_y = self.calc_grid_hist(
-                                        x_coords=df_argo['lon'].values,
-                                        y_coords=df_argo['lat'].values,
-                                        time=df_argo.index.values,
-                                        x_edges=self.x_edges,
-                                        y_edges=self.y_edges,
-                                    )
+            x_coords=df_private["lon"].values,
+            y_coords=df_private["lat"].values,
+            time=df_private["time"].values,
+            x_edges=self.x_edges,
+            y_edges=self.y_edges,
+        )
+        # self.logger.info("--- Downloading Argo data from ERDDAP")
+        # df_argo = self.load_argo()
+        # argo_h, argo_x, argo_y = self.calc_grid_hist(
+        #     x_coords=df_argo["lon"].values,
+        #     y_coords=df_argo["lat"].values,
+        #     time=df_argo.index.values,
+        #     x_edges=self.x_edges,
+        #     y_edges=self.y_edges,
+        # )
         private_plot_filename = os.path.join(
             self.outdir,
-            f"private_mangopare_{self.week_start.strftime('%Y%m%d')}_{self.week_end.strftime('%Y%m%d')}"
+            f"private_mangopare_{self.week_start.strftime('%Y%m%d')}_{self.week_end.strftime('%Y%m%d')}",
         )
         public_plot_filename = os.path.join(
             self.outdir,
-            f"public_mangopare_{self.week_start.strftime('%Y%m%d')}_{self.week_end.strftime('%Y%m%d')}"
+            f"public_mangopare_{self.week_start.strftime('%Y%m%d')}_{self.week_end.strftime('%Y%m%d')}",
         )
         self.logger.info("--- Generating spatial private data map plot")
-        self.generate_spatial_map_plot(
-            argo_h, argo_x, argo_y,
-            private_h, private_x, private_y,
-            private_plot_filename+".png"
-        )
+        # self.generate_spatial_map_plot(
+        #     argo_h, argo_x, argo_y, private_h, private_x, private_y, private_plot_filename + ".png"
+        # )
         self.logger.info("--- Generating spatial public data map plot")
         self.generate_spatial_map_plot(
-            argo_h, argo_x, argo_y,
-            public_h, public_x, public_y,
-            public_plot_filename
+            argo_h, argo_x, argo_y, public_h, public_x, public_y, public_plot_filename
         )
         self.logger.info("--- Generating public data kml file")
-        self.generate_kml_file(df_public, output_filename=public_plot_filename+".kml")
+        self.generate_kml_file(df_public, output_filename=public_plot_filename + ".kml")
         self.logger.info("--- Generating private data kml file")
-        self.generate_kml_file(df_private, output_filename=private_plot_filename+".kml")
+        self.generate_kml_file(df_private, output_filename=private_plot_filename + ".kml")
         self.logger.info("--- Finished processing")

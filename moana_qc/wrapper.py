@@ -1,22 +1,45 @@
-import os
-import logging
+"""Quality control wrapper for Moana/Mangōpare sensor data."""
+
+from __future__ import annotations
+
+import glob
 import json
+import logging
+import os
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Optional
+
+import gsw
 import numpy as np
 import pandas as pd
 import xarray as xr
-import gsw
-import datetime as dt
-from ops_qc.utils import catch, start_end_dist, import_pycallable
+
+from moana_qc.utils import catch, import_pycallable, start_end_dist
 
 xr.set_options(keep_attrs=True)
 
-cycle_dt = dt.datetime.utcnow()
+# Load gear classifications from config file
+_GEAR_CLASS_FILE = Path(__file__).parent / "gear_classifications.yml"
 
-class QcWrapper(object):
-    """
-    Wrapper class for observational data quality control.  Takes a list of csv files containing
-    moana/mangōpare data and outputs qc'd data in netcdf files, one file per csv.  Also creates 
-    a status file that indicates if the qc was successful, and if not, why it wasn't.
+def _load_gear_classifications() -> dict:
+    """Load gear classifications from YAML config file."""
+    try:
+        import yaml
+        with open(_GEAR_CLASS_FILE) as f:
+            config = yaml.safe_load(f)
+        return config.get("GEAR_CLASSIFICATIONS", {})
+    except Exception:
+        # Fallback to empty dict if file doesn't exist
+        return {}
+
+DEFAULT_GEAR_CLASS = _load_gear_classifications()
+
+class QcWrapper:
+    """Quality control wrapper for observational data.
+    Processes CSV files containing Moana/Mangōpare data and outputs QC'd netCDF files.
+    Creates a status file indicating success/failure for each file.
+    Designed for use in Cylc workflows where cycle_dt is managed by the workflow.
 
     Arguments:
         filelist -- list of csv files to apply quality control to
@@ -42,7 +65,7 @@ class QcWrapper(object):
             (false)
         default_latitude -- latitude to use in convert_p_to_z
         attr_file -- location of attribute_list.yml, default uses the one in the python 
-            package, should be a yaml file (see sample one in ops_qc directory)
+            package
         startstring -- string, used by datareader class to recognize the end of the header
             or start of the data
         splitstring -- string, string to look for in error messages, anything before 
@@ -61,85 +84,82 @@ class QcWrapper(object):
 
     def __init__(
         self,
-        filelist=None,
-        outfile_ext="_qc_%y%m%d",
-        out_dir=None,
-        test_list_1=None,
-        test_list_2=None,
-        fishing_metafile="/data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv",
-        metafile_username=[],
-        metafile_token=[],
-        status_file_ext="_%y%m%d",
-        status_file_dir="",
-        datareader={},
-        metareader={},
-        preprocessor={},
-        qc_class={},
-        save_flags=False,
-        convert_p_to_z=True,
-        default_latitude=-40,
-        attr_file=os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "attribute_list.yml"
-        ),
-        startstring="DateTime (UTC)",
-        splitstring="due to:",
-        gear_class={
-            "Bottom trawl": "mobile",
-            "Potting": "stationary",
-            "Long lining": "stationary",
-            "Trawling": "mobile",
-            "Midwater trawl": "mobile",
-            "Purse seine netting": "stationary",
-            "Bottom trawling": "mobile",
-            "Research": "mobile",
-            "Education": "mobile",
-            "Bottom trawler": "mobile",
-            "Bottom long line": "mobile",
-            "Waka": "mobile",
-            "Danish seining": "stationary",
-            "Netting": "stationary",
-            "Set netting": "stationary",
-            "Dredge": "mobile",
-            "Instrument deployment": "mobile",
-            "Potting, long lining": "stationary",
-            "Diving": "stationary",
-            "Trolling": "mobile"
-        },
-        logger=logging,
+        filelist: list[str] | None = None,
+        outfile_ext: str = "_qc",
+        out_dir: str | None = None,
+        test_list_1: list[str] | None = None,
+        test_list_2: list[str] | None = None,
+        fishing_metafile: str = "/data/obs/mangopare/incoming/Fisherman_details/Trial_fisherman_database.csv",
+        metafile_username: str | None = None,
+        metafile_token: str | None = None,
+        status_file_ext: str = "_%y%m%d",
+        status_file_dir: str = "",
+        datareader: dict | None = None,
+        metareader: dict | None = None,
+        preprocessor: dict | None = None,
+        qc_class: dict | None = None,
+        save_flags: bool = False,
+        convert_p_to_z: bool = True,
+        default_latitude: float = -40.0,
+        attr_file: str | Path | None = None,
+        startstring: str = "DateTime (UTC)",
+        splitstring: str = "due to:",
+        gear_class: dict | None = None,
+        logger: logging.Logger = logging.getLogger(__name__),
         **kwargs,
     ):
         # Extract filelist from config if passed via kwargs (from linked parent tasks)
         if filelist is None and 'config' in kwargs:
             filelist = kwargs['config'].get('filelist')
             if filelist:
-                print(f"Extracted filelist from config kwargs: {len(filelist)} files")
-        
+                logger.info(f"Extracted filelist from config kwargs: {len(filelist)} files")
+
+        # Expand glob patterns in filelist
+        if filelist:
+            expanded_filelist = []
+            for pattern in filelist:
+                # Check if pattern contains glob wildcard characters
+                if any(char in pattern for char in ['*', '?', '[']):
+                    matches = sorted(glob.glob(pattern))
+                    if matches:
+                        expanded_filelist.extend(matches)
+                        logger.info(f"Expanded glob pattern '{pattern}' to {len(matches)} files")
+                    else:
+                        logger.warning(f"Glob pattern '{pattern}' matched no files")
+                else:
+                    # Not a glob pattern, add as-is
+                    expanded_filelist.append(pattern)
+            filelist = expanded_filelist if expanded_filelist else filelist
+
         self.filelist = filelist
         self.outfile_ext = outfile_ext
         self.out_dir = out_dir
-        self.test_list_1 = test_list_1
-        self.test_list_2 = test_list_2
+        self.test_list_1 = test_list_1 or []
+        self.test_list_2 = test_list_2 or []
         self.metafile = fishing_metafile
         self.metafile_username = metafile_username
         self.metafile_token = metafile_token
         self.status_file_ext = status_file_ext
         self.status_file_dir = status_file_dir
-        self.datareader_class = datareader
-        self.metareader_class = metareader
-        self.preprocessor_class = preprocessor
-        self.qc_class = qc_class
+        self.datareader_class = datareader or {}
+        self.metareader_class = metareader or {}
+        self.preprocessor_class = preprocessor or {}
+        self.qc_class = qc_class or {}
         self.save_flags = save_flags
         self.convert_p_to_z = convert_p_to_z
         self.default_latitude = default_latitude
-        self.attr_file = attr_file
+        # Use default attr_file if not provided
+        self.attr_file = Path(attr_file) if attr_file else Path(__file__).parent / "attribute_list.yml"
         self.startstring = startstring
         self.splitstring = splitstring
-        self.gear_class = gear_class
-        self._default_datareader_class = "ops_qc.readers.MangopareStandardReader"
-        self._default_metareader_class = "ops_qc.readers.MangopareMetadataReader"
-        self._default_preprocessor_class = "ops_qc.preprocess.PreProcessMangopare"
-        self._default_qc_class = "ops_qc.apply_qc.QcApply"
-        self.logger = logging
+        # Use provided gear_class or load from config file
+        self.gear_class = gear_class or DEFAULT_GEAR_CLASS
+        # Default class names (updated for moana_qc package)
+        self._default_datareader_class = "moana_qc.readers.MangopareStandardReader"
+        self._default_metareader_class = "moana_qc.readers.MangopareMetadataReader"
+        self._default_preprocessor_class = "moana_qc.preprocess.PreProcessMangopare"
+        self._default_qc_class = "moana_qc.apply_qc.QcApply"
+        self.logger = logger
         self.status_dict_keys = [
             "filename",
             "baseline",
@@ -166,19 +186,18 @@ class QcWrapper(object):
             "detailed_error"
         ]
 
-    def set_cycle(self, cycle_dt):
+    def set_cycle(self, cycle_dt: datetime) -> None:
+        """Set the cycle datetime (typically from Cylc workflow)."""
         self.cycle_dt = cycle_dt
         if self.out_dir:
             self.out_dir = cycle_dt.strftime(self.out_dir)
         if self.outfile_ext:
             self.outfile_ext = cycle_dt.strftime(self.outfile_ext)
 
-    #     self._proxy.set_cycle(cycle_dt)
-
     def _set_class(self, in_class, default_class):
         klass = in_class.pop("class", default_class)
         out_class = import_pycallable(klass)
-        self.logger.info("Using class: %s " % klass)
+        self.logger.info(f"Using class: {klass}")
         return out_class
 
     def _set_all_classes(self):
@@ -196,9 +215,8 @@ class QcWrapper(object):
                 self.qc_class, self._default_qc_class
             )
         except Exception as exc:
-            self.logger.error(
-                "Unable to set required classes for qc: {}".format(exc))
-            raise type(exc)(f'Unable to set requred classes for qc due to: {exc}')
+            self.logger.error(f"Unable to set required classes for qc: {exc}")
+            raise type(exc)(f"Unable to set requred classes for qc due to: {exc}") from exc
 
 
     def _set_filelist(self):
@@ -210,7 +228,7 @@ class QcWrapper(object):
         except Exception as exc:
             self.logger.error(
                 "No file list found, please specify.  No QC performed.")
-            raise type(exc)(f'No file list found, no QC performed due to: {exc}')
+            raise type(exc)(f'No file list found, no QC performed due to: {exc}') from exc
 
 
     def _save_qc_data(self, filename):
@@ -224,9 +242,9 @@ class QcWrapper(object):
                 self.out_dir = head
             # create (mkdir) out_dir if it doesn't exist
             self._initialize_outdir(self.out_dir)
-            savefile = "{}{}{}{}".format(
-                self.out_dir, os.path.splitext(
-                    tail)[0], self.outfile_ext, ".nc"
+            savefile = os.path.join(
+                self.out_dir, "{}{}{}".format(
+                    os.path.splitext(tail)[0], self.outfile_ext, ".nc")
             )
             self.ds.to_netcdf(savefile, mode="w", format="NETCDF4")
             # self._saved_files.append(savefile)
@@ -236,9 +254,7 @@ class QcWrapper(object):
             self.status_dict.update(
                 {"failed": "yes", "failure_mode": "Save QC File Failed"}
             )
-            self.logger.error(
-                "Could not save qc data from {}: {}".format(filename, exc)
-            )
+            self.logger.error(f"Could not save qc data from {filename}: {exc}")
             # self._failed_files.append(f'{filename}: Save QC File Failed')
 
     def _save_status_data(self):
@@ -255,13 +271,13 @@ class QcWrapper(object):
             # create all the status files in self.save_file_dict
             #           for name,data in save_file_dict:
             basefile = f"status_file{self.status_file_ext}.csv"
-            filename = cycle_dt.strftime(
+            filename = self.cycle_dt.strftime(
                 os.path.join(self.status_file_dir, basefile))
             self._status_data.to_csv(
                 filename, mode="a", header=not os.path.isfile(filename), index=False
             )
         except Exception as exc:
-            self.logger.error("Could not save status files: {}".format(exc))
+            self.logger.error(f"Could not save status files: {exc}")
 
     def _save_success_files_list(self):
         """
@@ -275,34 +291,33 @@ class QcWrapper(object):
         if not self._saved_files:
             self.logger.info("No successful files to save to JSON list")
             return
-        
         try:
             if not self.status_file_dir:
                 self.status_file_dir = self.out_dir
-            
+
             if not self.status_file_dir:
                 self.logger.warning("Cannot save success files list: no output directory specified")
                 return
-            
+
             # Create filelist subdirectory
             filelist_dir = os.path.join(self.status_file_dir, 'filelist')
             self._initialize_outdir(filelist_dir)
-            
+
             # Format filename with cycle_dt as YYYYMMDD_HHMMz
             basefile = self.cycle_dt.strftime("success_files_list_%Y%m%d_%H00z.json")
             filename = os.path.join(filelist_dir, basefile)
-            
+
             # Prepare JSON structure with metadata
             success_data = {
                 "cycle_dt": self.cycle_dt.strftime("%Y%m%d_%H%Mz"),
                 "total_files": len(self._saved_files),
                 "filelist": self._saved_files
             }
-            
+
             # Write JSON file
             with open(filename, 'w') as f:
                 json.dump(success_data, f, indent=2)
-            
+
             msg = f"Saved list of {len(self._saved_files)} successful files to {filename}"
             self.logger.info(msg)
             print(msg)  # Ensure visibility in scheduler logs
@@ -321,12 +336,8 @@ class QcWrapper(object):
             if not os.path.isdir(dir_path):
                 os.mkdir(dir_path)
         except Exception as exc:
-            self.logger.error(
-                "Could not create specified directory to save qc files in: {}".format(
-                    exc
-                )
-            )
-            raise type(exc)(f'Could not create specified directory to save qc files in due to: {exc}')
+            self.logger.error(f"Could not create specified directory {dir_path} to save qc files in: {exc}")
+            raise type(exc)(f'Could not create specified directory to save qc files in due to: {exc}') from exc
 
 
     def convert_pressure_to_depth(self):
@@ -355,42 +366,43 @@ class QcWrapper(object):
             self.ds["DEPTH_QC"].attrs["long_name"] = "Overall Depth Quality Flag"
             return self.ds
         except Exception as exc:
-            self.logger.error(
-                "Could not convert pressure to depth, leaving as pressure: {}".format(
-                    exc
-                )
-            )
+            self.logger.error(f"Could not convert pressure to depth, leaving as pressure: {exc}")
             pass
 
-    def _calc_positions(self, filename, surface_pressure=10, qcrange=[1,2]):
+    def _calc_positions(self, filename, surface_pressure=10, qcrange=None):
         """
         Calculate locations for either stationary or mobile gear.
         Current state of this code assumes all stationary locations
         in one CSV file are the SAME.  NOT NECESSARILY TRUE!  Hence
         the commented out regions...eventually will use those.
         """
+        if qcrange is None:
+            qcrange = [1, 2]
         try:
             if self.ds.attrs['gear_class'] == 'stationary':
-                # this needs work
-                if 'LOCATION_QC' in self.ds.data_vars:
-                    ds2 = self.ds.where(self.ds['LOCATION_QC'].isin(qcrange), drop=True)
-                else:
-                    ds2 = self.ds
-                if 'DATETIME_QC' in ds2.data_vars:
-                    ds2 = ds2.where(
-                        ds2['DATETIME_QC'].isin(qcrange), drop=True)
-                lat = np.nanmean(
-                    [ds2.LATITUDE.values[0], ds2.LATITUDE.values[-1]])
-                lon = np.nanmean(
-                    [ds2.LONGITUDE.values[0], ds2.LONGITUDE.values[-1]]) % 360
-                self.ds['LATITUDE'] = self.ds.LATITUDE.where(self.ds.LATITUDE == lat, other=lat)
-                self.ds['LONGITUDE'] = self.ds.LONGITUDE.where(self.ds.LONGITUDE == lon, other=lon)
+                # Filter to good quality data points using boolean indexing
+                ds2 = self.ds
+                if 'LOCATION_QC' in self.ds.data_vars and 'DATETIME_QC' in self.ds.data_vars:
+                    good_mask = (
+                        (self.ds['LOCATION_QC'].isin(qcrange)) & 
+                        (self.ds['DATETIME_QC'].isin(qcrange))
+                    )
+                    ds2 = self.ds.isel(DATETIME=good_mask)
+                elif 'LOCATION_QC' in self.ds.data_vars:
+                    good_mask = self.ds['LOCATION_QC'].isin(qcrange)
+                    ds2 = self.ds.isel(DATETIME=good_mask)
+
+                if len(ds2.DATETIME) > 0:
+                    lat = np.nanmean([ds2.LATITUDE.values[0], ds2.LATITUDE.values[-1]])
+                    lon = np.nanmean([ds2.LONGITUDE.values[0], ds2.LONGITUDE.values[-1]]) % 360
+                    self.ds['LATITUDE'] = self.ds.LATITUDE.where(lat == self.ds.LATITUDE, other=lat)
+                    self.ds['LONGITUDE'] = self.ds.LONGITUDE.where(lon == self.ds.LONGITUDE, other=lon)
             if self.ds.attrs['gear_class'] == 'mobile':
                 self.ds = self.ds.assign({"LONGITUDE": lambda ds: ds['LONGITUDE'] % 360})
         except Exception as exc:
             self.logger.error(
                 f"Position could not be calculated for {filename}: {exc}")
-            raise type(exc)(f'Could not calculate stationary positions (len={len(self.ds.TEMPERATURE)}) due to: {exc}')
+            raise type(exc)(f'Could not calculate stationary positions (len={len(self.ds.TEMPERATURE)}) due to: {exc}') from exc
 
     def _calc_location_attrs(self,filename):
         """
@@ -398,20 +410,16 @@ class QcWrapper(object):
         calculates the start_end_dist
         """
         try:
-            self.ds.attrs['geospatial_lat_max'] = "%.6f" % np.nanmax(
-                self.ds.LATITUDE.values)
-            self.ds.attrs['geospatial_lat_min'] = "%.6f" % np.nanmin(
-                self.ds.LATITUDE.values)
-            self.ds.attrs['geospatial_lon_max'] = "%.6f" % np.nanmax(
-                self.ds.LONGITUDE.values)
-            self.ds.attrs['geospatial_lon_min'] = "%.6f" % np.nanmin(
-                self.ds.LONGITUDE.values)
+            self.ds.attrs['geospatial_lat_max'] = f"{np.nanmax(self.ds.LATITUDE.values):.6f}"
+            self.ds.attrs['geospatial_lat_min'] = f"{np.nanmin(self.ds.LATITUDE.values):.6f}"
+            self.ds.attrs['geospatial_lon_max'] = f"{np.nanmax(self.ds.LONGITUDE.values):.6f}"
+            self.ds.attrs['geospatial_lon_min'] = f"{np.nanmin(self.ds.LONGITUDE.values):.6f}"
             sed = start_end_dist(self.ds)
-            self.ds.attrs['start_end_dist_m'] = "%.2f" % sed
+            self.ds.attrs['start_end_dist_m'] = f"{sed:.2f}"
         except Exception as exc:
             self.logger.error(
                 f"Position attrs not assigned for {filename}: {exc}")
-            raise type(exc)(f'Position attrs or start_end_dist not assigned due to: {exc}')
+            raise type(exc)(f'Position attrs or start_end_dist not assigned due to: {exc}') from exc
 
 
     def _postprocess(self, filename):
@@ -431,8 +439,8 @@ class QcWrapper(object):
                     self.ds["QC_FLAG"].values, return_counts=True
                 )
                 if len(values) > 1:
-                    for values, counts in zip(values, counts):
-                        self.status_dict[f"qc={values}"] = counts
+                    for value, count in zip(values, counts):
+                        self.status_dict[f"qc={value}"] = count
                 else:
                     self.status_dict[f"qc={values[0]}"] = counts[0]
             else:
@@ -537,16 +545,21 @@ class QcWrapper(object):
                     self.status_dict.update({"failed": "yes","failure_mode":str(exc),"detailed_error":"NA"})
                 self._update_status(filename)
                 self.logger.error(
-                    "Could not qc data from {}. Traceback: {}".format(
-                        filename, exc)
+                    f"Could not qc data from {filename}. Traceback: {exc}"
                 )
         self._save_status_data()
         self._save_success_files_list()
         self._success_files = self._saved_files
 
     def run(self):
+        """Run the QC processing workflow.
+        Returns:
+            list: List of successfully processed files, or None if no files
+        """
         # set all readers/preprocessors
-        self.set_cycle(cycle_dt)
+        if not hasattr(self, 'cycle_dt'):
+            # If no cycle set, use current time (for non-Cylc usage)
+            self.set_cycle(datetime.now())
         self._set_all_classes()
         # load metadata common for all files
         self.fisher_metadata = self.metareader(
@@ -555,7 +568,6 @@ class QcWrapper(object):
             username=self.metafile_username,
             token=self.metafile_token,
         ).run()
-
         if len(self.filelist) < 1 or not self.filelist:
             self.logger.info(
                 'No files in filelist, exiting without performing qc and returning "None".'
@@ -563,5 +575,4 @@ class QcWrapper(object):
             self._success_files = None
         else:
             self._process_files()
-        
         return self._success_files

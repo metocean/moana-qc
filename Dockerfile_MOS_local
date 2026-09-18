@@ -1,0 +1,23 @@
+FROM metocean/ops-qc:v0.5.1
+#FROM metocean/ops-mangopare:v0.2.6
+
+ADD . /source/moana-qc
+
+ARG GIT_TOKEN
+
+#RUN pip install -r $SOURCE/moana-qc/requirements/default.txt &&\
+#    pip install -I -r $SOURCE/moana-qc/requirements/opslibs.txt &&\
+# RUN pip install -r $SOURCE/moana-qc/requirements/tests.txt &&\
+RUN pip install /source/moana-qc &&\
+    # sudo pip uninstall -y cloudpickle &&\
+    # sudo pip uninstall -y ops-mds &&\
+    # sudo pip uninstall -y snowflake-sqlalchemy &&\
+    # pip install pytz==2023.3 &&\
+    # pip install SQLAlchemy==1.1.18 &&\
+    # pip install simplekml &&\
+    pip install erddapy
+
+RUN apt-get upgrade -y && apt-get install -y rsync
+
+CMD ["/bin/bash"]
+

@@ -1,16 +1,16 @@
-numpy==1.21.6
-datetime
-pandas==1.5.3
-xarray==2022.12.0
-dask===2020.12.0
-pytz
-PyYaml<5
-gsw
-seawater
-#setuptools==57.5.0
-pyshp
-mandrill
-glob2
-shapely==1.8.5.post1
-requests
-netCDF4
+# Legacy requirements file - use pyproject.toml instead
+# This file is kept for backward compatibility only
+# Install with: pip install -e .
+
+numpy>=1.26.0
+pandas>=2.2.0
+xarray>=2024.1.0
+dask>=2024.1.0
+pytz>=2024.1
+PyYAML>=6.0
+gsw>=3.6.0
+seawater>=3.3.4
+pyshp>=2.3.0
+shapely>=2.0.0
+requests>=2.31.0
+netCDF4>=1.6.0
