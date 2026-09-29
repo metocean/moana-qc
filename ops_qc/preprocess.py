@@ -127,6 +127,10 @@ class PreProcessMangopare(object):
                         self.ds.attrs["internal_id"] = str(row[0])
                     except:
                         pass
+                    try:
+                        self.ds.attrs['internal_vessel_name'] = str(row["Internal Vessel Name"])
+                    except:
+                        pass
                     
                     time_check += 1
                     self.status_dict.update(self.ds.attrs)

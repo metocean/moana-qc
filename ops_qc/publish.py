@@ -179,6 +179,7 @@ class Wrapper(object):
         self.ds.attrs["publication_date"] = dt.datetime.utcnow().strftime(
             "%d/%m/%Y %H:%M"
         )
+        
 
     def _add_var_attrs(self):
         """
